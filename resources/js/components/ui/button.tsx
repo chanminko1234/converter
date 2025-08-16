@@ -1,15 +1,25 @@
-import React from 'react';
+import { ButtonHTMLAttributes } from 'react';
+import { cn } from '@/lib/utils';
 
-export function Button(props: any) {
-  const { children, className = '', variant = 'default', ...rest } = props;
-  
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'default' | 'outline' | 'ghost';
+  size?: 'sm' | 'md' | 'lg' | 'icon';
+}
+
+export function Button({ children, className = '', variant = 'default', ...props }: ButtonProps) {
   const baseClass = 'px-4 py-2 rounded font-medium transition-colors';
   const variantClass = variant === 'outline' 
-    ? 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-    : 'bg-blue-600 text-white hover:bg-blue-700';
+    ? 'border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground'
+    : variant === 'ghost'
+    ? 'bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground'
+    : 'bg-primary text-primary-foreground hover:bg-primary/90';
   
-  return React.createElement('button', {
-    className: `${baseClass} ${variantClass} ${className}`,
-    ...rest
-  }, children);
+  return (
+    <button 
+      className={`${baseClass} ${variantClass} ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
 }

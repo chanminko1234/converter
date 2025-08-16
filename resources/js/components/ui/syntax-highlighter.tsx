@@ -1,4 +1,3 @@
-import React from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useTheme } from '@/components/theme-provider';

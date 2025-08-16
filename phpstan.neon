@@ -1,0 +1,33 @@
+parameters:
+    paths:
+        - app/
+        - tests/
+    
+    # Rule level (0-9, where 9 is the strictest)
+    level: 6
+    
+    ignoreErrors:
+        - '#Call to an undefined method Illuminate\\Http\\Request::#'
+        - '#Call to an undefined method Inertia\\Response::#'
+        - '#Property [a-zA-Z0-9\\_]+::\$[a-zA-Z0-9_]+ \(array\) does not accept#'
+        - '#Undefined variable: \$[a-zA-Z0-9_]+#'
+        - '#Cannot call method [a-zA-Z0-9_]+\(\) on mixed#'
+        - '#Parameter \#[0-9]+ \$[a-zA-Z0-9_]+ of method [a-zA-Z0-9\\_]+::[a-zA-Z0-9_]+\(\) expects [a-zA-Z0-9\\_|]+, mixed given#'
+        - '#Method Tests\\[a-zA-Z0-9\\_]+::[a-zA-Z0-9_]+\(\) has no return type specified#'
+        - '#Method Tests\\[a-zA-Z0-9\\_]+::[a-zA-Z0-9_]+\(\) should return void but returns#'
+    
+    excludePaths:
+        - ./vendor/*
+        - ./storage/*
+        - ./bootstrap/cache/*
+        - ./public/build/*
+    
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false
+    
+    # Laravel-specific configurations
+    scanDirectories:
+        - ./vendor/laravel/framework/src/Illuminate/
+    
+    # Enable bleeding edge features
+    reportUnmatchedIgnoredErrors: false
