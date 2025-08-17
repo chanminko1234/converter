@@ -16,7 +16,7 @@ class ConversionController extends Controller
     public function convert(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'mysql_dump' => 'required|string|max:10485760', // 10MB limit
+            'mysql_dump' => 'required|string', // No size limit
             'target_format' => 'required|string|in:postgresql,csv,xlsx,xls,sqlite,psql',
             'options' => 'sometimes|array',
             'options.preserve_identity' => 'sometimes|boolean',
@@ -26,6 +26,7 @@ class ConversionController extends Controller
             'options.trigger_handling' => 'sometimes|string|in:convert,comment,skip',
             'options.replace_handling' => 'sometimes|string|in:upsert,insert_ignore,error',
             'options.ignore_handling' => 'sometimes|string|in:on_conflict_ignore,skip,error',
+            'options.schema_only' => 'sometimes|boolean',
             // CSV specific options
             'options.csv_delimiter' => 'sometimes|string|max:1',
             'options.csv_enclosure' => 'sometimes|string|max:1',
@@ -91,8 +92,18 @@ class ConversionController extends Controller
      */
     public function upload(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'file' => 'required|file|mimes:sql,txt|max:51200', // 50MB limit
+        // Handle options parameter - it comes as JSON string from FormData
+        $optionsInput = $request->input('options', '[]');
+        $options = [];
+        
+        if (is_string($optionsInput)) {
+            $options = json_decode($optionsInput, true) ?? [];
+        } elseif (is_array($optionsInput)) {
+            $options = $optionsInput;
+        }
+        
+        $validator = Validator::make(array_merge($request->all(), ['options' => $options]), [
+            'file' => 'required|file', // Accept any file type, no size limit
             'target_format' => 'required|string|in:postgresql,csv,xlsx,xls,sqlite,psql',
             'options' => 'sometimes|array',
         ]);
@@ -104,7 +115,6 @@ class ConversionController extends Controller
         /** @var UploadedFile $file */
         $file = $request->file('file');
         $targetFormat = $request->input('target_format');
-        $options = $request->input('options', []);
 
         try {
             $mysqlDump = file_get_contents($file->getRealPath());
@@ -142,12 +152,35 @@ class ConversionController extends Controller
         $currentTable = null;
         $inCreateTable = false;
         $tableStructure = [];
+        
+        // Debug output removed for clean JSON response
 
+        $lineNum = 0;
         foreach ($lines as $line) {
+            $lineNum++;
             $line = trim($line);
+            
+            // Removed debug output for cleaner logs
+            
+            // Skip empty lines and MySQL-specific comments/directives (but not when inside CREATE TABLE)
+            if (!$inCreateTable && (empty($line) || 
+                preg_match('/^\s*\/\*!.*?\*\/$/', $line) ||
+                preg_match('/^\s*SET\s+/', $line) ||
+                preg_match('/^\s*DROP\s+TABLE\s+IF\s+EXISTS\s+/', $line) ||
+                preg_match('/^\s*(LOCK|UNLOCK)\s+TABLES/', $line) ||
+                preg_match('/^\s*\/\*!\d+\s+(DIS|EN)ABLE\s+KEYS\s+\*\//', $line) ||
+                preg_match('/^\s*--/', $line))) {
+                continue;
+            }
+            
+            // Skip only empty lines when inside CREATE TABLE
+            if ($inCreateTable && empty($line)) {
+                continue;
+            }
 
-            // Handle single-line CREATE TABLE statements
-            if (preg_match('/^CREATE TABLE `?([^`\s]+)`?\s*\((.+)\);?$/i', $line, $matches)) {
+            // Handle single-line CREATE TABLE statements with full definition
+            if (preg_match('/^\s*CREATE\s+TABLE\s+`?([^`\s\(]+)`?\s*\((.+)\)\s*(ENGINE|DEFAULT|AUTO_INCREMENT|COMMENT|CHARSET|COLLATE|ROW_FORMAT|KEY_BLOCK_SIZE|MAX_ROWS|MIN_ROWS|PACK_KEYS|DELAY_KEY_WRITE|CHECKSUM|PARTITION|;)/i', $line, $matches)) {
+                // Single-line CREATE TABLE with full definition
                 $tableName = $matches[1];
                 $columnsStr = $matches[2];
                 $tableStructure = ['name' => $tableName, 'columns' => [], 'indexes' => []];
@@ -158,7 +191,7 @@ class ConversionController extends Controller
                     $columnDef = trim($columnDef);
                     if (preg_match('/^`?([^`\s]+)`?\s+(.+)$/i', $columnDef, $colMatches)) {
                         $columnName = strtoupper($colMatches[1]);
-                        if (! in_array($columnName, ['PRIMARY', 'KEY', 'INDEX', 'UNIQUE', 'CONSTRAINT', 'FOREIGN'])) {
+                        if (! in_array($columnName, ['PRIMARY', 'KEY', 'INDEX', 'UNIQUE', 'CONSTRAINT', 'FOREIGN', 'CREATE'])) {
                             $tableStructure['columns'][] = [
                                 'name' => $colMatches[1],
                                 'definition' => trim($colMatches[2], ' ,'),
@@ -168,11 +201,13 @@ class ConversionController extends Controller
                 }
                 
                 $tables[$tableName] = $tableStructure;
+                // Added single-line table to array
                 continue;
             }
             
             // Handle single-line CREATE TABLE with opening parenthesis
             if (preg_match('/^\s*CREATE\s+TABLE\s+`?([^`\s\(]+)`?\s*\(/i', $line, $matches)) {
+                // CREATE TABLE with opening parenthesis
                 $currentTable = $matches[1];
                 $inCreateTable = true;
                 $tableStructure = ['name' => $currentTable, 'columns' => [], 'indexes' => []];
@@ -192,6 +227,7 @@ class ConversionController extends Controller
                         }
                     }
                 }
+                continue;
             } elseif (preg_match('/^\s*CREATE\s+TABLE\s+`?([^`\s]+)`?/i', $line, $matches)) {
                 // Handle multi-line CREATE TABLE without opening parenthesis on same line
                 $currentTable = $matches[1];
@@ -213,29 +249,37 @@ class ConversionController extends Controller
                         }
                     }
                 }
-            } elseif ($inCreateTable && !empty(trim($line)) && $line !== ');') {
-                // Parse column definitions in multi-line format
-                $columnDef = trim($line);
-                // Skip lines that contain CREATE TABLE or just opening parenthesis
-                if (!preg_match('/^CREATE\s+TABLE/i', $columnDef) && !preg_match('/^\s*\(\s*$/', $columnDef)) {
-                    if (preg_match('/^`?([^`\s]+)`?\s+(.+)$/i', $columnDef, $matches)) {
-                        $columnName = strtoupper($matches[1]);
-                        if (! in_array($columnName, ['PRIMARY', 'KEY', 'INDEX', 'UNIQUE', 'CONSTRAINT', 'FOREIGN', 'CREATE'])) {
-                            $tableStructure['columns'][] = [
-                                'name' => $matches[1],
-                                'definition' => trim($matches[2], ' ,'),
-                            ];
+            } elseif ($inCreateTable && !empty(trim($line))) {
+                // Check if this line ends the CREATE TABLE statement
+                if (preg_match('/^\s*\)\s*(ENGINE|DEFAULT|AUTO_INCREMENT|COMMENT|CHARSET|COLLATE|ROW_FORMAT|KEY_BLOCK_SIZE|MAX_ROWS|MIN_ROWS|PACK_KEYS|DELAY_KEY_WRITE|CHECKSUM|PARTITION|;)/i', $line) || $line === ');') {
+                    $inCreateTable = false;
+                    if ($currentTable && isset($tableStructure)) {
+                        $tables[$currentTable] = $tableStructure;
+                        $currentTable = null;
+                        $tableStructure = null;
+                    } else {
+                        // Error logging removed for clean JSON response
+                    }
+                } else {
+                    // Parse column definitions in multi-line format
+                    $columnDef = trim($line);
+                    // Skip lines that contain CREATE TABLE or just opening parenthesis
+                    if (!preg_match('/^CREATE\s+TABLE/i', $columnDef) && !preg_match('/^\s*\(\s*$/', $columnDef)) {
+                        if (preg_match('/^`?([^`\s]+)`?\s+(.+)$/i', $columnDef, $matches)) {
+                            $columnName = strtoupper($matches[1]);
+                            if (! in_array($columnName, ['PRIMARY', 'KEY', 'INDEX', 'UNIQUE', 'CONSTRAINT', 'FOREIGN', 'CREATE'])) {
+                                $tableStructure['columns'][] = [
+                                    'name' => $matches[1],
+                                    'definition' => trim($matches[2], ' ,'),
+                                ];
+                            }
                         }
                     }
-                }
-            } elseif ($inCreateTable && $line === ');') {
-                $inCreateTable = false;
-                if ($currentTable) {
-                    $tables[$currentTable] = $tableStructure;
                 }
             }
         }
 
+        // Parser completed successfully
         return ['tables' => $tables, 'raw_dump' => $dump];
     }
 
@@ -312,7 +356,8 @@ class ConversionController extends Controller
 
             foreach ($table['columns'] as $column) {
                 $pgColumn = $this->convertMysqlColumnToPostgreSQL($column, $options);
-                $columns[] = '  '.$column['name'].' '.$pgColumn;
+                $quotedColumnName = $this->quotePostgreSQLIdentifier($column['name']);
+                $columns[] = '  '.$quotedColumnName.' '.$pgColumn;
             }
 
             $pgTable .= implode(",\n", $columns)."\n);";
@@ -327,6 +372,11 @@ class ConversionController extends Controller
             foreach ($lines as $line) {
                 $trimmed = trim($line);
                 if (empty($trimmed) || str_starts_with($trimmed, '--')) {
+                    continue;
+                }
+
+                // Skip INSERT and REPLACE statements if schema only option is enabled
+                if (($options['schema_only'] ?? false) && preg_match('/^\s*(INSERT|REPLACE)\s+/i', $trimmed)) {
                     continue;
                 }
 
@@ -592,7 +642,37 @@ class ConversionController extends Controller
     }
 
     /**
-     * Convert MySQL column to PostgreSQL
+     * Quote PostgreSQL identifier if it's a reserved keyword
+     */
+    private function quotePostgreSQLIdentifier(string $identifier): string
+    {
+        // PostgreSQL reserved keywords that need quoting
+        $reservedKeywords = [
+            'desc', 'asc', 'order', 'group', 'select', 'from', 'where', 'insert', 'update', 'delete',
+            'create', 'drop', 'alter', 'table', 'index', 'view', 'database', 'schema', 'user', 'role',
+            'grant', 'revoke', 'commit', 'rollback', 'transaction', 'begin', 'end', 'if', 'else',
+            'case', 'when', 'then', 'null', 'true', 'false', 'and', 'or', 'not', 'in', 'exists',
+            'between', 'like', 'is', 'as', 'on', 'join', 'inner', 'outer', 'left', 'right', 'full',
+            'union', 'intersect', 'except', 'distinct', 'all', 'any', 'some', 'having', 'limit',
+            'offset', 'fetch', 'for', 'with', 'recursive', 'window', 'partition', 'over', 'row',
+            'range', 'rows', 'unbounded', 'preceding', 'following', 'current', 'default', 'constraint',
+            'primary', 'foreign', 'key', 'references', 'unique', 'check', 'not', 'null', 'cascade',
+            'restrict', 'set', 'action', 'match', 'partial', 'simple', 'full', 'initially', 'deferred',
+            'immediate', 'deferrable', 'temporary', 'temp', 'global', 'local', 'preserve', 'delete',
+            'rows', 'on', 'commit', 'drop', 'truncate', 'restart', 'continue', 'identity', 'generated',
+            'always', 'by', 'stored', 'virtual', 'column', 'add', 'modify', 'change', 'rename', 'to'
+        ];
+
+        // Check if identifier is a reserved keyword (case-insensitive)
+        if (in_array(strtolower($identifier), $reservedKeywords)) {
+            return '"' . $identifier . '"';
+        }
+
+        return $identifier;
+    }
+
+    /**
+     * Convert MySQL column definition to PostgreSQL
      */
     private function convertMysqlColumnToPostgreSQL(array|string $column, array $options): string
     {
@@ -603,6 +683,18 @@ class ConversionController extends Controller
             $definition = $column;
         }
         $originalDefinition = $definition;
+        
+        // Remove MySQL-specific collations that don't exist in PostgreSQL
+        $definition = preg_replace('/\s+COLLATE\s+[a-zA-Z0-9_]+/i', '', $definition);
+        
+        // Remove MySQL-specific CHARACTER SET clauses that don't exist in PostgreSQL
+        $definition = preg_replace('/\s+CHARACTER\s+SET\s+[a-zA-Z0-9_]+/i', '', $definition);
+        
+        // Remove MySQL-specific COMMENT clauses that don't exist in PostgreSQL column definitions
+        $definition = preg_replace('/\s+COMMENT\s+([\'"])[^\1]*\1/i', '', $definition);
+        
+        // Remove MySQL-specific UNSIGNED keyword that doesn't exist in PostgreSQL
+        $definition = preg_replace('/\s+UNSIGNED/i', '', $definition);
         
         // First, handle DATETIME conversion with timezone options
         if (stripos($definition, 'DATETIME') !== false) {
@@ -694,22 +786,34 @@ class ConversionController extends Controller
             'json' => 'JSONB',
         ];
 
+        // Handle DOUBLE PRECISION as a special case first to avoid double conversion
+        if (preg_match('/\bDOUBLE\s+PRECISION\s*(?:\(\d+(?:,\d+)?\))?/i', $definition)) {
+            $converted = preg_replace('/\bDOUBLE\s+PRECISION\s*\(\d+(?:,\d+)?\)/i', 'DOUBLE PRECISION', $definition);
+            return trim($converted);
+        }
+        
         // Apply type conversions
         foreach ($typeMap as $mysql => $postgres) {
             if (str_contains(strtolower($definition), strtolower($mysql))) {
-                $converted = str_ireplace($mysql, $postgres, $originalDefinition);
+                $converted = str_ireplace($mysql, $postgres, $definition);
+
+                // Remove precision/scale parameters for DOUBLE PRECISION and REAL types
+                // PostgreSQL doesn't support precision/scale for these types
+                if ($postgres === 'DOUBLE PRECISION' || $postgres === 'REAL') {
+                    $converted = preg_replace('/\b' . preg_quote($postgres, '/') . '\s*\(\d+(?:,\d+)?\)/i', $postgres, $converted);
+                }
 
                 // Handle AUTO_INCREMENT
                 if (str_contains(strtoupper($converted), 'AUTO_INCREMENT')) {
                     if ($options['preserveIdentity'] ?? true) {
                         if (str_contains($postgres, 'SMALLINT')) {
-                            $converted = str_ireplace($mysql, 'SMALLSERIAL', $originalDefinition);
+                            $converted = str_ireplace($mysql, 'SMALLSERIAL', $definition);
                             $converted = str_ireplace('AUTO_INCREMENT', '', $converted);
                         } elseif (str_contains($postgres, 'INTEGER')) {
-                            $converted = str_ireplace($mysql, 'SERIAL', $originalDefinition);
+                            $converted = str_ireplace($mysql, 'SERIAL', $definition);
                             $converted = str_ireplace('AUTO_INCREMENT', '', $converted);
                         } elseif (str_contains($postgres, 'BIGINT')) {
-                            $converted = str_ireplace($mysql, 'BIGSERIAL', $originalDefinition);
+                            $converted = str_ireplace($mysql, 'BIGSERIAL', $definition);
                             $converted = str_ireplace('AUTO_INCREMENT', '', $converted);
                         }
                     } else {
@@ -722,12 +826,12 @@ class ConversionController extends Controller
         }
         
         // Fallback: Direct DATETIME conversion if not caught above
-        if (str_contains(strtoupper($originalDefinition), 'DATETIME')) {
-            return str_ireplace('DATETIME', 'TIMESTAMP WITH TIME ZONE', $originalDefinition);
+        if (str_contains(strtoupper($definition), 'DATETIME')) {
+            return str_ireplace('DATETIME', 'TIMESTAMP WITH TIME ZONE', $definition);
         }
         
-        // If no conversion was applied, return the original definition
-        return $originalDefinition;
+        // If no conversion was applied, return the cleaned definition
+        return $definition;
     }
 
     /**

@@ -27,6 +27,7 @@ interface ConversionOptions {
   triggerHandling: 'convert' | 'comment' | 'skip';
   replaceHandling: 'upsert' | 'insert_ignore' | 'error';
   ignoreHandling: 'on_conflict_ignore' | 'skip' | 'error';
+  schemaOnly: boolean;
   // CSV options
   csvDelimiter: string;
   csvEnclosure: string;
@@ -50,7 +51,7 @@ const Welcome: React.FC = () => {
   const [activeTab, setActiveTab] = useState('output');
   const [conversionData, setConversionData] = useState<any>(null);
   const [converter] = useState(() => new MySQLToPostgreSQLConverter());
-  
+
   const [options, setOptions] = useState<ConversionOptions>({
     preserveIdentity: true,
     handleEnums: 'check_constraint',
@@ -59,6 +60,7 @@ const Welcome: React.FC = () => {
     triggerHandling: 'convert',
     replaceHandling: 'upsert',
     ignoreHandling: 'on_conflict_ignore',
+    schemaOnly: false,
     csvDelimiter: ',',
     csvEnclosure: '"',
     csvIncludeHeaders: true,
@@ -67,9 +69,9 @@ const Welcome: React.FC = () => {
     sqliteForeignKeys: true,
     sqliteWalMode: true,
   });
-  
+
   const [showCommandPalette, setShowCommandPalette] = useState(false);
-  
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -80,19 +82,19 @@ const Welcome: React.FC = () => {
           handleConvert();
         }
       }
-      
+
       // ⌘K (Cmd+K) for command palette
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault();
         setShowCommandPalette(true);
       }
-      
+
       // Escape to close command palette
       if (event.key === 'Escape' && showCommandPalette) {
         setShowCommandPalette(false);
       }
     };
-    
+
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isConverting, mysqlInput, showCommandPalette]);
@@ -100,21 +102,17 @@ const Welcome: React.FC = () => {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     setError('');
-    
+
     if (!file) return;
-    
+
     // Validate file type
     if (!file.name.endsWith('.sql') && !file.name.endsWith('.txt') && file.type !== 'text/plain') {
       setError('Please upload a valid SQL file (.sql or .txt)');
       return;
     }
-    
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('File size must be less than 5MB');
-      return;
-    }
-    
+
+    // File size validation removed - unlimited file size allowed
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -124,16 +122,100 @@ const Welcome: React.FC = () => {
           return;
         }
         setMysqlInput(content);
+        toast.success(`File "${file.name}" loaded successfully`);
       } catch (err) {
         setError('Failed to read the file content');
       }
     };
-    
+
     reader.onerror = () => {
       setError('Failed to read the file');
     };
-    
+
     reader.readAsText(file);
+  };
+
+  const handleFileUploadAndConvert = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    setError('');
+
+    if (!file) return;
+
+    // Validate file type
+    if (!file.name.endsWith('.sql') && !file.name.endsWith('.txt') && file.type !== 'text/plain') {
+      setError('Please upload a valid SQL file (.sql or .txt)');
+      return;
+    }
+
+    // Validate file size (max 50MB for server upload)
+    // if (file.size > 50 * 1024 * 1024) {
+    //   setError('File size must be less than 50MB');
+    //   return;
+    // }
+
+    setIsConverting(true);
+    setConversionReport([]);
+    setOutput('');
+    setDiffOutput('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('target_format', targetFormat);
+      formData.append('options', JSON.stringify(options));
+
+      const response = await fetch('/convert/upload', {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Conversion failed');
+      }
+
+      // Handle the conversion result same as regular convert
+      const data = result.data;
+      setConversionData(data);
+
+      if (targetFormat === 'xlsx' || targetFormat === 'xls') {
+        // For Excel files, store the base64 content and metadata
+        setOutput(`Excel file generated: ${data.filename}\nFormat: ${data.format}\nMIME Type: ${data.mime_type}`);
+        setDiffOutput('Excel files do not support diff view');
+        setConversionReport([{ type: 'info', message: `Excel file ready for download: ${data.filename}` }]);
+      } else if (targetFormat === 'csv') {
+        // For CSV files, display the files content
+        const csvContent = Object.entries(data.files)
+          .map(([tableName, content]) => `-- Table: ${tableName}\n${content}`)
+          .join('\n\n');
+        setOutput(csvContent);
+        setDiffOutput('CSV files do not support diff view');
+        setConversionReport([{ type: 'info', message: `Generated ${Object.keys(data.files).length} CSV files` }]);
+      } else {
+        // For SQL formats (postgresql, sqlite, psql)
+        setOutput(data.sql || data.script || '');
+        setDiffOutput(result.diff || '');
+        setConversionReport(result.report || []);
+      }
+      toast.success(`File "${file.name}" uploaded and converted successfully`);
+
+    } catch (error: any) {
+      setError(error.message || 'File upload and conversion failed');
+      toast.error('Upload and conversion failed');
+    } finally {
+      setIsConverting(false);
+      // Reset file input
+      event.target.value = '';
+    }
   };
 
   const handleDownload = () => {
@@ -141,7 +223,7 @@ const Welcome: React.FC = () => {
       toast.error('No conversion data available for download');
       return;
     }
-    
+
     try {
       if (targetFormat === 'xlsx' || targetFormat === 'xls') {
         // Handle Excel files - decode base64 content
@@ -160,7 +242,7 @@ const Welcome: React.FC = () => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         toast.success(`Downloaded ${conversionData.filename}`);
-        
+
       } else if (targetFormat === 'csv') {
         // Handle CSV files - create individual files or ZIP archive
         const files = conversionData.files;
@@ -192,7 +274,7 @@ const Welcome: React.FC = () => {
           URL.revokeObjectURL(url);
           toast.info(`Downloaded ${tableName}.csv (first of ${Object.keys(files).length} files)`);
         }
-        
+
       } else {
         // Handle SQL formats (postgresql, sqlite, psql)
         const content = conversionData.sql || conversionData.script || output;
@@ -204,7 +286,7 @@ const Welcome: React.FC = () => {
             default: return '.sql';
           }
         };
-        
+
         const blob = new Blob([content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -227,13 +309,13 @@ const Welcome: React.FC = () => {
       setError('Please enter some MySQL code to convert');
       return;
     }
-    
+
     setIsConverting(true);
     setError('');
     setConversionReport([]);
     setOutput('');
     setDiffOutput('');
-    
+
     try {
       const response = await fetch('/convert', {
         method: 'POST',
@@ -247,22 +329,22 @@ const Welcome: React.FC = () => {
           options: options
         })
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
-      
+
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.error || 'Conversion failed');
       }
-      
+
       // Handle different response formats based on target format
       const data = result.data;
       setConversionData(data); // Store the raw conversion data for downloads
-      
+
       if (targetFormat === 'xlsx' || targetFormat === 'xls') {
         // For Excel files, store the base64 content and metadata
         setOutput(`Excel file generated: ${data.filename}\nFormat: ${data.format}\nMIME Type: ${data.mime_type}`);
@@ -282,17 +364,17 @@ const Welcome: React.FC = () => {
         setDiffOutput(result.diff || '');
         setConversionReport(result.report || []);
       }
-      
+
       // Show success toast
       toast.success(`Successfully converted to ${targetFormat.toUpperCase()}`);
-      
+
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(`Conversion failed: ${errorMessage}`);
       setOutput('');
       setDiffOutput('');
       setConversionReport([]);
-      
+
       // Show error toast
       toast.error('Conversion failed');
     } finally {
@@ -382,7 +464,7 @@ const Welcome: React.FC = () => {
               </Select>
             </div>
           </div>
-          
+
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" className="flex items-center gap-2">
@@ -402,25 +484,33 @@ const Welcome: React.FC = () => {
                 <div className="space-y-4">
                   <h4 className="text-sm font-medium">General Options</h4>
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="preserve-identity" 
+                    <Checkbox
+                      id="preserve-identity"
                       checked={options.preserveIdentity}
                       onCheckedChange={(checked) => setOptions(prev => ({ ...prev, preserveIdentity: !!checked }))}
                     />
                     <Label htmlFor="preserve-identity">Preserve Identity/Auto-increment</Label>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="schema-only"
+                      checked={options.schemaOnly}
+                      onCheckedChange={(checked) => setOptions(prev => ({ ...prev, schemaOnly: !!checked }))}
+                    />
+                    <Label htmlFor="schema-only">Schema Only (exclude data/INSERT statements)</Label>
+                  </div>
                 </div>
-                
+
                 {/* MySQL-specific Handling */}
                 {(targetFormat === 'postgresql' || targetFormat === 'sqlite') && (
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">MySQL-specific Handling</h4>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="enum-handling">ENUM Handling</Label>
-                      <Select 
-                        value={options.handleEnums} 
-                        onValueChange={(value: 'varchar' | 'check_constraint' | 'enum_table') => 
+                      <Select
+                        value={options.handleEnums}
+                        onValueChange={(value: 'varchar' | 'check_constraint' | 'enum_table') =>
                           setOptions(prev => ({ ...prev, handleEnums: value }))}
                       >
                         <SelectTrigger>
@@ -433,12 +523,12 @@ const Welcome: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="set-handling">SET Handling</Label>
-                      <Select 
-                        value={options.handleSets} 
-                        onValueChange={(value: 'varchar' | 'array' | 'separate_table') => 
+                      <Select
+                        value={options.handleSets}
+                        onValueChange={(value: 'varchar' | 'array' | 'separate_table') =>
                           setOptions(prev => ({ ...prev, handleSets: value }))}
                       >
                         <SelectTrigger>
@@ -451,12 +541,12 @@ const Welcome: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="timezone-handling">Timezone Handling</Label>
-                      <Select 
-                        value={options.timezoneHandling} 
-                        onValueChange={(value: 'utc' | 'local' | 'preserve') => 
+                      <Select
+                        value={options.timezoneHandling}
+                        onValueChange={(value: 'utc' | 'local' | 'preserve') =>
                           setOptions(prev => ({ ...prev, timezoneHandling: value }))}
                       >
                         <SelectTrigger>
@@ -469,12 +559,12 @@ const Welcome: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="trigger-handling">Trigger Handling</Label>
-                      <Select 
-                        value={options.triggerHandling} 
-                        onValueChange={(value: 'convert' | 'comment' | 'skip') => 
+                      <Select
+                        value={options.triggerHandling}
+                        onValueChange={(value: 'convert' | 'comment' | 'skip') =>
                           setOptions(prev => ({ ...prev, triggerHandling: value }))}
                       >
                         <SelectTrigger>
@@ -487,12 +577,12 @@ const Welcome: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="replace-handling">REPLACE Handling</Label>
-                      <Select 
-                        value={options.replaceHandling} 
-                        onValueChange={(value: 'upsert' | 'insert_ignore' | 'error') => 
+                      <Select
+                        value={options.replaceHandling}
+                        onValueChange={(value: 'upsert' | 'insert_ignore' | 'error') =>
                           setOptions(prev => ({ ...prev, replaceHandling: value }))}
                       >
                         <SelectTrigger>
@@ -505,12 +595,12 @@ const Welcome: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="ignore-handling">INSERT IGNORE Handling</Label>
-                      <Select 
-                        value={options.ignoreHandling} 
-                        onValueChange={(value: 'on_conflict_ignore' | 'skip' | 'error') => 
+                      <Select
+                        value={options.ignoreHandling}
+                        onValueChange={(value: 'on_conflict_ignore' | 'skip' | 'error') =>
                           setOptions(prev => ({ ...prev, ignoreHandling: value }))}
                       >
                         <SelectTrigger>
@@ -525,14 +615,14 @@ const Welcome: React.FC = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Format-specific options */}
                 {targetFormat === 'csv' && (
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">CSV Options</h4>
                     <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="csv-headers" 
+                      <Checkbox
+                        id="csv-headers"
                         checked={options.csvIncludeHeaders}
                         onCheckedChange={(checked) => setOptions(prev => ({ ...prev, csvIncludeHeaders: !!checked }))}
                       />
@@ -540,21 +630,21 @@ const Welcome: React.FC = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {(targetFormat === 'xlsx' || targetFormat === 'xls') && (
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">Excel Options</h4>
                     <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="excel-sheet-per-table" 
+                      <Checkbox
+                        id="excel-sheet-per-table"
                         checked={options.excelSheetPerTable}
                         onCheckedChange={(checked) => setOptions(prev => ({ ...prev, excelSheetPerTable: !!checked }))}
                       />
                       <Label htmlFor="excel-sheet-per-table">Separate sheet per table</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="excel-metadata" 
+                      <Checkbox
+                        id="excel-metadata"
                         checked={options.excelIncludeMetadata}
                         onCheckedChange={(checked) => setOptions(prev => ({ ...prev, excelIncludeMetadata: !!checked }))}
                       />
@@ -562,21 +652,21 @@ const Welcome: React.FC = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {targetFormat === 'sqlite' && (
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">SQLite Options</h4>
                     <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="sqlite-foreign-keys" 
+                      <Checkbox
+                        id="sqlite-foreign-keys"
                         checked={options.sqliteForeignKeys}
                         onCheckedChange={(checked) => setOptions(prev => ({ ...prev, sqliteForeignKeys: !!checked }))}
                       />
                       <Label htmlFor="sqlite-foreign-keys">Enable foreign keys</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="sqlite-wal" 
+                      <Checkbox
+                        id="sqlite-wal"
                         checked={options.sqliteWalMode}
                         onCheckedChange={(checked) => setOptions(prev => ({ ...prev, sqliteWalMode: !!checked }))}
                       />
@@ -619,19 +709,35 @@ const Welcome: React.FC = () => {
                     <Play className="h-4 w-4" />
                     {isConverting ? 'Converting...' : 'Convert'}
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="flex items-center gap-2"
                     onClick={() => document.getElementById('file-upload')?.click()}
                   >
                     <Upload className="h-4 w-4" />
-                    Upload File
+                    Load File
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    onClick={() => document.getElementById('file-upload-convert')?.click()}
+                    disabled={isConverting}
+                  >
+                    <Upload className="h-4 w-4" />
+                    {isConverting ? 'Uploading...' : 'Upload & Convert'}
                   </Button>
                   <input
                     id="file-upload"
                     type="file"
                     accept=".sql,.txt"
                     onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <input
+                    id="file-upload-convert"
+                    type="file"
+                    accept=".sql,.txt"
+                    onChange={handleFileUploadAndConvert}
                     className="hidden"
                   />
                 </div>
@@ -661,7 +767,7 @@ const Welcome: React.FC = () => {
                   <TabsTrigger value="diff">Diff</TabsTrigger>
                   <TabsTrigger value="report">Report</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="output" className="space-y-4">
                   {output ? (
                     <CodeHighlighter
@@ -695,7 +801,7 @@ const Welcome: React.FC = () => {
                     </Button>
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="diff" className="space-y-4">
                   {diffOutput ? (
                     <CodeHighlighter
@@ -712,7 +818,7 @@ const Welcome: React.FC = () => {
                     </div>
                   )}
                 </TabsContent>
-                
+
                 <TabsContent value="report" className="space-y-4">
                   {conversionReport.length > 0 ? (
                     <div className="space-y-2 max-h-[350px] overflow-y-auto">
@@ -807,7 +913,7 @@ const Welcome: React.FC = () => {
                 <Alert>
                   <AlertDescription>
                     <pre className="text-sm font-mono whitespace-pre-wrap">
-{`INSERT INTO users (name, email) VALUES 
+{`INSERT INTO users (name, email) VALUES
 ('John Doe', 'john@example.com'),
 ('Jane Smith', 'jane@example.com');`}
                     </pre>
@@ -815,7 +921,7 @@ const Welcome: React.FC = () => {
                 </Alert>
                 <Button
                   variant="outline"
-                  onClick={() => setMysqlInput(`INSERT INTO users (name, email) VALUES 
+                  onClick={() => setMysqlInput(`INSERT INTO users (name, email) VALUES
 ('John Doe', 'john@example.com'),
 ('Jane Smith', 'jane@example.com');`)}
                 >
@@ -855,7 +961,7 @@ LIMIT 10;`)}
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Command Palette */}
       <Dialog open={showCommandPalette} onOpenChange={setShowCommandPalette}>
         <DialogContent className="sm:max-w-[425px]">

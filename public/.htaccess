@@ -1,3 +1,10 @@
+# PHP Configuration for unlimited file uploads
+php_value upload_max_filesize 0
+php_value post_max_size 0
+php_value max_execution_time 0
+php_value max_input_time 0
+php_value memory_limit -1
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
