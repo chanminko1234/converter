@@ -548,4 +548,65 @@ class ConversionControllerTest extends TestCase
         $this->assertStringContainsString("LEFT JOIN customers r ON t.customer_id = r.id", $validationSql);
         $this->assertStringContainsString("WHERE t.customer_id IS NOT NULL AND r.id IS NULL;", $validationSql);
     }
+
+    public function test_magento_preset_converts_eav_types(): void
+    {
+        $mysqlSql = "CREATE TABLE catalog_product_entity_decimal (value_id INT PRIMARY KEY, value DECIMAL(12,4));\n" .
+                    "CREATE TABLE catalog_product_entity_int (value_id INT PRIMARY KEY, value INT(11));";
+
+        $response = $this->post('/convert', [
+            'mysql_dump' => $mysqlSql,
+            'target_format' => 'postgresql',
+            'options' => [
+                'framework_preset' => 'magento',
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $sql = $response->json('data.sql');
+
+        // Verify Magento EAV type mapping overrides
+        $this->assertStringContainsString('value NUMERIC(12,4)', $sql);
+        // Magento `value` int columns must map exactly to INTEGER, discarding lengths
+        $this->assertStringContainsString('value INTEGER', $sql);
+    }
+
+    public function test_convert_endpoint_respects_schema_only_option(): void
+    {
+        $mysqlSql = "CREATE TABLE users (id INT PRIMARY KEY);\nINSERT INTO users (id) VALUES (1);";
+
+        $response = $this->post('/convert', [
+            'mysql_dump' => $mysqlSql,
+            'target_format' => 'postgresql',
+            'options' => [
+                'schema_only' => true,
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $sql = $response->json('data.sql');
+
+        $this->assertStringContainsString('CREATE TABLE users', $sql);
+        $this->assertStringNotContainsString('INSERT INTO users', $sql);
+    }
+
+    public function test_triggers_handling_options(): void
+    {
+        $mysqlSql = "CREATE TABLE test_table (id INT PRIMARY KEY);\n" . 
+                    "CREATE TRIGGER test_trigger BEFORE INSERT ON test_table FOR EACH ROW SET NEW.id = 1;";
+
+        $response = $this->post('/convert', [
+            'mysql_dump' => $mysqlSql,
+            'target_format' => 'postgresql',
+            'options' => [
+                'trigger_handling' => 'comment',
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $sql = $response->json('data.sql');
+
+        // Confirm the trigger is commented out instead of executed
+        $this->assertStringContainsString('-- CREATE TRIGGER test_trigger', $sql);
+    }
 }

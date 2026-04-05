@@ -1635,12 +1635,12 @@ class ConversionController extends Controller
                 break;
 
             case 'magento':
-                // Magento prices are usually decimal(12,4)
-                if (str_contains($colName, 'price') && str_contains($def, 'decimal')) {
+                // Magento prices and decimals in EAV are usually decimal(12,4)
+                if (str_contains($tableName, 'entity_decimal') && str_contains($colName, 'value') && str_contains($def, 'decimal')) {
                     $column['definition'] = 'NUMERIC(12,4)';
                 }
                 // Handle complex Magento EAV integer types
-                if (str_contains($tableName, 'entity_int') && $colName === 'value' && str_contains($def, 'int')) {
+                if (str_contains($tableName, 'entity_int') && str_contains($colName, 'value') && str_contains($def, 'int')) {
                     $column['definition'] = 'INTEGER';
                 }
                 break;
