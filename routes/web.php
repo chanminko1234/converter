@@ -24,4 +24,6 @@ Route::get('/support', function () {
 Route::middleware(['throttle:60,1'])->group(function () {
     Route::post('/convert', [ConversionController::class, 'convert'])->name('convert');
     Route::post('/convert/upload', [ConversionController::class, 'upload'])->name('convert.upload');
+    Route::post('/convert/stream', [ConversionController::class, 'stream'])->name('convert.stream');
+    Route::post('/convert/analyze', [ConversionController::class, 'analyze'])->name('convert.analyze');
 });

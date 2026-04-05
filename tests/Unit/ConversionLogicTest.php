@@ -240,4 +240,37 @@ class ConversionLogicTest extends TestCase
         $result = $this->callPrivateMethod('convertMysqlColumnToSqlite', ['YEAR', []]);
         $this->assertEquals('INTEGER', $result);
     }
+
+    public function test_trigger_conversion_resiliency(): void
+    {
+        $mysqlSql = "CREATE TRIGGER before_insert_users\n" .
+                    "BEFORE INSERT ON users\n" .
+                    "FOR EACH ROW\n" .
+                    "BEGIN\n" .
+                    "  SET NEW.created_at = NOW();\n" .
+                    "END;";
+
+        // Use a partial data structure for testing convertToPostgreSQL
+        $data = ['raw_dump' => $mysqlSql, 'tables' => []];
+        $options = ['triggerHandling' => 'convert'];
+        $result = $this->callPrivateMethod('convertToPostgreSQL', [$data, $options]);
+
+        $this->assertStringContainsString('CREATE TRIGGER', $result['sql']);
+        $reportMessages = array_column($result['report'], 'message');
+        $this->assertTrue(collect($reportMessages)->contains(fn($m) => str_contains($m, 'Trigger syntax')));
+    }
+
+    public function test_view_conversion_strips_mysql_specifics(): void
+    {
+        $mysqlSql = "CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW user_emails AS \n" .
+                    "SELECT email FROM users WHERE email IS NOT NULL;";
+
+        $data = ['raw_dump' => $mysqlSql, 'tables' => []];
+        $result = $this->callPrivateMethod('convertToPostgreSQL', [$data, []]);
+
+        $this->assertStringContainsString('CREATE VIEW', $result['sql']);
+        $this->assertStringNotContainsString('ALGORITHM', $result['sql']);
+        $this->assertStringNotContainsString('DEFINER', $result['sql']);
+        $this->assertStringNotContainsString('SQL SECURITY', $result['sql']);
+    }
 }

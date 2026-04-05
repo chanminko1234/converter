@@ -14,12 +14,17 @@ const Support: React.FC = () => {
   const faqs = [
     { q: "Is there a file size limit?", a: "Standard uploads support files up to 100MB. For larger databases, please use our CLI tool or streaming endpoint." },
     { q: "How accurate is the transformation?", a: "We maintain a 99.9% accuracy rate for standard SQL. Complex stored procedures may require a manual review." },
-    { q: "Do you support custom PostgreSQL schemas?", a: "Yes, you can define custom schema mappings in the advanced options panel before running a conversion." },
+    { q: "Does the system scan for sensitive data?", a: "Yes. Our PII Defense Engine auto-detects fields like passwords, SSRNs, and credit cards and applies one-way hashing to obfuscate them before export." },
+    { q: "How do I verify the migration?", a: "When transforming to PostgreSQL, the engine automatically generates an 'Integrity Validation Script' containing queries to verify row counts, sum totals, and foreign keys." },
   ];
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans relative overflow-hidden">
-      <Head title="Support Hub - SQL Decoded" />
+      <Head>
+        <title>Technical Support | MySQL to PostgreSQL Converter</title>
+        <meta name="description" content="Get expert technical support and guidance on complex database migrations from MySQL to PostgreSQL. Community hub, bug tracker, and detailed FAQs." />
+        <meta name="keywords" content="sql migration support, database conversion help, mysql to postgresql technical assistance, troubleshoot sql migration" />
+      </Head>
 
       {/* Background Effects */}
       <div className="fixed inset-0 z-0 pointer-events-none">

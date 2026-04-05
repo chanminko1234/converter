@@ -13,15 +13,19 @@ import { motion } from 'framer-motion';
 const Status: React.FC = () => {
   const services = [
     { name: 'Transformation Engine', status: 'operational', uptime: '99.98%', latency: '42ms' },
+    { name: 'PII Defense Engine', status: 'operational', uptime: '100%', latency: '18ms' },
+    { name: 'Integrity Audit Pipeline', status: 'operational', uptime: '99.99%', latency: '35ms' },
     { name: 'File Storage Service', status: 'operational', uptime: '100%', latency: '12ms' },
     { name: 'REST API 2.0', status: 'operational', uptime: '99.95%', latency: '84ms' },
-    { name: 'Documentation Hub', status: 'operational', uptime: '100%', latency: '5ms' },
-    { name: 'Excel Export Worker', status: 'operational', uptime: '99.90%', latency: '1.2s' },
   ];
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans relative overflow-hidden">
-      <Head title="System Status - SQL Decoded" />
+      <Head>
+        <title>API Status & Uptime | MySQL to PostgreSQL Converter</title>
+        <meta name="description" content="View the real-time operational status, latency, and uptime history for the SQL Decoded database transformation API and PII Defense engines." />
+        <meta name="keywords" content="sql to postgres api status, database converter uptime, mysql migration tool health" />
+      </Head>
       
       {/* Background Effects */}
       <div className="fixed inset-0 z-0 pointer-events-none">

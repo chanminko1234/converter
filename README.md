@@ -5,10 +5,12 @@ A powerful web-based tool for converting MySQL database schemas and data to Post
 ## Features
 
 - **Multiple Output Formats**: Convert to PostgreSQL, CSV, Excel (.xlsx/.xls), SQLite, and psql scripts
-- **Advanced Conversion Options**: Handle ENUMs, SETs, triggers, and MySQL-specific syntax
-- **Web Interface**: Modern, responsive UI built with React and Tailwind CSS
-- **API Endpoints**: RESTful API for programmatic access
-- **Comprehensive Testing**: Full test suite with PHPStan and Pint code quality tools
+- **Security & Pipeline Features**: End-to-end Data Masking (PII Discovery), automated generation of Integrity Validation SQL scripts, and Predictive Refactoring.
+- **Advanced Conversion Options**: Handle ENUMs, SETs, triggers, MySQL-specific syntax, and Auto-Cleaning (Duplicate & Naming resolution).
+- **Framework Presets**: Optimized transpilation rules specifically tailored for Laravel, WordPress, and Magento database definitions.
+- **Web Interface**: Modern, responsive UI built with React and Tailwind CSS providing visual ERD architectural previews and Diff inspection.
+- **API Endpoints**: RESTful API for programmatic access (up to 100MB chunk processing capability).
+- **Comprehensive Testing**: Full test suite hitting 100+ assertions ensuring deep conversion integrity, alongside PHPStan and Pint code quality tools.
 
 ## Installation Guide
 

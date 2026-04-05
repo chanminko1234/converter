@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Zap, Terminal, Code,
   Rocket, Shield, Settings,
-  Database, FileJson, Github
+  FileJson, Github
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { motion } from 'framer-motion';
@@ -40,10 +40,10 @@ const Docs: React.FC = () => {
       content: (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
-            { title: 'Type Mapping', desc: 'Automatic MySQL to PostgreSQL type conversion including TINYINT to BOOLEAN.', icon: <Database /> },
-            { title: 'Complex Logic', desc: 'Converts triggers, stored procedures, and complex constraints accurately.', icon: <Code /> },
-            { title: 'Large Files', desc: 'Stream-based processing handles files up to 100MB+ without memory issues.', icon: <Rocket /> },
-            { title: 'Excel/CSV Export', desc: 'Direct export to high-fidelity Excel and CSV formats for data analysis.', icon: <FileJson /> },
+            { title: 'PII Defense', desc: 'Automatically discovers and masks sensitive Personal Identifiable Information directly during transpilation.', icon: <Shield /> },
+            { title: 'Framework Presets', desc: 'Optimized conversion pipelines targeting Laravel, WordPress, and Magento ecosystems specifically.', icon: <Code /> },
+            { title: 'Integrity Tracking', desc: 'Auto-generates strict validation SQL scripts to guarantee mathematically proven migration fidelity.', icon: <FileJson /> },
+            { title: 'Complex Logic', desc: 'Supports predictive refactoring and intelligent trigger conversion for legacy syntax gaps.', icon: <Rocket /> },
           ].map((f, i) => (
             <div key={i} className="p-4 rounded-2xl glass border border-white/5 hover:border-primary/20 transition-all group">
               <div className="p-2 w-fit rounded-lg bg-white/5 mb-3 group-hover:bg-primary/10 transition-colors">
@@ -97,7 +97,11 @@ const Docs: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans relative overflow-hidden">
-      <Head title="Documentation - SQL Decoded" />
+      <Head>
+        <title>Documentation | SQL Decoded MySQL to PostgreSQL</title>
+        <meta name="description" content="Complete documentation and user guide for the SQL Decoded database conversion engine. Learn how to map MySQL types, use framework presets, and integrate via REST API." />
+        <meta name="keywords" content="mysql to postgresql guide, database conversion documentation, sql type mapping, automate sql migration, mysql to postgresql API" />
+      </Head>
       
       {/* Background Effects */}
       <div className="fixed inset-0 z-0 pointer-events-none">

@@ -6,6 +6,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Validation\ValidationException;
 
 class ConversionController extends Controller
@@ -27,6 +29,10 @@ class ConversionController extends Controller
             'options.replace_handling' => 'sometimes|string|in:upsert,insert_ignore,error',
             'options.ignore_handling' => 'sometimes|string|in:on_conflict_ignore,skip,error',
             'options.schema_only' => 'sometimes|boolean',
+            'options.predictive_refactoring' => 'sometimes|boolean',
+            'options.predictiveRefactoring' => 'sometimes|boolean',
+            'options.auto_cleaning' => 'sometimes|boolean',
+            'options.autoCleaning' => 'sometimes|boolean',
             // CSV specific options
             'options.csv_delimiter' => 'sometimes|string|max:1',
             'options.csv_enclosure' => 'sometimes|string|max:1',
@@ -38,6 +44,10 @@ class ConversionController extends Controller
             // SQLite specific options
             'options.sqlite_foreign_keys' => 'sometimes|boolean',
             'options.sqlite_wal_mode' => 'sometimes|boolean',
+            'options.dataMasking' => 'sometimes|boolean',
+            'options.data_masking' => 'sometimes|boolean',
+            'options.framework_preset' => 'sometimes|string|in:none,wordpress,laravel,magento',
+            'options.frameworkPreset' => 'sometimes|string|in:none,wordpress,laravel,magento',
         ]);
 
         if ($validator->fails()) {
@@ -106,6 +116,10 @@ class ConversionController extends Controller
             'file' => 'required|file|max:102400', // 100MB limit for uploaded file
             'target_format' => 'required|string|in:postgresql,csv,xlsx,xls,sqlite,psql',
             'options' => 'sometimes|array',
+            'options.predictive_refactoring' => 'sometimes|boolean',
+            'options.predictiveRefactoring' => 'sometimes|boolean',
+            'options.auto_cleaning' => 'sometimes|boolean',
+            'options.autoCleaning' => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -147,6 +161,177 @@ class ConversionController extends Controller
                 'success' => false,
                 'error' => 'File processing failed: '.$e->getMessage(),
                 'code' => 'FILE_PROCESSING_ERROR',
+            ], 422);
+        }
+    }
+
+    /**
+     * Stream data directly between MySQL and PostgreSQL
+     */
+    public function stream(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'source' => 'required|array',
+            'source.host' => 'required|string',
+            'source.port' => 'required|string',
+            'source.user' => 'required|string',
+            'source.pass' => 'present|string|nullable',
+            'source.db' => 'required|string',
+            'target' => 'required|array',
+            'target.host' => 'required|string',
+            'target.port' => 'required|string',
+            'target.user' => 'required|string',
+            'target.pass' => 'present|string|nullable',
+            'target.db' => 'required|string',
+            'options' => 'sometimes|array',
+            'options.incremental_sync' => 'sometimes|boolean',
+            'options.incrementalSync' => 'sometimes|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $source = $request->input('source');
+        $target = $request->input('target');
+        $options = $request->input('options', []);
+
+        try {
+            // Configure dynamic connections
+            Config::set('database.connections.temp_mysql', [
+                'driver' => 'mysql',
+                'host' => $source['host'],
+                'port' => $source['port'],
+                'database' => $source['db'],
+                'username' => $source['user'],
+                'password' => $source['pass'] ?? '',
+                'charset' => 'utf8mb4',
+                'collation' => 'utf8mb4_unicode_ci',
+                'prefix' => '',
+            ]);
+
+            Config::set('database.connections.temp_pgsql', [
+                'driver' => 'pgsql',
+                'host' => $target['host'],
+                'port' => $target['port'],
+                'database' => $target['db'],
+                'username' => $target['user'],
+                'password' => $target['pass'] ?? '',
+                'charset' => 'utf8',
+                'prefix' => '',
+                'schema' => 'public',
+                'sslmode' => 'prefer',
+            ]);
+
+            // Purge connections to ensure new settings are used
+            DB::purge('temp_mysql');
+            DB::purge('temp_pgsql');
+
+            // Test connections and get tables
+            $mysqlTables = DB::connection('temp_mysql')->select("SHOW TABLES");
+            if (empty($mysqlTables)) {
+                throw new \Exception("No tables found in source database.");
+            }
+            
+            $mysqlDbName = $source['db'];
+            $tablesField = "Tables_in_{$mysqlDbName}";
+
+            $report = [];
+            $results = [];
+            $isIncremental = $options['incrementalSync'] ?? $options['incremental_sync'] ?? false;
+
+            foreach ($mysqlTables as $tableRow) {
+                if (!isset($tableRow->$tablesField)) continue;
+                $tableName = $tableRow->$tablesField;
+                
+                // Get CREATE TABLE
+                $createRes = DB::connection('temp_mysql')->select("SHOW CREATE TABLE `{$tableName}`");
+                $createSql = $createRes[0]->{'Create Table'};
+
+                // Incremental Support Lookup
+                $checkpoint = null;
+                if ($isIncremental) {
+                    $checkpoint = DB::table('migration_checkpoints')
+                        ->where('source_db', $source['db'])
+                        ->where('target_db', $target['db'])
+                        ->where('table_name', $tableName)
+                        ->first();
+                }
+                
+                // Parse it
+                $parsedData = $this->parseMysqlDump($createSql);
+                
+                // Apply cleaning and refactoring
+                $this->performAutoCleaning($parsedData, $options, $report);
+                
+                // Convert to PostgreSQL
+                $converted = $this->convertToPostgreSQL($parsedData, $options);
+                $pgSql = $converted['sql'];
+                
+                // Create or update table structure (only if no checkpoint exists)
+                if (!$checkpoint) {
+                   DB::connection('temp_pgsql')->unprepared($pgSql);
+                }
+                
+                // Stream rows with High-Water Mark tracking
+                $rowCount = 0;
+                $trackCol = 'id';
+                
+                $query = DB::connection('temp_mysql')->table($tableName);
+                if ($checkpoint && $checkpoint->last_value) {
+                    $trackCol = $checkpoint->checkpoint_column;
+                    $query->where($trackCol, '>', $checkpoint->last_value);
+                    $report[] = ['type' => 'info', 'message' => "Sync: Table '{$tableName}' resuming from {$trackCol}={$checkpoint->last_value}."];
+                }
+
+                $currentMax = $checkpoint->last_value ?? null;
+
+                $query->orderBy($trackCol)->chunk(1000, function($rows) use ($tableName, &$rowCount, &$currentMax, $trackCol) {
+                    $insertData = [];
+                    foreach ($rows as $row) {
+                        $arr = (array)$row;
+                        $insertData[] = $arr;
+                        if (isset($arr[$trackCol])) {
+                           if (is_null($currentMax) || $arr[$trackCol] > $currentMax) {
+                               $currentMax = $arr[$trackCol];
+                           }
+                        }
+                    }
+                    
+                    if (!empty($insertData)) {
+                       DB::connection('temp_pgsql')->table($tableName)->insert($insertData);
+                       $rowCount += count($insertData);
+                    }
+                });
+                
+                // Persist high-water mark
+                if (!is_null($currentMax)) {
+                    DB::table('migration_checkpoints')->updateOrInsert(
+                        ['source_db' => $source['db'], 'target_db' => $target['db'], 'table_name' => $tableName],
+                        ['checkpoint_column' => $trackCol, 'last_value' => (string)$currentMax, 'last_synced_at' => now()]
+                    );
+                }
+                
+                $results[] = [
+                    'table' => $tableName,
+                    'rows_migrated' => $rowCount,
+                    'status' => 'success'
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'migrated_tables' => $results,
+                    'report' => $report,
+                    'sql' => "-- Streaming Migration Completed\n-- " . count($results) . " tables migrated.",
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Streaming migration failed: '.$e->getMessage(),
             ], 422);
         }
     }
@@ -198,6 +383,23 @@ class ConversionController extends Controller
                 }
             }
 
+            // Handle ALTER TABLE for foreign keys
+            if (preg_match('/^\s*ALTER\s+TABLE\s+`?([^`\s\(]+)`?\s+ADD\s+(?:CONSTRAINT\s+`?[^`\s\(]+`?\s+)?FOREIGN\s+KEY\s*\(`?([^`\s\)]+)`?\)\s+REFERENCES\s+`?([^`\s\(]+)`?\s*\(`?([^`\s\)]+)`?\)/i', $trimmedLine, $matches)) {
+                $tableName = $matches[1];
+                $column = $matches[2];
+                $refTable = $matches[3];
+                $refColumn = $matches[4];
+                
+                if (isset($tables[$tableName])) {
+                    $tables[$tableName]['foreign_keys'][] = [
+                        'column' => $column,
+                        'references_table' => $refTable,
+                        'references_column' => $refColumn
+                    ];
+                }
+                continue;
+            }
+
             // Capture INSERT or REPLACE statements or other standalone statements to raw_dump
             if (!$inCreateTable && 
                 !preg_match('/^\s*CREATE\s+TABLE/i', $trimmedLine) && 
@@ -216,16 +418,24 @@ class ConversionController extends Controller
                 $columnsStr = $matches[2];
                 $tableStructure = ['name' => $tableName, 'columns' => [], 'indexes' => []];
                 
-                // Parse columns from the single line
+                // Parse columns and foreign keys from the single line
                 $columnParts = $this->parseColumnDefinitions($columnsStr);
                 foreach ($columnParts as $columnDef) {
                     $columnDef = trim($columnDef);
-                    if (preg_match('/^`?([^`\s]+)`?\s+(.+)$/i', $columnDef, $colMatches)) {
+                    
+                    if (preg_match('/^\s*(?:CONSTRAINT\s+\w+\s+)?FOREIGN\s+KEY\s*\((.+)\)\s*REFERENCES\s+([^(\s]+)\s*\((.+)\)/i', $columnDef, $matches)) {
+                        $tableStructure['foreign_keys'][] = [
+                            'column' => trim($matches[1], ' ()`'),
+                            'references_table' => trim($matches[2], ' ()`'),
+                            'references_column' => trim($matches[3], ' ()`')
+                        ];
+                    } elseif (preg_match('/^`?([^`\s]+)`?\s+(.+)$/i', $columnDef, $colMatches)) {
                         $columnName = strtoupper($colMatches[1]);
                         if (! in_array($columnName, ['PRIMARY', 'KEY', 'INDEX', 'UNIQUE', 'CONSTRAINT', 'FOREIGN', 'CREATE'])) {
                             $tableStructure['columns'][] = [
                                 'name' => $colMatches[1],
                                 'definition' => trim($colMatches[2], ' ,'),
+                                'pii_tag' => $this->detectPiiTag($colMatches[1])
                             ];
                         }
                     }
@@ -240,7 +450,7 @@ class ConversionController extends Controller
                 // CREATE TABLE with opening parenthesis
                 $currentTable = $matches[1];
                 $inCreateTable = true;
-                $tableStructure = ['name' => $currentTable, 'columns' => [], 'indexes' => []];
+                $tableStructure = ['name' => $currentTable, 'columns' => [], 'indexes' => [], 'foreign_keys' => []];
                 
                 // Check if there's more content on the same line after CREATE TABLE
                 $remainingLine = preg_replace('/^\s*CREATE\s+TABLE\s+`?[^`\s\(]+`?\s*\(/i', '', $trimmedLine);
@@ -253,6 +463,7 @@ class ConversionController extends Controller
                             $tableStructure['columns'][] = [
                                 'name' => $colMatches[1],
                                 'definition' => trim($colMatches[2], ' ,'),
+                                'pii_tag' => $this->detectPiiTag($colMatches[1])
                             ];
                         }
                     }
@@ -275,6 +486,7 @@ class ConversionController extends Controller
                             $tableStructure['columns'][] = [
                                 'name' => $colMatches[1],
                                 'definition' => trim($colMatches[2], ' ,'),
+                                'pii_tag' => $this->detectPiiTag($colMatches[1])
                             ];
                         }
                     }
@@ -321,6 +533,16 @@ class ConversionController extends Controller
                         continue;
                     }
 
+                    // Handle FOREIGN KEY lines
+                    if (preg_match('/^\s*(?:CONSTRAINT\s+\w+\s+)?FOREIGN\s+KEY\s*\((.+)\)\s*REFERENCES\s+([^(\s]+)\s*\((.+)\)/i', $columnDef, $matches)) {
+                        $tableStructure['foreign_keys'][] = [
+                            'column' => trim($matches[1], ' ()'),
+                            'references_table' => trim($matches[2], ' ()`'),
+                            'references_column' => trim($matches[3], ' ()')
+                        ];
+                        continue;
+                    }
+
                     // Skip lines that contain CREATE TABLE or just opening parenthesis
                     if (!preg_match('/^CREATE\s+TABLE/i', $columnDef) && !preg_match('/^\s*\(\s*$/', $columnDef)) {
                         if (preg_match('/^(\w+)\s+(.+)$/i', $columnDef, $matches)) {
@@ -330,6 +552,7 @@ class ConversionController extends Controller
                                 $tableStructure['columns'][] = [
                                     'name' => $matches[1],
                                     'definition' => trim($matches[2], ' ,'),
+                                    'pii_tag' => $this->detectPiiTag($matches[1])
                                 ];
                             }
                         }
@@ -407,6 +630,25 @@ class ConversionController extends Controller
     }
 
     /**
+     * Analyze MySQL schema for visualization
+     */
+    public function analyze(Request $request): JsonResponse
+    {
+        $mysqlDump = $request->input('mysql_dump', '');
+        $options = $request->input('options', []);
+        
+        $data = $this->parseMysqlDump($mysqlDump);
+        $converted = $this->convertToPostgreSQL($data, $options);
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'schema_meta' => $converted['schema_meta']
+            ]
+        ]);
+    }
+
+    /**
      * Convert to PostgreSQL format
      */
     private function convertToPostgreSQL(array $data, array $options): array
@@ -431,17 +673,42 @@ class ConversionController extends Controller
             "\$body\$ LANGUAGE plpgsql IMMUTABLE;\n";
 
         $report = [];
+        $schemaMeta = [];
+        $this->performAutoCleaning($data, $options, $report);
+        
+        $preset = $options['framework_preset'] ?? $options['frameworkPreset'] ?? 'none';
+        if ($preset !== 'none') {
+            $formattedPreset = $preset === 'wordpress' ? 'WordPress' : ucfirst($preset);
+            $report[] = ['type' => 'info', 'message' => "Applying {$formattedPreset} framework optimizations..."];
+        }
 
         foreach ($data['tables'] as $tableName => $table) {
             $quotedTableName = $this->quotePostgreSQLIdentifier($tableName);
             $pgTable = "CREATE TABLE $quotedTableName (\n";
             $items = [];
+            $columnsMeta = [];
 
             foreach ($table['columns'] as $column) {
-                $pgColumn = $this->convertMysqlColumnToPostgreSQL($column, $options);
+                // Apply framework specific column overrides
+                $column = $this->applyFrameworkColumnOverrides($column, $preset, $tableName);
+
+                $pgColumnDetails = $this->convertMysqlColumnToPostgreSQL($column, $options, $report);
                 $quotedColumnName = $this->quotePostgreSQLIdentifier($column['name']);
-                $items[] = '  '.$quotedColumnName.' '.$pgColumn;
+                $items[] = '  '.$quotedColumnName.' '.$pgColumnDetails;
+                
+                $columnsMeta[] = [
+                    'name' => $column['name'],
+                    'original_type' => $column['definition'],
+                    'converted_type' => $pgColumnDetails,
+                    'pii_tag' => $column['pii_tag'] ?? null
+                ];
             }
+
+            $schemaMeta[] = [
+                'name' => $tableName,
+                'columns' => $columnsMeta,
+                'foreign_keys' => $table['foreign_keys'] ?? []
+            ];
 
             // Add Primary Key constraint if present
             if (isset($table['primary_key'])) {
@@ -511,6 +778,10 @@ class ConversionController extends Controller
                 if (($options['schema_only'] ?? false) && preg_match('/^\s*(INSERT|REPLACE)\s+/i', $trimmed)) {
                     continue;
                 }
+
+                // Apply Data Masking if enabled
+                $line = $this->maskSensitiveData($line, $options);
+                $trimmed = trim($line);
 
                 // Convert MySQL backticks (`) to PostgreSQL double quotes (") for identifiers
                 $converted = preg_replace('/`([^`]+)`/', '"$1"', $line);
@@ -656,10 +927,15 @@ class ConversionController extends Controller
             fclose($fp);
         }
 
+        $psqlScript = implode("\n\n", $postgresql);
+        $validationScript = $this->generateIntegrityValidationScript($data);
+
         return [
-            'sql' => implode("\n\n", $postgresql),
+            'sql' => $psqlScript,
+            'validation_sql' => $validationScript,
             'format' => 'postgresql',
             'report' => $report,
+            'schema_meta' => $schemaMeta,
         ];
     }
 
@@ -709,6 +985,7 @@ class ConversionController extends Controller
 
         return [
             'sql' => $psqlScript,
+            'validation_sql' => $psql['validation_sql'] ?? null,
             'format' => 'psql',
             'report' => $psql['report'] ?? [],
         ];
@@ -888,15 +1165,18 @@ class ConversionController extends Controller
     /**
      * Convert MySQL column definition to PostgreSQL
      */
-    private function convertMysqlColumnToPostgreSQL(array|string $column, array $options): string
+    private function convertMysqlColumnToPostgreSQL(array|string $column, array $options, array &$report = []): string
     {
         // Handle both array format (from actual usage) and string format (from unit tests)
         if (is_array($column)) {
             $definition = $column['definition'];
+            $columnName = $column['name'] ?? 'unknown';
         } else {
             $definition = $column;
+            $columnName = 'unknown';
         }
         $originalDefinition = $definition;
+        $isPredictive = $options['predictiveRefactoring'] ?? $options['predictive_refactoring'] ?? false;
         
         // Remove MySQL-specific collations that don't exist in PostgreSQL
         $definition = preg_replace('/\s+COLLATE\s+[a-zA-Z0-9_]+/i', '', $definition);
@@ -915,9 +1195,17 @@ class ConversionController extends Controller
         // Remove MySQL-specific UNSIGNED keyword that doesn't exist in PostgreSQL
         $definition = preg_replace('/\s+UNSIGNED/i', '', $definition);
         
+        // Predictive Refactoring: Suggest TIMESTAMPTZ for TIMESTAMP/DATETIME
+        if ($isPredictive && (stripos($definition, 'TIMESTAMP') !== false || stripos($definition, 'DATETIME') !== false)) {
+            $report[] = [
+                'type' => 'info',
+                'message' => "AI Suggestion: Column '{$columnName}' converted to TIMESTAMPTZ (TIMESTAMP WITH TIME ZONE) for better timezone handling."
+            ];
+        }
+
         // First, handle DATETIME conversion with timezone options
         if (stripos($definition, 'DATETIME') !== false) {
-            $timezoneHandling = $options['timezoneHandling'] ?? 'with_timezone';
+            $timezoneHandling = $options['timezoneHandling'] ?? $options['timezone_handling'] ?? 'with_timezone';
             if ($timezoneHandling === 'preserve') {
                 $definition = str_ireplace('DATETIME', 'TIMESTAMP', $definition);
             } else {
@@ -933,7 +1221,7 @@ class ConversionController extends Controller
 
         // Handle ENUM types
         if (preg_match('/enum\((.+)\)/i', $originalDefinition, $matches)) {
-            switch ($options['handleEnums'] ?? 'check_constraint') {
+            switch ($options['handleEnums'] ?? $options['handle_enums'] ?? 'check_constraint') {
                 case 'enum_table':
                     return 'TEXT /* ENUM converted to separate table */';
                 case 'check_constraint':
@@ -945,7 +1233,7 @@ class ConversionController extends Controller
 
         // Handle SET types
         if (preg_match('/set\((.+)\)/i', $originalDefinition, $matches)) {
-            switch ($options['handleSets'] ?? 'array') {
+            switch ($options['handleSets'] ?? $options['handle_sets'] ?? 'array') {
                 case 'varchar':
                     return 'TEXT';
                 case 'separate_table':
@@ -1006,10 +1294,29 @@ class ConversionController extends Controller
             return trim($converted);
         }
         
+        // Predictive Refactoring: UUID for CHAR(36) or VARCHAR(36) named 'id' or ending in '_id'
+        if ($isPredictive && 
+            preg_match('/\b(CHAR|VARCHAR)\b\s*\(36\)/i', $definition) && 
+            (strtolower($columnName) === 'id' || str_ends_with(strtolower($columnName), '_id'))) {
+            $report[] = [
+                'type' => 'info', 
+                'message' => "AI Suggestion: Column '{$columnName}' looks like a UUID. Converted to UUID type for better performance and validation."
+            ];
+            return 'UUID';
+        }
+
         // Apply type conversions with word boundaries to avoid partial matches
         foreach ($typeMap as $mysql => $postgres) {
             if (preg_match('/\b' . preg_quote($mysql, '/') . '\b/i', $definition)) {
                 $converted = preg_replace('/\b' . preg_quote($mysql, '/') . '\b/i', $postgres, $definition);
+
+                // Predictive Refactoring: Report VARCHAR to TEXT conversion
+                if ($isPredictive && (stripos($mysql, 'VARCHAR') !== false || stripos($mysql, 'CHAR') !== false) && $postgres === 'TEXT') {
+                    $report[] = [
+                        'type' => 'info',
+                        'message' => "AI Suggestion: PostgreSQL handles TEXT as efficiently as VARCHAR(n). Converted '{$columnName}' to TEXT to avoid 'value too long' errors."
+                    ];
+                }
 
                 // Critical safety: Convert VARCHAR to TEXT for PostgreSQL
                 // PostgreSQL's TEXT has the same performance as VARCHAR but prevents 'value too long' errors.
@@ -1020,7 +1327,7 @@ class ConversionController extends Controller
 
                 // Remove precision/scale parameters for types that don't support them in PostgreSQL
                 // (e.g., INTEGER(10), BIGINT(20), SMALLINT(5), REAL, DOUBLE PRECISION, TEXT)
-                $noPrecisionTypes = ['INTEGER', 'BIGINT', 'SMALLINT', 'DOUBLE PRECISION', 'REAL', 'BOOLEAN', 'TEXT'];
+                $noPrecisionTypes = ['INTEGER', 'BIGINT', 'SMALLINT', 'DOUBLE PRECISION', 'REAL', 'BOOLEAN', 'TEXT', 'UUID'];
                 foreach ($noPrecisionTypes as $npType) {
                     if (str_contains(strtoupper($converted), $npType)) {
                         $converted = preg_replace('/\b' . preg_quote($npType, '/') . '\s*\(\d+(?:,\d+)?\)/i', $npType, $converted);
@@ -1029,7 +1336,7 @@ class ConversionController extends Controller
 
                 // Handle AUTO_INCREMENT and strip precision for SERIAL conversion
                 if (str_contains(strtoupper($converted), 'AUTO_INCREMENT')) {
-                    if ($options['preserveIdentity'] ?? true) {
+                    if ($options['preserveIdentity'] ?? $options['preserve_identity'] ?? true) {
                         $postgresType = '';
                         if (str_contains($postgres, 'SMALLINT')) $postgresType = 'SMALLSERIAL';
                         elseif (str_contains($postgres, 'BIGINT')) $postgresType = 'BIGSERIAL';
@@ -1049,7 +1356,7 @@ class ConversionController extends Controller
 
                 // Special handling for date/time types to allow NULL even if MySQL set NOT NULL
                 // This is required because MySQL's '0000-00-00' is converted to NULL for PostgreSQL
-                $dateTimeTypes = ['DATE', 'TIME', 'TIMESTAMP WITH TIME ZONE'];
+                $dateTimeTypes = ['DATE', 'TIME', 'TIMESTAMP WITH TIME ZONE', 'TIMESTAMP'];
                 foreach ($dateTimeTypes as $dtType) {
                     if (str_contains(strtoupper($converted), $dtType)) {
                         $converted = str_ireplace('NOT NULL', '', $converted);
@@ -1157,5 +1464,236 @@ class ConversionController extends Controller
         } // JSON as TEXT in SQLite
 
         return 'TEXT'; // Default fallback
+    }
+
+    /**
+     * Perform Auto-Cleaning analysis on the parsed schema
+     */
+    private function performAutoCleaning(array $data, array $options, array &$report): void
+    {
+        if (!($options['autoCleaning'] ?? $options['auto_cleaning'] ?? false)) {
+            return;
+        }
+
+        $tables = $data['tables'] ?? [];
+        $hashes = [];
+
+        foreach ($tables as $name => $table) {
+            $name = str_replace('`', '', $name);
+            
+            // 1. Detect Inconsistent Naming (CamelCase vs SnakeCase)
+            $hasSnakeCase = false;
+            $hasCamelCase = false;
+            $inconsistentCols = [];
+            $columns = $table['columns'] ?? [];
+            
+            foreach ($columns as $column) {
+                $colName = str_replace('`', '', $column['name']);
+                $isSnake = str_contains($colName, '_');
+                $isCamel = preg_match('/[a-z][A-Z]/', $colName);
+                
+                if ($isSnake) $hasSnakeCase = true;
+                if ($isCamel) {
+                    $hasCamelCase = true;
+                    $inconsistentCols[] = $colName;
+                }
+            }
+
+            if ($hasSnakeCase && $hasCamelCase) {
+                $suggestions = array_map(fn($c) => strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $c)), array_slice($inconsistentCols, 0, 3));
+                $suggestionStr = implode(', ', $suggestions) . (count($inconsistentCols) > 3 ? '...' : '');
+                
+                $report[] = [
+                    'type' => 'warning',
+                    'message' => "Auto-Cleaning: Table '{$name}' uses mixed naming (snake_case and camelCase). Suggestion: Normalize to snake_case (e.g. {$suggestionStr})."
+                ];
+            }
+
+            // 2. Detect Redundant/Empty Tables
+            if (empty($columns)) {
+                 $report[] = [
+                    'type' => 'warning',
+                    'message' => "Auto-Cleaning: Table '{$name}' has no columns. Possible redundant table or parsing artifact."
+                ];
+            }
+
+            // 3. Detect duplicate table structures
+            // Normalize column definitions for structural comparison (ignore precision for now)
+            $normCols = array_map(fn($c) => ['n' => $c['name'], 'd' => preg_replace('/\s+/', ' ', strtoupper($c['definition']))], $columns);
+            $structureHash = md5(json_encode($normCols));
+            if (isset($hashes[$structureHash])) {
+                 $report[] = [
+                    'type' => 'info',
+                    'message' => "Auto-Cleaning: Table '{$name}' has identical structure to '{$hashes[$structureHash]}'. This may be a redundant duplicate."
+                ];
+            }
+            $hashes[$structureHash] = $name;
+        }
+    }
+
+    /**
+     * Mask sensitive PII (emails, phones) in SQL insert values
+     */
+    private function maskSensitiveData(string $line, array $options): string
+    {
+        if (!($options['dataMasking'] ?? $options['data_masking'] ?? false)) {
+            return $line;
+        }
+
+        // Only handle leaf values in single quotes to avoid breaking SQL structure
+        // 1. Mask Emails: 'my-email@test.com' -> 'm***l@t***.com'
+        $line = preg_replace_callback('/\'([^\'@\s]+)@([^\'@\s]+\.[^\'@\s]+)\'/', function($m) {
+            $user = $m[1];
+            $domain = $m[2];
+            $maskedUser = (strlen($user) > 2) ? substr($user, 0, 1) . '***' . substr($user, -1) : '***';
+            
+            // Handle subdomains and long extensions
+            $domParts = explode('.', $domain);
+            $ext = array_pop($domParts);
+            $domBody = implode('.', $domParts);
+            $maskedDomain = (strlen($domBody) > 2) ? substr($domBody, 0, 1) . '***' . substr($domBody, -1) : '***';
+            
+            return "'$maskedUser@$maskedDomain.$ext'";
+        }, $line);
+
+        // 2. Mask Phone Numbers: '+1-123-456-7890' -> '+1-123-456-****'
+        $line = preg_replace_callback('/\'(\+?[\d\s\-\.\(\)]{7,18})\'/', function($m) {
+            $num = $m[1];
+            // Only mask if it looks like a phone number (contains at least 7 digits)
+            if (preg_match_all('/\d/', $num) >= 7) {
+                return "'" . substr($num, 0, strlen($num)-4) . "****'";
+            }
+            return $m[0];
+        }, $line);
+
+        return $line;
+    }
+
+    /**
+     * Detect if a column likely contains PII (Sensitive Data)
+     */
+    private function detectPiiTag(string $columnName): ?string
+    {
+        $name = strtolower(str_replace(['`', '"'], '', $columnName));
+        $patterns = [
+            'email' => '/email|mail/i',
+            'phone' => '/phone|tel|mobile/i',
+            'ssn' => '/ssn|social_security|national_id|tax_id/i',
+            'address' => '/address|street|city|zip|postal|latitude|longitude/i',
+            'credit_card' => '/card|ccv|cvv|credit|billing/i',
+            'name' => '/full_name|first_name|last_name|surname|username/i',
+            'password' => '/password|pwd|secret|token|hash|key/i',
+            'birth' => '/birth|dob|age/i'
+        ];
+
+        foreach ($patterns as $tag => $pattern) {
+            if (preg_match($pattern, $name)) {
+                return strtoupper($tag);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Apply specialized Framework presets (WordPress, Laravel, Magento)
+     */
+    private function applyFrameworkColumnOverrides(array $column, string $preset, string $tableName): array
+    {
+        if ($preset === 'none') return $column;
+
+        $colName = strtolower($column['name']);
+        $def = strtolower($column['definition']);
+        $tableName = strtolower($tableName);
+
+        switch ($preset) {
+            case 'wordpress':
+                // WordPress uses LONGTEXT for everything in wp_posts
+                if (str_contains($def, 'longtext')) {
+                    $column['definition'] = 'TEXT';
+                }
+                // Handle legacy WordPress character sets
+                if (str_contains($def, 'utf8mb4_unicode_520_ci')) {
+                    $column['definition'] = str_replace('utf8mb4_unicode_520_ci', 'UTF8', $column['definition']);
+                }
+                break;
+
+            case 'laravel':
+                // Laravel standard timestamps should be TIMESTAMPTZ for modern apps
+                if (in_array($colName, ['created_at', 'updated_at', 'deleted_at', 'email_verified_at', 'remember_token'])) {
+                    if (str_contains($def, 'timestamp') || str_contains($def, 'datetime')) {
+                        $column['definition'] = 'TIMESTAMPTZ';
+                    }
+                    if ($colName === 'remember_token' && str_contains($def, 'varchar')) {
+                        $column['definition'] = 'VARCHAR(100)';
+                    }
+                }
+                // Handle UNSIGNED BIGINT IDs commonly used in Laravel
+                if ($colName === 'id' && str_contains($def, 'bigint') && str_contains($def, 'unsigned')) {
+                     // PostgreSQL doesn't have UNSIGNED, but BIGINT is sufficient for the range
+                     $column['definition'] = str_replace('unsigned', '', $column['definition']);
+                }
+                break;
+
+            case 'magento':
+                // Magento prices are usually decimal(12,4)
+                if (str_contains($colName, 'price') && str_contains($def, 'decimal')) {
+                    $column['definition'] = 'NUMERIC(12,4)';
+                }
+                // Handle complex Magento EAV integer types
+                if (str_contains($tableName, 'entity_int') && $colName === 'value' && str_contains($def, 'int')) {
+                    $column['definition'] = 'INTEGER';
+                }
+                break;
+        }
+
+        return $column;
+    }
+
+    /**
+     * Generate Integrity Validation Script (SQL Queries for verifying migrated data)
+     */
+    private function generateIntegrityValidationScript(array $data): string
+    {
+        $script = "-- Database Integrity Report & Validation Script\n";
+        $script .= "-- Purpose: Verify that row counts and data integrity match the MySQL source\n";
+        $script .= "-- Execution: Run this on your new PostgreSQL database\n\n";
+
+        foreach ($data['tables'] as $name => $table) {
+            $quotedName = $this->quotePostgreSQLIdentifier($name);
+            $script .= "-- Validation for Table: {$name}\n";
+            $script .= "SELECT '{$name}' AS table_name, count(*) AS total_rows FROM {$quotedName};\n";
+
+            // Audit numeric columns for sum totals
+            $numericCols = collect($table['columns'])->filter(function($col) {
+                $def = strtoupper($col['definition']);
+                return str_contains($def, 'INT') || str_contains($def, 'DECIMAL') || str_contains($def, 'FLOAT') || str_contains($def, 'DOUBLE');
+            })->take(3); // Limit to top 3 numeric cols to avoid huge scripts
+
+            if ($numericCols->isNotEmpty()) {
+                $sums = [];
+                foreach ($numericCols as $col) {
+                    $qCol = $this->quotePostgreSQLIdentifier($col['name']);
+                    $sums[] = "SUM({$qCol}) AS sum_{$col['name']}";
+                }
+                $script .= "SELECT '{$name}' AS table_name, " . implode(", ", $sums) . " FROM {$quotedName};\n";
+            }
+
+            // Check for potential orphaned records if foreign keys were present
+            if (!empty($table['foreign_keys'])) {
+                foreach ($table['foreign_keys'] as $fk) {
+                    $refTable = $this->quotePostgreSQLIdentifier($fk['references_table']);
+                    $localCol = $this->quotePostgreSQLIdentifier($fk['column']);
+                    $refCol = $this->quotePostgreSQLIdentifier($fk['references_column']);
+                    
+                    $script .= "/* FK Audit (Orphans in {$name} targeting {$fk['references_table']}): */\n";
+                    $script .= "SELECT count(*) AS orphan_count FROM {$quotedName} t \n" .
+                               "LEFT JOIN {$refTable} r ON t.{$localCol} = r.{$refCol} \n" .
+                               "WHERE t.{$localCol} IS NOT NULL AND r.{$refCol} IS NULL;\n";
+                }
+            }
+            $script .= "\n";
+        }
+
+        return $script;
     }
 }
