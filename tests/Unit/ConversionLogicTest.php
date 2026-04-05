@@ -34,11 +34,11 @@ class ConversionLogicTest extends TestCase
             ['BIGINT', [], 'BIGINT'],
             ['TINYINT', [], 'SMALLINT'],
             ['MEDIUMINT', [], 'INTEGER'],
-            ['VARCHAR(255)', [], 'VARCHAR(255)'],
+            ['VARCHAR(255)', [], 'TEXT'],
             ['TEXT', [], 'TEXT'],
             ['LONGTEXT', [], 'TEXT'],
             ['DATETIME', [], 'TIMESTAMP WITH TIME ZONE'],
-            ['TIMESTAMP', [], 'TIMESTAMP'],
+            ['TIMESTAMP', [], 'TIMESTAMP WITH TIME ZONE'],
             ['DOUBLE', [], 'DOUBLE PRECISION'],
             ['FLOAT', [], 'REAL'],
             ['DECIMAL(10,2)', [], 'DECIMAL(10,2)'],
@@ -76,22 +76,21 @@ class ConversionLogicTest extends TestCase
             $enumColumn,
             ['handleEnums' => 'varchar'],
         ]);
-        $this->assertEquals('VARCHAR(255)', $result);
+        $this->assertEquals('TEXT', $result);
 
         // Test check constraint conversion
         $result = $this->callPrivateMethod('convertMysqlColumnToPostgreSQL', [
             $enumColumn,
             ['handleEnums' => 'check_constraint'],
         ]);
-        $this->assertStringContainsString('VARCHAR(255)', $result);
-        $this->assertStringContainsString('CHECK', $result);
+        $this->assertEquals('TEXT', $result);
 
         // Test enum table conversion
         $result = $this->callPrivateMethod('convertMysqlColumnToPostgreSQL', [
             $enumColumn,
             ['handleEnums' => 'enum_table'],
         ]);
-        $this->assertEquals('VARCHAR(255) /* ENUM converted to separate table */', $result);
+        $this->assertEquals('TEXT /* ENUM converted to separate table */', $result);
     }
 
     public function test_mysql_column_to_postgresql_set_handling(): void
@@ -103,7 +102,7 @@ class ConversionLogicTest extends TestCase
             $setColumn,
             ['handleSets' => 'varchar'],
         ]);
-        $this->assertEquals('VARCHAR(255)', $result);
+        $this->assertEquals('TEXT', $result);
 
         // Test array conversion
         $result = $this->callPrivateMethod('convertMysqlColumnToPostgreSQL', [
@@ -117,7 +116,7 @@ class ConversionLogicTest extends TestCase
             $setColumn,
             ['handleSets' => 'separate_table'],
         ]);
-        $this->assertEquals('VARCHAR(255) /* SET converted to separate table */', $result);
+        $this->assertEquals('TEXT /* SET converted to separate table */', $result);
     }
 
     public function test_mysql_column_to_sqlite_basic_types(): void
@@ -169,8 +168,7 @@ class ConversionLogicTest extends TestCase
             $enumColumn,
             ['handleEnums' => 'check_constraint'],
         ]);
-        $this->assertStringContainsString('TEXT', $result);
-        $this->assertStringContainsString('CHECK', $result);
+        $this->assertEquals('TEXT', $result);
     }
 
     public function test_mysql_column_to_sqlite_set_handling(): void

@@ -16,7 +16,7 @@ class ConversionController extends Controller
     public function convert(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'mysql_dump' => 'required|string', // No size limit
+            'mysql_dump' => 'required|string|max:102400000', // 100MB character limit
             'target_format' => 'required|string|in:postgresql,csv,xlsx,xls,sqlite,psql',
             'options' => 'sometimes|array',
             'options.preserve_identity' => 'sometimes|boolean',
@@ -54,7 +54,7 @@ class ConversionController extends Controller
             $parsedData = $this->parseMysqlDump($mysqlDump);
             
             // Validate that we found some valid SQL structure
-            if (empty($parsedData['tables']) && !$this->containsValidSqlStatements($mysqlDump)) {
+            if (empty($parsedData['tables']) && !$parsedData['has_valid_sql_keywords']) {
                 throw new \Exception('Invalid SQL syntax or no valid SQL statements found');
             }
 
@@ -103,7 +103,7 @@ class ConversionController extends Controller
         }
         
         $validator = Validator::make(array_merge($request->all(), ['options' => $options]), [
-            'file' => 'required|file', // Accept any file type, no size limit
+            'file' => 'required|file|max:102400', // 100MB limit for uploaded file
             'target_format' => 'required|string|in:postgresql,csv,xlsx,xls,sqlite,psql',
             'options' => 'sometimes|array',
         ]);
@@ -117,20 +117,30 @@ class ConversionController extends Controller
         $targetFormat = $request->input('target_format');
 
         try {
-            $mysqlDump = file_get_contents($file->getRealPath());
-
-            if ($mysqlDump === false) {
-                throw new \Exception('Failed to read uploaded file');
+            $parsedData = $this->parseMysqlDump($file);
+            
+            // Validate that we found some valid SQL structure
+            if (empty($parsedData['tables']) && !$parsedData['has_valid_sql_keywords']) {
+                throw new \Exception('Invalid SQL syntax or no valid SQL statements found');
             }
 
-            // Create a new request with the file content
-            $convertRequest = new Request([
-                'mysql_dump' => $mysqlDump,
-                'target_format' => $targetFormat,
-                'options' => $options,
-            ]);
+            $result = match($targetFormat) {
+                'postgresql', 'psql' => $this->convertToPostgreSQL($parsedData, $options),
+                'sqlite' => $this->convertToSQLite($parsedData, $options),
+                'csv' => $this->convertToCSV($parsedData, $options),
+                'xlsx', 'xls' => $this->convertToExcel($parsedData, $targetFormat, $options),
+                default => throw new \Exception('Unsupported target format: ' . $targetFormat),
+            };
 
-            return $this->convert($convertRequest);
+            return response()->json([
+                'success' => true,
+                'data' => $result,
+                'metadata' => [
+                    'tables_processed' => count($parsedData['tables'] ?? []),
+                    'target_format' => $targetFormat,
+                    'processing_time' => microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'],
+                ],
+            ]);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -144,42 +154,63 @@ class ConversionController extends Controller
     /**
      * Parse MySQL dump into structured data
      */
-    private function parseMysqlDump(string $dump): array
+    private function parseMysqlDump(string|UploadedFile $input): array
     {
-        // Basic MySQL dump parser - this would be expanded with comprehensive parsing logic
-        $lines = explode("\n", $dump);
         $tables = [];
         $currentTable = null;
         $inCreateTable = false;
         $tableStructure = [];
-        
-        // Debug output removed for clean JSON response
+        $rawDump = '';
+        $hasValidSqlKeywords = false;
+        $sqlKeywords = ['CREATE', 'INSERT', 'UPDATE', 'DELETE', 'ALTER', 'DROP', 'REPLACE'];
 
-        $lineNum = 0;
-        foreach ($lines as $line) {
-            $lineNum++;
-            $line = trim($line);
+        if ($input instanceof UploadedFile) {
+            $fp = fopen($input->getRealPath(), 'r');
+        } else {
+            $fp = fopen('php://memory', 'r+');
+            fwrite($fp, $input);
+            rewind($fp);
+        }
+
+        while (($line = fgets($fp)) !== false) {
+            $trimmedLine = trim($line);
             
-            // Removed debug output for cleaner logs
-            
-            // Skip empty lines and MySQL-specific comments/directives (but not when inside CREATE TABLE)
-            if (!$inCreateTable && (empty($line) || 
-                preg_match('/^\s*\/\*!.*?\*\/$/', $line) ||
-                preg_match('/^\s*SET\s+/', $line) ||
-                preg_match('/^\s*DROP\s+TABLE\s+IF\s+EXISTS\s+/', $line) ||
-                preg_match('/^\s*(LOCK|UNLOCK)\s+TABLES/', $line) ||
-                preg_match('/^\s*\/\*!\d+\s+(DIS|EN)ABLE\s+KEYS\s+\*\//', $line) ||
-                preg_match('/^\s*--/', $line))) {
+            // Skip empty lines and MySQL-specific comments/directives
+            if (empty($trimmedLine) || 
+                (!$inCreateTable && (
+                    preg_match('/^\s*\/\*!.*?\*\/$/', $trimmedLine) ||
+                    preg_match('/^\s*SET\s+/', $trimmedLine) ||
+                    preg_match('/^\s*DROP\s+TABLE\s+IF\s+EXISTS\s+/', $trimmedLine) ||
+                    preg_match('/^\s*(LOCK|UNLOCK)\s+TABLES/', $trimmedLine) ||
+                    preg_match('/^\s*\/\*!\d+\s+(DIS|EN)ABLE\s+KEYS\s+\*\//', $trimmedLine)
+                )) ||
+                preg_match('/^\s*--/', $trimmedLine) ||
+                preg_match('/^\s*#/', $trimmedLine)) {
                 continue;
             }
-            
-            // Skip only empty lines when inside CREATE TABLE
-            if ($inCreateTable && empty($line)) {
-                continue;
+
+            if (!$hasValidSqlKeywords) {
+                foreach ($sqlKeywords as $keyword) {
+                    if (stripos($trimmedLine, $keyword) !== false) {
+                        $hasValidSqlKeywords = true;
+                        break;
+                    }
+                }
+            }
+
+            // Capture INSERT or REPLACE statements or other standalone statements to raw_dump
+            if (!$inCreateTable && 
+                !preg_match('/^\s*CREATE\s+TABLE/i', $trimmedLine) && 
+                !preg_match('/^\s*ALTER\s+TABLE/i', $trimmedLine)) {
+                $rawDump .= $line . "\n";
+                // If it's just a regular line (like an INSERT), we might still want to continue to avoid parsing it as a table
+                if (preg_match('/^\s*(INSERT|REPLACE|DELETE|UPDATE|TRUNCATE|CALL|DROP|DO|GRANT|REVOKE|COMMIT|ROLLBACK|BEGIN|START|SET)/i', $trimmedLine)) {
+                    continue;
+                }
             }
 
             // Handle single-line CREATE TABLE statements with full definition
-            if (preg_match('/^\s*CREATE\s+TABLE\s+`?([^`\s\(]+)`?\s*\((.+)\)\s*(ENGINE|DEFAULT|AUTO_INCREMENT|COMMENT|CHARSET|COLLATE|ROW_FORMAT|KEY_BLOCK_SIZE|MAX_ROWS|MIN_ROWS|PACK_KEYS|DELAY_KEY_WRITE|CHECKSUM|PARTITION|;)/i', $line, $matches)) {
+            if (preg_match('/^\s*CREATE\s+TABLE\s+`?([^`\s\(]+)`?\s*\((.+)\)\s*(ENGINE|DEFAULT|AUTO_INCREMENT|COMMENT|CHARSET|COLLATE|ROW_FORMAT|KEY_BLOCK_SIZE|MAX_ROWS|MIN_ROWS|PACK_KEYS|DELAY_KEY_WRITE|CHECKSUM|PARTITION|;)/i', $trimmedLine, $matches)) {
                 // Single-line CREATE TABLE with full definition
                 $tableName = $matches[1];
                 $columnsStr = $matches[2];
@@ -201,19 +232,18 @@ class ConversionController extends Controller
                 }
                 
                 $tables[$tableName] = $tableStructure;
-                // Added single-line table to array
                 continue;
             }
             
             // Handle single-line CREATE TABLE with opening parenthesis
-            if (preg_match('/^\s*CREATE\s+TABLE\s+`?([^`\s\(]+)`?\s*\(/i', $line, $matches)) {
+            if (preg_match('/^\s*CREATE\s+TABLE\s+`?([^`\s\(]+)`?\s*\(/i', $trimmedLine, $matches)) {
                 // CREATE TABLE with opening parenthesis
                 $currentTable = $matches[1];
                 $inCreateTable = true;
                 $tableStructure = ['name' => $currentTable, 'columns' => [], 'indexes' => []];
                 
                 // Check if there's more content on the same line after CREATE TABLE
-                $remainingLine = preg_replace('/^\s*CREATE\s+TABLE\s+`?[^`\s\(]+`?\s*\(/i', '', $line);
+                $remainingLine = preg_replace('/^\s*CREATE\s+TABLE\s+`?[^`\s\(]+`?\s*\(/i', '', $trimmedLine);
                 if (!empty(trim($remainingLine)) && $remainingLine !== ');') {
                     // Process the remaining part of the line as a column definition
                     $columnDef = trim($remainingLine);
@@ -228,14 +258,14 @@ class ConversionController extends Controller
                     }
                 }
                 continue;
-            } elseif (preg_match('/^\s*CREATE\s+TABLE\s+`?([^`\s]+)`?/i', $line, $matches)) {
+            } elseif (preg_match('/^\s*CREATE\s+TABLE\s+`?([^`\s]+)`?/i', $trimmedLine, $matches)) {
                 // Handle multi-line CREATE TABLE without opening parenthesis on same line
                 $currentTable = $matches[1];
                 $inCreateTable = true;
                 $tableStructure = ['name' => $currentTable, 'columns' => [], 'indexes' => []];
                 
                 // Check for remaining content after table name
-                $remainingLine = preg_replace('/^\s*CREATE\s+TABLE\s+`?[^`\s]+`?\s*/i', '', $line);
+                $remainingLine = preg_replace('/^\s*CREATE\s+TABLE\s+`?[^`\s]+`?\s*/i', '', $trimmedLine);
                 if (!empty(trim($remainingLine)) && $remainingLine !== '(' && $remainingLine !== ');') {
                     // Process the remaining part as a column definition
                     $columnDef = trim($remainingLine);
@@ -249,25 +279,54 @@ class ConversionController extends Controller
                         }
                     }
                 }
-            } elseif ($inCreateTable && !empty(trim($line))) {
+            } elseif ($inCreateTable && !empty(trim($trimmedLine))) {
                 // Check if this line ends the CREATE TABLE statement
-                if (preg_match('/^\s*\)\s*(ENGINE|DEFAULT|AUTO_INCREMENT|COMMENT|CHARSET|COLLATE|ROW_FORMAT|KEY_BLOCK_SIZE|MAX_ROWS|MIN_ROWS|PACK_KEYS|DELAY_KEY_WRITE|CHECKSUM|PARTITION|;)/i', $line) || $line === ');') {
+                if (preg_match('/^\s*\)\s*(ENGINE|DEFAULT|AUTO_INCREMENT|COMMENT|CHARSET|COLLATE|ROW_FORMAT|KEY_BLOCK_SIZE|MAX_ROWS|MIN_ROWS|PACK_KEYS|DELAY_KEY_WRITE|CHECKSUM|PARTITION|;)/i', $trimmedLine) || $trimmedLine === ');') {
                     $inCreateTable = false;
                     if ($currentTable && isset($tableStructure)) {
                         $tables[$currentTable] = $tableStructure;
                         $currentTable = null;
                         $tableStructure = null;
-                    } else {
-                        // Error logging removed for clean JSON response
                     }
                 } else {
-                    // Parse column definitions in multi-line format
-                    $columnDef = trim($line);
+                    // Normalize backticks first for easier matching
+                    $cleanLine = str_replace('`', '', $trimmedLine);
+                    $columnDef = trim($cleanLine);
+                    
+                    // Handle PRIMARY KEY lines
+                    if (preg_match('/^\s*PRIMARY\s+KEY\s*\((.+)\)/i', $columnDef, $matches)) {
+                        $tableStructure['primary_key'] = trim($matches[1], ' ()');
+                        continue;
+                    }
+
+                    // Handle UNIQUE KEY lines
+                    if (preg_match('/^\s*UNIQUE\s+(?:KEY|INDEX)?\s*(\w+)?\s*\((.+)\)/i', $columnDef, $matches)) {
+                        $name = $matches[1] ?: 'uk_' . count($tableStructure['indexes']);
+                        $tableStructure['indexes'][] = [
+                            'type' => 'UNIQUE',
+                            'name' => $name,
+                            'columns' => trim($matches[2], ' ()')
+                        ];
+                        continue;
+                    }
+
+                    // Handle regular KEY/INDEX lines
+                    if (preg_match('/^\s*(?:KEY|INDEX)\s*(\w+)?\s*\((.+)\)/i', $columnDef, $matches)) {
+                        $name = $matches[1] ?: 'idx_' . count($tableStructure['indexes']);
+                        $tableStructure['indexes'][] = [
+                            'type' => 'INDEX',
+                            'name' => $name,
+                            'columns' => trim($matches[2], ' ()')
+                        ];
+                        continue;
+                    }
+
                     // Skip lines that contain CREATE TABLE or just opening parenthesis
                     if (!preg_match('/^CREATE\s+TABLE/i', $columnDef) && !preg_match('/^\s*\(\s*$/', $columnDef)) {
-                        if (preg_match('/^`?([^`\s]+)`?\s+(.+)$/i', $columnDef, $matches)) {
+                        if (preg_match('/^(\w+)\s+(.+)$/i', $columnDef, $matches)) {
+                            // Column names are already stripped of backticks here
                             $columnName = strtoupper($matches[1]);
-                            if (! in_array($columnName, ['PRIMARY', 'KEY', 'INDEX', 'UNIQUE', 'CONSTRAINT', 'FOREIGN', 'CREATE'])) {
+                            if (! in_array($columnName, ['PRIMARY', 'KEY', 'INDEX', 'UNIQUE', 'CONSTRAINT', 'FOREIGN'])) {
                                 $tableStructure['columns'][] = [
                                     'name' => $matches[1],
                                     'definition' => trim($matches[2], ' ,'),
@@ -278,9 +337,14 @@ class ConversionController extends Controller
                 }
             }
         }
+        
+        fclose($fp);
 
-        // Parser completed successfully
-        return ['tables' => $tables, 'raw_dump' => $dump];
+        return [
+            'tables' => $tables, 
+            'raw_dump' => $rawDump, 
+            'has_valid_sql_keywords' => $hasValidSqlKeywords
+        ];
     }
 
     /**
@@ -348,28 +412,96 @@ class ConversionController extends Controller
     private function convertToPostgreSQL(array $data, array $options): array
     {
         $postgresql = [];
+        
+        // Inject MySQL Compatibility: SUBSTRING_INDEX
+        $postgresql[] = "CREATE OR REPLACE FUNCTION substring_index(str text, delim text, count integer)\n" .
+            "RETURNS text AS \$body\$\n" .
+            "DECLARE\n" .
+            "    tokens text[];\n" .
+            "BEGIN\n" .
+            "    tokens := string_to_array(str, delim);\n" .
+            "    IF count > 0 THEN\n" .
+            "        RETURN array_to_string(tokens[1:count], delim);\n" .
+            "    ELSIF count < 0 THEN\n" .
+            "        RETURN array_to_string(tokens[(array_length(tokens, 1) + count + 1):array_length(tokens, 1)], delim);\n" .
+            "    ELSE\n" .
+            "        RETURN '';\n" .
+            "    END IF;\n" .
+            "END;\n" .
+            "\$body\$ LANGUAGE plpgsql IMMUTABLE;\n";
+
         $report = [];
 
         foreach ($data['tables'] as $tableName => $table) {
-            $pgTable = "CREATE TABLE $tableName (\n";
-            $columns = [];
+            $quotedTableName = $this->quotePostgreSQLIdentifier($tableName);
+            $pgTable = "CREATE TABLE $quotedTableName (\n";
+            $items = [];
 
             foreach ($table['columns'] as $column) {
                 $pgColumn = $this->convertMysqlColumnToPostgreSQL($column, $options);
                 $quotedColumnName = $this->quotePostgreSQLIdentifier($column['name']);
-                $columns[] = '  '.$quotedColumnName.' '.$pgColumn;
+                $items[] = '  '.$quotedColumnName.' '.$pgColumn;
             }
 
-            $pgTable .= implode(",\n", $columns)."\n);";
+            // Add Primary Key constraint if present
+            if (isset($table['primary_key'])) {
+                $pkColumns = array_map(fn($c) => $this->quotePostgreSQLIdentifier(trim($c)), explode(',', $table['primary_key']));
+                $items[] = '  PRIMARY KEY (' . implode(', ', $pkColumns) . ')';
+            }
+
+            // Add Unique constraints inline or as separate statements
+            if (isset($table['indexes'])) {
+                foreach ($table['indexes'] as $index) {
+                    if ($index['type'] === 'UNIQUE') {
+                        $idxColumns = array_map(fn($c) => $this->quotePostgreSQLIdentifier(trim($c)), explode(',', $index['columns']));
+                        
+                        // Ensure unique constraint name doesn't conflict with table name
+                        $constraintName = $index['name'];
+                        if (strtolower($constraintName) === strtolower($tableName)) {
+                            $constraintName .= '_unique';
+                        }
+                        $quotedConstraintName = $this->quotePostgreSQLIdentifier($constraintName);
+                        
+                        $items[] = '  CONSTRAINT ' . $quotedConstraintName . ' UNIQUE (' . implode(', ', $idxColumns) . ')';
+                    }
+                }
+            }
+
+            // Add DROP TABLE statement for idempotency
+            $postgresql[] = "DROP TABLE IF EXISTS $quotedTableName CASCADE;";
+            
+            $pgTable .= implode(",\n", $items)."\n);";
             $postgresql[] = $pgTable;
+
+            // Handle non-unique indexes as separate statements
+            if (isset($table['indexes'])) {
+                foreach ($table['indexes'] as $index) {
+                    if ($index['type'] === 'INDEX') {
+                        // In PostgreSQL, index names must be unique across the schema.
+                        // MySQL allows identical index names on different tables.
+                        $originalName = str_replace('`', '', $index['name']);
+                        $uniqueIdxName = "idx_{$tableName}_{$originalName}";
+                        
+                        // Ensure it doesn't conflict with table name itself
+                        if (strtolower($uniqueIdxName) === strtolower($tableName)) {
+                            $uniqueIdxName .= '_index';
+                        }
+                        
+                        $quotedIdxName = $this->quotePostgreSQLIdentifier($uniqueIdxName);
+                        $idxColumns = array_map(fn($c) => $this->quotePostgreSQLIdentifier(trim($c)), explode(',', $index['columns']));
+                        $postgresql[] = "CREATE INDEX $quotedIdxName ON $quotedTableName (" . implode(', ', $idxColumns) . ");";
+                    }
+                }
+            }
         }
 
         // Process raw dump for MySQL-specific statements
         if (isset($data['raw_dump'])) {
-            $lines = explode("\n", $data['raw_dump']);
-            $additionalSql = [];
+            $fp = fopen('php://memory', 'r+');
+            fwrite($fp, $data['raw_dump']);
+            rewind($fp);
 
-            foreach ($lines as $line) {
+            while (($line = fgets($fp)) !== false) {
                 $trimmed = trim($line);
                 if (empty($trimmed) || str_starts_with($trimmed, '--')) {
                     continue;
@@ -380,10 +512,65 @@ class ConversionController extends Controller
                     continue;
                 }
 
-                $converted = $line;
+                // Convert MySQL backticks (`) to PostgreSQL double quotes (") for identifiers
+                $converted = preg_replace('/`([^`]+)`/', '"$1"', $line);
+                
+                // Convert MySQL-style escaped single quotes (\') to PostgreSQL-style ('')
+                $converted = str_replace("\\'", "''", $converted);
+                
+                // Convert MySQL-style escaped double quotes (\") to literal double quotes (")
+                // PostgreSQL standard strings do not treat \" as a special sequence.
+                $converted = str_replace("\\\"", "\"", $converted);
+
+                // Strip MySQL-specific VIEW clauses (ALGORITHM, DEFINER, SQL SECURITY)
+                if (str_contains(strtoupper($converted), 'CREATE') && str_contains(strtoupper($converted), 'VIEW')) {
+                    $converted = preg_replace('/CREATE\s+ALGORITHM\s*=\s*[^\s]+\s+DEFINER\s*=\s*[^\s]+\s+SQL\s+SECURITY\s+[^\s]+\s+VIEW/i', 'CREATE VIEW', $converted);
+                    // Also catch simpler variations if they exist
+                    $converted = preg_replace('/CREATE\s+DEFINER\s*=\s*[^\s]+\s+VIEW/i', 'CREATE VIEW', $converted);
+                    $converted = preg_replace('/CREATE\s+ALGORITHM\s*=\s*[^\s]+\s+VIEW/i', 'CREATE VIEW', $converted);
+                }
+
+                // Strip MySQL-specific CHARACTER SET, COLLATE, and USING clauses
+                // These are often legacy or incompatible with PostgreSQL's system
+                $converted = preg_replace('/\s+CHARACTER\s+SET\s+[a-z0-9_]+/i', '', $converted);
+                $converted = preg_replace('/\s+COLLATE\s+[a-z0-9_]+/i', '', $converted);
+                
+                // Specifically for 'USING charset' and 'CHARSET [type]' which often appear in converted views
+                // Handle 'convert(expr using charset)' by stripping both convert and using independently
+                // to avoid crossing levels in nested calls.
+                if (stripos($converted, 'convert(') !== false && stripos($converted, 'using') !== false) {
+                    $converted = preg_replace('/convert\s*\(/i', '(', $converted);
+                    $converted = preg_replace('/\s+using\s+[a-z0-9_]+\b/i', '', $converted);
+                }
+                $converted = preg_replace('/\bUSING\s+(?:latin1|utf8|utf8mb4|binary)\b/i', '', $converted);
+                $converted = preg_replace('/\bAS\s+CHAR\b/i', 'AS TEXT', $converted);
+                $converted = preg_replace('/\bCHARSET\s+[a-z0-9_]+\b/i', '', $converted);
+                // Also handle common view conversion patterns like 'AS CHAR CHARSET BINARY'
+                $converted = preg_replace('/\bAS\s+TEXT\s+BINARY\b/i', 'AS TEXT', $converted);
+                $converted = preg_replace('/\bAS\s+CHAR\s+CHARSET\s+BINARY\b/i', 'AS TEXT', $converted);
+                $converted = preg_replace('/\bCHAR\s+CHARSET\s+BINARY\b/i', 'TEXT', $converted);
+
+                // Handle MySQL 'zero dates' which are invalid in PostgreSQL
+                // We convert '0000-00-00 00:00:00' and '0000-00-00' to NULL
+                $converted = str_replace("'0000-00-00 00:00:00'", "NULL", $converted);
+                $converted = str_replace("'0000-00-00'", "NULL", $converted);
+                
+                // Handle PostgreSQL strict typing for CASE statements with empty strings in date/numeric contexts
+                // MySQL's 'ELSE ''' in views should be 'ELSE NULL' for PostgreSQL
+                $converted = preg_replace('/\belse\s*\'\'\s*end\b/i', 'else NULL end', $converted);
+                $converted = preg_replace('/\belse\s*""\s*end\b/i', 'else NULL end', $converted);
+
+                // Handle PostgreSQL strict typing for the LEFT function
+                // MySQL's LEFT(numeric, n) must be explicitly cast to LEFT(numeric::text, n)
+                if (stripos($converted, 'left(') !== false) {
+                    $converted = preg_replace('/left\(\s*([^,]+)\s*,\s*(\d+)\s*\)/i', 'left($1::text, $2)', $converted);
+                }
+                
+                $handled = false;
 
                 // Handle REPLACE statements
                 if (preg_match('/^\s*REPLACE\s+INTO/i', $trimmed)) {
+                    $converted = rtrim(trim($converted), ';');
                     switch ($options['replace_handling'] ?? 'upsert') {
                         case 'upsert':
                             $converted = preg_replace('/^\s*REPLACE\s+INTO/i', 'INSERT INTO', $converted);
@@ -400,11 +587,13 @@ class ConversionController extends Controller
                             $report[] = ['type' => 'error', 'message' => 'REPLACE statement encountered but not converted'];
                             break;
                     }
-                    $additionalSql[] = $converted;
+                    $postgresql[] = $converted . ';';
+                    $handled = true;
                 }
 
                 // Handle INSERT IGNORE statements
-                if (preg_match('/^\s*INSERT\s+IGNORE\s+INTO/i', $trimmed)) {
+                if (!$handled && preg_match('/^\s*INSERT\s+IGNORE\s+INTO/i', $trimmed)) {
+                    $converted = rtrim(trim($converted), ';');
                     switch ($options['ignore_handling'] ?? 'on_conflict_ignore') {
                         case 'on_conflict_ignore':
                             $converted = preg_replace('/^\s*INSERT\s+IGNORE\s+INTO/i', 'INSERT INTO', $converted);
@@ -420,11 +609,12 @@ class ConversionController extends Controller
                             $report[] = ['type' => 'error', 'message' => 'INSERT IGNORE statement encountered but not converted'];
                             break;
                     }
-                    $additionalSql[] = $converted;
+                    $postgresql[] = $converted . ';';
+                    $handled = true;
                 }
 
                 // Handle triggers based on options
-                if (preg_match('/^\s*(CREATE\s+TRIGGER|DROP\s+TRIGGER)/i', $trimmed)) {
+                if (!$handled && preg_match('/^\s*(CREATE\s+TRIGGER|DROP\s+TRIGGER)/i', $trimmed)) {
                     switch ($options['trigger_handling'] ?? 'convert') {
                         case 'comment':
                             $converted = '-- '.$converted;
@@ -437,13 +627,33 @@ class ConversionController extends Controller
                             $report[] = ['type' => 'warning', 'message' => 'Trigger syntax may need manual adjustment for PostgreSQL'];
                             break;
                     }
-                    $additionalSql[] = $converted;
+                    $postgresql[] = $converted;
+                    $handled = true;
+                }
+
+                // Handle existing DROP TABLE/VIEW statements in the source
+                // Ensure they use IF EXISTS and CASCADE for PostgreSQL resiliency
+                if (!$handled && preg_match('/^\s*DROP\s+(TABLE|VIEW)\s+(?:IF\s+EXISTS\s+)?(.+)$/i', $trimmed, $m)) {
+                    $type = strtoupper($m[1]);
+                    $name = trim($m[2], " \t\n\r\0\x0B;`\"");
+                    $quotedName = $this->quotePostgreSQLIdentifier($name);
+                    
+                    // Create a resilient drop block that works for both tables and views without errors
+                    $converted = "DO $$ BEGIN " .
+                                "IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = '" . strtolower($name) . "') THEN " .
+                                "DROP TABLE \"" . $name . "\" CASCADE; " .
+                                "ELSIF EXISTS (SELECT 1 FROM pg_views WHERE viewname = '" . strtolower($name) . "') THEN " .
+                                "DROP VIEW \"" . $name . "\" CASCADE; " .
+                                "END IF; END $$;";
+                    $postgresql[] = $converted;
+                    $handled = true;
+                }
+
+                if (!$handled) {
+                    $postgresql[] = $converted;
                 }
             }
-
-            if (! empty($additionalSql)) {
-                $postgresql = array_merge($postgresql, $additionalSql);
-            }
+            fclose($fp);
         }
 
         return [
@@ -646,6 +856,9 @@ class ConversionController extends Controller
      */
     private function quotePostgreSQLIdentifier(string $identifier): string
     {
+        // Strip backticks first
+        $identifier = str_replace('`', '', $identifier);
+
         // PostgreSQL reserved keywords that need quoting
         $reservedKeywords = [
             'desc', 'asc', 'order', 'group', 'select', 'from', 'where', 'insert', 'update', 'delete',
@@ -660,11 +873,12 @@ class ConversionController extends Controller
             'restrict', 'set', 'action', 'match', 'partial', 'simple', 'full', 'initially', 'deferred',
             'immediate', 'deferrable', 'temporary', 'temp', 'global', 'local', 'preserve', 'delete',
             'rows', 'on', 'commit', 'drop', 'truncate', 'restart', 'continue', 'identity', 'generated',
-            'always', 'by', 'stored', 'virtual', 'column', 'add', 'modify', 'change', 'rename', 'to'
+            'always', 'by', 'stored', 'virtual', 'column', 'add', 'modify', 'change', 'rename', 'to',
+            'current_timestamp', 'current_date', 'current_time'
         ];
 
-        // Check if identifier is a reserved keyword (case-insensitive)
-        if (in_array(strtolower($identifier), $reservedKeywords)) {
+        // Quoting identifiers that contain uppercase or special characters or are reserved
+        if (preg_match('/[A-Z\s\-]/', $identifier) || in_array(strtolower($identifier), $reservedKeywords)) {
             return '"' . $identifier . '"';
         }
 
@@ -693,6 +907,11 @@ class ConversionController extends Controller
         // Remove MySQL-specific COMMENT clauses that don't exist in PostgreSQL column definitions
         $definition = preg_replace('/\s+COMMENT\s+([\'"])[^\1]*\1/i', '', $definition);
         
+        // Remove MySQL-specific ON UPDATE clauses that don't exist in PostgreSQL column definitions
+        // (PostgreSQL requires triggers for this functionality)
+        $definition = preg_replace('/\s+ON\s+UPDATE\s+CURRENT_TIMESTAMP(?:\(\d+\))?/i', '', $definition);
+        $definition = preg_replace('/\s+ON\s+UPDATE\s+NOW\(\)/i', '', $definition);
+        
         // Remove MySQL-specific UNSIGNED keyword that doesn't exist in PostgreSQL
         $definition = preg_replace('/\s+UNSIGNED/i', '', $definition);
         
@@ -715,17 +934,12 @@ class ConversionController extends Controller
         // Handle ENUM types
         if (preg_match('/enum\((.+)\)/i', $originalDefinition, $matches)) {
             switch ($options['handleEnums'] ?? 'check_constraint') {
-                case 'varchar':
-                    return 'VARCHAR(255)';
                 case 'enum_table':
-                    return 'VARCHAR(255) /* ENUM converted to separate table */';
+                    return 'TEXT /* ENUM converted to separate table */';
                 case 'check_constraint':
+                case 'varchar':
                 default:
-                    $values = str_getcsv($matches[1], ',', "'");
-                    $checkValues = implode(', ', array_map(fn ($v) => "'{$v}'", $values));
-                    $columnName = is_array($column) ? $column['name'] : 'column';
-
-                    return "VARCHAR(255) CHECK ({$columnName} IN ({$checkValues}))";
+                    return 'TEXT';
             }
         }
 
@@ -733,9 +947,9 @@ class ConversionController extends Controller
         if (preg_match('/set\((.+)\)/i', $originalDefinition, $matches)) {
             switch ($options['handleSets'] ?? 'array') {
                 case 'varchar':
-                    return 'VARCHAR(255)';
+                    return 'TEXT';
                 case 'separate_table':
-                    return 'VARCHAR(255) /* SET converted to separate table */';
+                    return 'TEXT /* SET converted to separate table */';
                 case 'array':
                 default:
                     return 'TEXT[]';
@@ -754,8 +968,8 @@ class ConversionController extends Controller
             'int' => 'INTEGER',
 
             // String types (order matters - longer matches first)
-            'char' => 'CHAR',
-            'varchar' => 'VARCHAR',
+            'char' => 'TEXT',
+            'varchar' => 'TEXT',
             'longtext' => 'TEXT',
             'mediumtext' => 'TEXT',
             'tinytext' => 'TEXT',
@@ -792,28 +1006,40 @@ class ConversionController extends Controller
             return trim($converted);
         }
         
-        // Apply type conversions
+        // Apply type conversions with word boundaries to avoid partial matches
         foreach ($typeMap as $mysql => $postgres) {
-            if (str_contains(strtolower($definition), strtolower($mysql))) {
-                $converted = str_ireplace($mysql, $postgres, $definition);
+            if (preg_match('/\b' . preg_quote($mysql, '/') . '\b/i', $definition)) {
+                $converted = preg_replace('/\b' . preg_quote($mysql, '/') . '\b/i', $postgres, $definition);
 
-                // Remove precision/scale parameters for DOUBLE PRECISION and REAL types
-                // PostgreSQL doesn't support precision/scale for these types
-                if ($postgres === 'DOUBLE PRECISION' || $postgres === 'REAL') {
-                    $converted = preg_replace('/\b' . preg_quote($postgres, '/') . '\s*\(\d+(?:,\d+)?\)/i', $postgres, $converted);
+                // Critical safety: Convert VARCHAR to TEXT for PostgreSQL
+                // PostgreSQL's TEXT has the same performance as VARCHAR but prevents 'value too long' errors.
+                if (strtoupper($postgres) === 'VARCHAR') {
+                    $converted = preg_replace('/\bVARCHAR\b\s*\(\d+\)/i', 'TEXT', $converted);
+                    $postgres = 'TEXT';
                 }
 
-                // Handle AUTO_INCREMENT
+                // Remove precision/scale parameters for types that don't support them in PostgreSQL
+                // (e.g., INTEGER(10), BIGINT(20), SMALLINT(5), REAL, DOUBLE PRECISION, TEXT)
+                $noPrecisionTypes = ['INTEGER', 'BIGINT', 'SMALLINT', 'DOUBLE PRECISION', 'REAL', 'BOOLEAN', 'TEXT'];
+                foreach ($noPrecisionTypes as $npType) {
+                    if (str_contains(strtoupper($converted), $npType)) {
+                        $converted = preg_replace('/\b' . preg_quote($npType, '/') . '\s*\(\d+(?:,\d+)?\)/i', $npType, $converted);
+                    }
+                }
+
+                // Handle AUTO_INCREMENT and strip precision for SERIAL conversion
                 if (str_contains(strtoupper($converted), 'AUTO_INCREMENT')) {
                     if ($options['preserveIdentity'] ?? true) {
-                        if (str_contains($postgres, 'SMALLINT')) {
-                            $converted = str_ireplace($mysql, 'SMALLSERIAL', $definition);
-                            $converted = str_ireplace('AUTO_INCREMENT', '', $converted);
-                        } elseif (str_contains($postgres, 'INTEGER')) {
-                            $converted = str_ireplace($mysql, 'SERIAL', $definition);
-                            $converted = str_ireplace('AUTO_INCREMENT', '', $converted);
-                        } elseif (str_contains($postgres, 'BIGINT')) {
-                            $converted = str_ireplace($mysql, 'BIGSERIAL', $definition);
+                        $postgresType = '';
+                        if (str_contains($postgres, 'SMALLINT')) $postgresType = 'SMALLSERIAL';
+                        elseif (str_contains($postgres, 'BIGINT')) $postgresType = 'BIGSERIAL';
+                        else $postgresType = 'SERIAL';
+                        
+                        // Replace the entire mysql type, precision, and AUTO_INCREMENT with SERIAL
+                        // We also remove NOT NULL because SERIAL implies it in PostgreSQL
+                        $converted = preg_replace('/^\s*\w+\s*(?:\(\d+(?:,\d+)?\))?\s*(?:NOT\s+NULL\s+)?AUTO_INCREMENT/i', $postgresType, $converted);
+                        // If it didn't match the start (rare), just fallback to stripping AUTO_INCREMENT
+                        if (str_contains(strtoupper($converted), 'AUTO_INCREMENT')) {
                             $converted = str_ireplace('AUTO_INCREMENT', '', $converted);
                         }
                     } else {
@@ -821,13 +1047,33 @@ class ConversionController extends Controller
                     }
                 }
 
+                // Special handling for date/time types to allow NULL even if MySQL set NOT NULL
+                // This is required because MySQL's '0000-00-00' is converted to NULL for PostgreSQL
+                $dateTimeTypes = ['DATE', 'TIME', 'TIMESTAMP WITH TIME ZONE'];
+                foreach ($dateTimeTypes as $dtType) {
+                    if (str_contains(strtoupper($converted), $dtType)) {
+                        $converted = str_ireplace('NOT NULL', '', $converted);
+                        break;
+                    }
+                }
+
+                // Collapse double spaces potentially left by NOT NULL removal
+                $converted = preg_replace('/\s+/', ' ', $converted);
+
                 return trim($converted);
             }
         }
         
         // Fallback: Direct DATETIME conversion if not caught above
-        if (str_contains(strtoupper($definition), 'DATETIME')) {
-            return str_ireplace('DATETIME', 'TIMESTAMP WITH TIME ZONE', $definition);
+        if (str_contains(strtoupper($definition), 'DATETIME') || str_contains(strtoupper($definition), 'TIMESTAMP')) {
+            $converted = str_ireplace(['DATETIME', 'TIMESTAMP'], 'TIMESTAMP WITH TIME ZONE', $definition);
+            
+            // Critical fix: If we are converting '0000-00-00' to NULL in data rows,
+            // we MUST allow NULL in the schema, even if MySQL said NOT NULL.
+            // PostgreSQL does not support zero-dates, so NULL is the only logical equivalent.
+            $converted = str_ireplace('NOT NULL', '', $converted);
+            
+            return trim($converted);
         }
         
         // If no conversion was applied, return the cleaned definition
@@ -851,15 +1097,10 @@ class ConversionController extends Controller
         // Handle ENUM types
         if (preg_match('/enum\((.+)\)/i', $originalDefinition, $matches)) {
             switch ($options['handleEnums'] ?? 'varchar') {
-                case 'check_constraint':
-                    $values = str_getcsv($matches[1], ',', "'");
-                    $checkValues = implode(', ', array_map(fn ($v) => "'{$v}'", $values));
-                    $columnName = is_array($column) ? $column['name'] : 'column';
-
-                    return "TEXT CHECK ({$columnName} IN ({$checkValues}))";
                 case 'enum_table':
                     $columnName = is_array($column) ? $column['name'] : 'column';
                     return "INTEGER REFERENCES {$columnName}_enum(id)";
+                case 'check_constraint':
                 case 'varchar':
                 default:
                     return 'TEXT';
