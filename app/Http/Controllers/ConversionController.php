@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\GeminiService;
 use App\Services\BinlogListener;
+use App\Services\DatabaseAdapters\SourceAdapterFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -32,6 +33,7 @@ class ConversionController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'mysql_dump' => 'required_without:source|string|max:102400000', // 100MB character limit
+            'source_type' => 'sometimes|string|in:mysql,oracle,sqlserver,sqlsrv,sql_server',
             'source' => 'sometimes|array',
             'source.host' => 'required_with:source|string',
             'source.port' => 'required_with:source|string',
@@ -80,13 +82,17 @@ class ConversionController extends Controller
         $options = $validated['options'] ?? [];
 
         try {
+            $sourceType = $request->input('source_type', 'mysql');
+            $adapter = SourceAdapterFactory::create($sourceType);
+
             // Fetch schema either from dump or live source
             if ($mysqlDump) {
-                $parsedData = $this->parseMysqlDump($mysqlDump);
+                $parsedData = $adapter->parseDump($mysqlDump);
             } elseif ($source) {
-                $parsedData = $this->fetchFromSource($source, $options);
+                $adapter->setupConnection($source);
+                $parsedData = $adapter->fetchSchema($options);
             } else {
-                throw new \Exception('No MySQL input provided (Dump or Credentials expected)');
+                throw new \Exception('No input provided (Dump or Credentials expected)');
             }
             
             // Validate that we found some valid SQL structure
@@ -141,6 +147,7 @@ class ConversionController extends Controller
         
         $validator = Validator::make(array_merge($request->all(), ['options' => $options]), [
             'file' => 'required|file|max:102400', // 100MB limit for uploaded file
+            'source_type' => 'sometimes|string|in:mysql,oracle,sqlserver,sqlsrv,sql_server',
             'target_format' => 'required|string|in:postgresql,csv,xlsx,xls,sqlite,psql',
             'options' => 'sometimes|array',
             'options.predictive_refactoring' => 'sometimes|boolean',
@@ -158,7 +165,10 @@ class ConversionController extends Controller
         $targetFormat = $request->input('target_format');
 
         try {
-            $parsedData = $this->parseMysqlDump($file);
+            $sourceType = $request->input('source_type', 'mysql');
+            $adapter = SourceAdapterFactory::create($sourceType);
+            
+            $parsedData = $adapter->parseDump($file);
             
             // Validate that we found some valid SQL structure
             if (empty($parsedData['tables']) && !$parsedData['has_valid_sql_keywords']) {
@@ -199,6 +209,7 @@ class ConversionController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'source' => 'required|array',
+            'source_type' => 'sometimes|string|in:mysql,oracle,sqlserver,sqlsrv,sql_server',
             'source.host' => 'required|string',
             'source.port' => 'required|string',
             'source.user' => 'required|string',
@@ -224,9 +235,12 @@ class ConversionController extends Controller
         $options = $request->input('options', []);
 
         try {
+            $sourceType = $request->input('source_type', 'mysql');
+            $adapter = SourceAdapterFactory::create($sourceType);
+            
             // Configure dynamic connections
-            $this->setupSourceConnection($source);
-
+            $adapter->setupConnection($source);
+            
             Config::set('database.connections.temp_pgsql', [
                 'driver' => 'pgsql',
                 'host' => $target['host'],
@@ -239,31 +253,23 @@ class ConversionController extends Controller
                 'schema' => 'public',
                 'sslmode' => 'prefer',
             ]);
-
+            
             // Purge connections to ensure new settings are used
-            DB::purge('temp_mysql');
             DB::purge('temp_pgsql');
-
+            
             // Test connections and get tables
-            $mysqlTables = DB::connection('temp_mysql')->select("SHOW TABLES");
-            if (empty($mysqlTables)) {
+            $tables = $adapter->getTables();
+            if (empty($tables)) {
                 throw new \Exception("No tables found in source database.");
             }
             
-            $mysqlDbName = $source['db'];
-            $tablesField = "Tables_in_{$mysqlDbName}";
-
             $report = [];
             $results = [];
             $isIncremental = $options['incrementalSync'] ?? $options['incremental_sync'] ?? false;
-
-            foreach ($mysqlTables as $tableRow) {
-                if (!isset($tableRow->$tablesField)) continue;
-                $tableName = $tableRow->$tablesField;
-                
+            
+            foreach ($tables as $tableName) {
                 // Get CREATE TABLE
-                $createRes = DB::connection('temp_mysql')->select("SHOW CREATE TABLE `{$tableName}`");
-                $createSql = $createRes[0]->{'Create Table'};
+                $createSql = $adapter->getTableSchema($tableName);
 
                 // Incremental Support Lookup
                 $checkpoint = null;
@@ -276,7 +282,7 @@ class ConversionController extends Controller
                 }
                 
                 // Parse it
-                $parsedData = $this->parseMysqlDump($createSql);
+                $parsedData = $adapter->parseDump($createSql);
                 
                 // Apply cleaning and refactoring
                 $this->performAutoCleaning($parsedData, $options, $report);
@@ -294,7 +300,7 @@ class ConversionController extends Controller
                 $rowCount = 0;
                 $trackCol = 'id';
                 
-                $query = DB::connection('temp_mysql')->table($tableName);
+                $query = $adapter->getTableData($tableName);
                 if ($checkpoint && $checkpoint->last_value) {
                     $trackCol = $checkpoint->checkpoint_column;
                     $query->where($trackCol, '>', $checkpoint->last_value);
@@ -367,40 +373,6 @@ class ConversionController extends Controller
         }
     }
 
-    /**
-     * Fetch schema info from a live MySQL database
-     */
-    private function fetchFromSource(array $source, array $options): array
-    {
-        $this->setupSourceConnection($source);
-        
-        $mysqlDbName = $source['db'];
-        $mysqlTables = DB::connection('temp_mysql')->select("SHOW TABLES");
-        $tablesField = "Tables_in_{$mysqlDbName}";
-        
-        $allTablesData = [];
-        $rawDump = "";
-        
-        foreach ($mysqlTables as $tableRow) {
-            if (!isset($tableRow->$tablesField)) continue;
-            $tableName = $tableRow->$tablesField;
-            
-            $createRes = DB::connection('temp_mysql')->select("SHOW CREATE TABLE `{$tableName}`");
-            if (!empty($createRes)) {
-                $createSql = $createRes[0]->{'Create Table'};
-                $parsed = $this->parseMysqlDump($createSql);
-                if (isset($parsed['tables'][$tableName])) {
-                    $allTablesData[$tableName] = $parsed['tables'][$tableName];
-                }
-            }
-        }
-        
-        return [
-            'tables' => $allTablesData,
-            'raw_dump' => $rawDump,
-            'has_valid_sql_keywords' => !empty($allTablesData)
-        ];
-    }
 
     /**
      * Generate PostgreSQL rollback SQL (cleanup/revert)
@@ -515,24 +487,6 @@ class ConversionController extends Controller
         }
     }
 
-    /**
-     * Setup dynamic mysql connection
-     */
-    private function setupSourceConnection(array $source): void
-    {
-        Config::set('database.connections.temp_mysql', [
-            'driver' => 'mysql',
-            'host' => $source['host'],
-            'port' => $source['port'],
-            'database' => $source['db'],
-            'username' => $source['user'],
-            'password' => $source['pass'] ?? '',
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-        ]);
-        DB::purge('temp_mysql');
-    }
 
     /**
      * Parse MySQL dump into structured data
@@ -871,10 +825,14 @@ class ConversionController extends Controller
         $source = $request->input('source');
         $options = $request->input('options', []);
         
+        $sourceType = $request->input('source_type', 'mysql');
+        $adapter = SourceAdapterFactory::create($sourceType);
+
         if ($mysqlDump) {
-            $data = $this->parseMysqlDump($mysqlDump);
+            $data = $adapter->parseDump($mysqlDump);
         } elseif ($source) {
-            $data = $this->fetchFromSource($source, $options);
+            $adapter->setupConnection($source);
+            $data = $adapter->fetchSchema($options);
         } else {
             return response()->json(['success' => false, 'error' => 'No analysis input provided'], 422);
         }
@@ -933,7 +891,12 @@ class ConversionController extends Controller
                 // Apply framework specific column overrides
                 $column = $this->applyFrameworkColumnOverrides($column, $preset, $tableName);
 
-                $pgColumnDetails = $this->convertMysqlColumnToPostgreSQL($column, $options, $report);
+                $sourceType = $data['source_type'] ?? 'mysql';
+                $pgColumnDetails = match(strtolower($sourceType)) {
+                    'oracle' => $this->convertOracleColumnToPostgreSQL($column, $options, $report),
+                    'sqlserver', 'sqlsrv', 'sql_server' => $this->convertSqlServerColumnToPostgreSQL($column, $options, $report),
+                    default => $this->convertMysqlColumnToPostgreSQL($column, $options, $report),
+                };
                 $quotedColumnName = $this->quotePostgreSQLIdentifier($column['name']);
                 $items[] = '  '.$quotedColumnName.' '.$pgColumnDetails;
                 
@@ -1653,6 +1616,81 @@ class ConversionController extends Controller
 
         $converted = preg_replace('/\s+/', ' ', $converted);
         return trim($converted);
+    }
+
+    /**
+     * Convert Oracle column definition to PostgreSQL
+     */
+    private function convertOracleColumnToPostgreSQL(array|string $column, array $options, array &$report = []): string
+    {
+        $definition = is_array($column) ? $column['definition'] : $column;
+        $defUpper = strtoupper($definition);
+        
+        // Basic Mappings
+        if (str_contains($defUpper, 'VARCHAR2') || str_contains($defUpper, 'NVARCHAR2') || str_contains($defUpper, 'CLOB')) {
+            $pgType = 'TEXT';
+        } elseif (str_contains($defUpper, 'NUMBER')) {
+            if (preg_match('/NUMBER\s*\((\d+)\)/i', $defUpper, $m)) {
+                $pgType = (int)$m[1] > 9 ? 'BIGINT' : 'INTEGER';
+            } elseif (preg_match('/NUMBER\s*\((\d+),\s*(\d+)\)/i', $defUpper, $m)) {
+                $pgType = "DECIMAL({$m[1]},{$m[2]})";
+            } else {
+                $pgType = 'NUMERIC';
+            }
+        } elseif (str_contains($defUpper, 'DATE') || str_contains($defUpper, 'TIMESTAMP')) {
+            $pgType = 'TIMESTAMP WITH TIME ZONE';
+        } elseif (str_contains($defUpper, 'BLOB') || str_contains($defUpper, 'RAW')) {
+            $pgType = 'BYTEA';
+        } elseif (str_contains($defUpper, 'LONG')) {
+            $pgType = 'TEXT';
+        } else {
+            $pgType = 'TEXT'; // Fallback
+        }
+
+        $attrPart = '';
+        if (str_contains($defUpper, 'NOT NULL')) {
+            $attrPart = ' NOT NULL';
+        }
+        
+        return $pgType . $attrPart;
+    }
+
+    /**
+     * Convert SQL Server column definition to PostgreSQL
+     */
+    private function convertSqlServerColumnToPostgreSQL(array|string $column, array $options, array &$report = []): string
+    {
+        $definition = is_array($column) ? $column['definition'] : $column;
+        $defUpper = strtoupper($definition);
+        
+        // Basic Mappings
+        if (str_contains($defUpper, 'VARCHAR') || str_contains($defUpper, 'NVARCHAR') || str_contains($defUpper, 'TEXT') || str_contains($defUpper, 'NTEXT')) {
+            $pgType = 'TEXT';
+        } elseif (str_contains($defUpper, 'INT')) {
+            if (str_contains($defUpper, 'BIGINT')) $pgType = 'BIGINT';
+            elseif (str_contains($defUpper, 'SMALLINT')) $pgType = 'SMALLINT';
+            elseif (str_contains($defUpper, 'TINYINT')) $pgType = 'SMALLINT';
+            else $pgType = 'INTEGER';
+        } elseif (str_contains($defUpper, 'BIT')) {
+            $pgType = 'BOOLEAN';
+        } elseif (str_contains($defUpper, 'DATETIME') || str_contains($defUpper, 'DATE')) {
+            $pgType = 'TIMESTAMP WITH TIME ZONE';
+        } elseif (str_contains($defUpper, 'VARBINARY') || str_contains($defUpper, 'BINARY') || str_contains($defUpper, 'IMAGE')) {
+            $pgType = 'BYTEA';
+        } elseif (str_contains($defUpper, 'MONEY')) {
+            $pgType = 'NUMERIC(19,4)';
+        } elseif (str_contains($defUpper, 'UNIQUEIDENTIFIER')) {
+            $pgType = 'UUID';
+        } else {
+            $pgType = 'TEXT'; // Fallback
+        }
+
+        $attrPart = '';
+        if (str_contains($defUpper, 'NOT NULL')) {
+            $attrPart = ' NOT NULL';
+        }
+        
+        return $pgType . $attrPart;
     }
 
     /**

@@ -311,4 +311,44 @@ class ConversionLogicTest extends TestCase
             $this->assertEquals($expected['random_page_cost'], $result['random_page_cost']);
         }
     }
+
+    public function test_oracle_column_to_postgresql(): void
+    {
+        $testCases = [
+            ['VARCHAR2', 'TEXT'],
+            ['NUMBER(10)', 'BIGINT'],
+            ['NUMBER(19)', 'BIGINT'],
+            ['NUMBER(10,2)', 'DECIMAL(10,2)'],
+            ['DATE', 'TIMESTAMP WITH TIME ZONE'],
+            ['TIMESTAMP', 'TIMESTAMP WITH TIME ZONE'],
+            ['CLOB', 'TEXT'],
+            ['BLOB', 'BYTEA'],
+            ['RAW', 'BYTEA'],
+        ];
+
+        foreach ($testCases as [$input, $expected]) {
+            $result = $this->callPrivateMethod('convertOracleColumnToPostgreSQL', [$input, []]);
+            $this->assertEquals($expected, $result, "Failed converting Oracle {$input} to PostgreSQL");
+        }
+    }
+
+    public function test_sql_server_column_to_postgresql(): void
+    {
+        $testCases = [
+            ['VARCHAR', 'TEXT'],
+            ['NVARCHAR', 'TEXT'],
+            ['INT', 'INTEGER'],
+            ['BIGINT', 'BIGINT'],
+            ['BIT', 'BOOLEAN'],
+            ['DATETIME2', 'TIMESTAMP WITH TIME ZONE'],
+            ['UNIQUEIDENTIFIER', 'UUID'],
+            ['MONEY', 'NUMERIC(19,4)'],
+            ['VARBINARY', 'BYTEA'],
+        ];
+
+        foreach ($testCases as [$input, $expected]) {
+            $result = $this->callPrivateMethod('convertSqlServerColumnToPostgreSQL', [$input, []]);
+            $this->assertEquals($expected, $result, "Failed converting SQL Server {$input} to PostgreSQL");
+        }
+    }
 }
