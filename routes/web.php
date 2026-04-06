@@ -32,6 +32,10 @@ Route::get('/index-advisor', function () {
     return Inertia::render('IndexAdvisor');
 });
 
+Route::get('/orchestrator', function () {
+    return Inertia::render('Orchestrator');
+});
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
@@ -55,6 +59,8 @@ Route::middleware(['throttle:60,1'])->group(function () {
     Route::post('/cdc/replay', [ConversionController::class, 'replayCdcChanges'])->name('cdc.replay');
     Route::post('/convert/validate', [\App\Http\Controllers\ValidationController::class, 'validateData'])->name('convert.validate');
     Route::post('/convert/advise-indexes', [\App\Http\Controllers\IndexAdvisorController::class, 'advise'])->name('convert.advise');
+    Route::post('/convert/migration-status', [\App\Http\Controllers\OrchestrationController::class, 'getStatus'])->name('convert.migration_status');
+    Route::post('/convert/cutover', [\App\Http\Controllers\OrchestrationController::class, 'cutover'])->name('convert.cutover');
 });
 
 require __DIR__.'/auth.php';

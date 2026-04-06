@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
-  Zap, Terminal,
+  Zap,
   Rocket, Shield,
-  FileJson, Github, Search,
-  Activity, Eraser, Database,
-  Lock, RefreshCcw, Cpu, Globe
+  Github,
+  Activity, Database,
+  Cpu
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { motion } from 'framer-motion';
@@ -21,98 +21,29 @@ const Docs: React.FC = () => {
       icon: <Rocket className="h-5 w-5 text-primary" />,
       content: (
         <div className="space-y-4">
-          <p className="text-muted-foreground font-medium">SQL STREAM is engineered for zero-artifact database migrations. Get started via the CLI or use our live streaming node cluster.</p>
+          <p className="text-muted-foreground font-medium">SQL STREAM is engineered for zero-artifact database migrations. Connect MySQL, Oracle, or SQL Server directly and stream to PostgreSQL with zero-downtime.</p>
           <div className="bg-black/50 p-6 rounded-2xl border border-white/10 font-mono text-xs group relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-40 transition-opacity">
-              <Terminal className="h-4 w-4" />
-            </div>
-            <p className="text-primary/80 mb-2"># Install the stream engine</p>
-            <p className="text-white">composer require sql-stream/core</p>
-            <p className="text-white">npm install @sql-stream/react</p>
-            <p className="text-primary/80 mt-4 mb-2"># Initialize a live migration node</p>
-            <p className="text-white">php artisan stream:init --cluster=us-east-1</p>
+            <p className="text-primary/80 mb-2"># Initialize a live migration</p>
+            <p className="text-white">php artisan convert:stream --source=oracle --target=pgsql</p>
           </div>
         </div>
       ),
     },
     {
-      id: 'neural-engine',
-      title: 'Predictive AI Transpiler',
-      icon: <Cpu className="h-5 w-5 text-purple-400" />,
+      id: 'source-adapters',
+      title: 'Multi-Source Fabric',
+      icon: <Database className="h-5 w-5 text-blue-400" />,
       content: (
         <div className="space-y-4">
-          <p className="text-muted-foreground font-medium">Our Neural Transpilation Engine (NTE) goes beyond regex. It understands the abstract syntax tree (AST) of your MySQL queries and maps them to highly optimized PostgreSQL equivalents.</p>
-          <div className="bg-black/50 p-6 rounded-2xl border border-white/10 font-mono text-xs">
-            <p className="text-amber-500/80 mb-2">-- Legacy MySQL Pattern</p>
-            <p className="text-white/60 italic">SELECT name, GROUP_CONCAT(role SEPARATOR '|') FROM users GROUP BY name;</p>
-            <p className="text-emerald-500/80 mt-4 mb-2">-- Neural Optimized PostgreSQL</p>
-            <p className="text-white">SELECT name, string_agg(role, '|') FROM "users" GROUP BY name;</p>
-          </div>
-          <p className="text-[10px] uppercase font-black tracking-widest opacity-40">Supported: Recursive CTEs, Stored Procedures, Cross-Schema Triggers</p>
-        </div>
-      ),
-    },
-    {
-      id: 'direct-streaming',
-      title: 'Live Node Streaming',
-      icon: <Activity className="h-5 w-5 text-blue-400" />,
-      content: (
-        <div className="space-y-6">
-          <p className="text-muted-foreground font-medium">Connect directly to a source MySQL node and stream data to a target PostgreSQL cluster with zero-downtime and sub-millisecond lag.</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <Card className="p-5 bg-white/5 border-white/5 rounded-2xl hover:bg-white/[0.08] transition-colors">
-               <div className="flex items-center gap-2 mb-2">
-                 <RefreshCcw className="h-3 w-3 text-blue-400" />
-                 <h5 className="font-bold text-[10px] uppercase tracking-widest">Delta Sync</h5>
-               </div>
-               <p className="text-[11px] opacity-70 leading-relaxed">Only migrates changes (INSERT/UPDATE/DELETE) since the last high-water mark, minimizing network load.</p>
-             </Card>
-             <Card className="p-5 bg-white/5 border-white/5 rounded-2xl hover:bg-white/[0.08] transition-colors">
-               <div className="flex items-center gap-2 mb-2">
-                 <Globe className="h-3 w-3 text-blue-400" />
-                 <h5 className="font-bold text-[10px] uppercase tracking-widest">Global Clusters</h5>
-               </div>
-               <p className="text-[11px] opacity-70 leading-relaxed">Distribute migration workload across our globally edge-optimized transformation nodes.</p>
-             </Card>
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: 'staging-synthesis',
-      title: 'Staging Synthesis',
-      icon: <Lock className="h-5 w-5 text-emerald-400" />,
-      content: (
-        <div className="space-y-4">
-          <p className="text-muted-foreground font-medium">Protect your production data. Our PII Defense engine automatically obfuscates sensitive information during the stream.</p>
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent border border-emerald-500/10">
-            <h5 className="font-bold text-xs mb-3 text-emerald-400 flex items-center gap-2">
-              <Search className="h-3 w-3" /> PII Discovery Patterns
-            </h5>
-            <ul className="text-[11px] space-y-2 opacity-80 list-disc ml-4">
-              <li>Automatic detection of <code>email</code>, <code>phone_number</code>, and <code>ssn</code> columns.</li>
-              <li>Context-aware FakerPHP synthesis for realistic dev data.</li>
-              <li>Encrypted-at-rest buffers for all staging transpiler workflows.</li>
-            </ul>
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: 'framework-presets',
-      title: 'Framework Presets',
-      icon: <FileJson className="h-5 w-5 text-amber-400" />,
-      content: (
-        <div className="space-y-4">
-          <p className="text-muted-foreground font-medium">Optimized logic for the world's most popular database-heavy ecosystems.</p>
+          <p className="text-muted-foreground font-medium">Our enterprise adapter fabric supports high-fidelity transpilation from diverse engines:</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { name: 'Laravel', color: 'text-amber-500', desc: 'UUID primary key support & Migration file exports.' },
-              { name: 'Wordpress', color: 'text-blue-400', desc: 'Serialized PHP data parsing & URL rewriting.' },
-              { name: 'Magento', color: 'text-orange-500', desc: 'EAV table flattening & high-performance joins.' }
+              { name: 'Oracle', desc: 'Automatic mapping of RAW, CLOB, and NUMBER(p,s) to native PG types.' },
+              { name: 'SQL Server', desc: 'T-SQL to PL/pgSQL conversion with bracketed identifier normalization.' },
+              { name: 'MySQL', desc: 'Full support for Enums, JSON, and complex spatial types.' }
             ].map(f => (
               <div key={f.name} className="p-4 rounded-xl bg-white/5 border border-white/5">
-                <h6 className={`font-black text-[10px] uppercase tracking-widest mb-2 ${f.color}`}>{f.name}</h6>
+                <h6 className="font-black text-[10px] uppercase tracking-widest mb-2 text-primary">{f.name}</h6>
                 <p className="text-[10px] opacity-60 leading-relaxed font-medium">{f.desc}</p>
               </div>
             ))}
@@ -121,17 +52,39 @@ const Docs: React.FC = () => {
       ),
     },
     {
-      id: 'rollback-engine',
-      title: 'Atomic Rollback',
-      icon: <Eraser className="h-5 w-5 text-red-400" />,
+      id: 'mission-control',
+      title: 'Mission Control',
+      icon: <Activity className="h-5 w-5 text-emerald-400" />,
       content: (
         <div className="space-y-4">
-          <p className="text-muted-foreground font-medium">Never deploy without a safety net. Every migration generates a cryptographically signed rollback script.</p>
-          <div className="bg-slate-900 ring-1 ring-white/10 p-5 rounded-2xl space-y-3">
-             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-red-400/60">
-               <Shield className="h-3 w-3" /> Integrity Lock
-             </div>
-             <p className="text-[11px] opacity-70 italic">"Rollback scripts analyze the target state to ensure that reversing a migration will not cause data loss in newly formed relations."</p>
+          <p className="text-muted-foreground font-medium">The Orchestrator provides real-time telemetry into the migration network fabric.</p>
+          <ul className="text-sm space-y-2 text-muted-foreground ml-4 list-disc">
+            <li><span className="text-white font-bold">Throughput Analysis:</span> Live charting of Records per Second (RPS).</li>
+            <li><span className="text-white font-bold">Progress Sharding:</span> Table-level monitoring of sync states.</li>
+            <li><span className="text-white font-bold">Final Cutover:</span> Atomic finalization with bindlog/CDC parity checks.</li>
+          </ul>
+        </div>
+      ),
+    },
+    {
+      id: 'ai-index-advisor',
+      title: 'Neural Index Advisor',
+      icon: <Cpu className="h-5 w-5 text-purple-400" />,
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground font-medium">Leverage Google Gemini to optimize your target PostgreSQL architecture. NTE scans your source schema and suggests high-performance indexing strategies like GIN and BRIN.</p>
+        </div>
+      ),
+    },
+    {
+      id: 'integrity-audit',
+      title: 'Integrity Auditing',
+      icon: <Shield className="h-5 w-5 text-red-400" />,
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground font-medium">Ensure 100% data parity between sharded nodes.</p>
+          <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
+             <code className="text-xs text-white">Validation::parityCheck($source, $target); // Row-count & MD5 parity</code>
           </div>
         </div>
       ),

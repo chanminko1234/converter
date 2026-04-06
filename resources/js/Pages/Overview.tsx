@@ -25,8 +25,8 @@ const Overview: React.FC = () => {
       icon: <Shield className="h-6 w-6 text-emerald-400" />
     },
     {
-      title: 'Direct Streaming',
-      desc: 'Zero-artifact migration. Connect source and target directly for high-volume, low-latency data synchronization.',
+      title: 'Mission Control',
+      desc: 'Zero-downtime orchestration with real-time telemetry. Monitor throughput, parity, and perform final cutovers via a high-fidelity cockpit.',
       icon: <Activity className="h-6 w-6 text-amber-500" />
     }
   ];
@@ -99,7 +99,7 @@ const Overview: React.FC = () => {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-400 to-emerald-400">Data Evolution.</span>
           </h1>
           <p className="text-xl text-muted-foreground font-medium max-w-3xl leading-relaxed">
-            SQL STREAM isn't just a converter; it's a stateful migration ecosystem designed to bridge the gap between legacy MySQL instances and resilient, modern PostgreSQL architectures.
+            SQL STREAM isn't just a converter; it's a stateful migration ecosystem designed to bridge the gap between legacy MySQL, Oracle, and SQL Server instances and resilient, modern PostgreSQL architectures.
           </p>
         </section>
 
@@ -156,8 +156,8 @@ const Overview: React.FC = () => {
                 {[
                   { icon: <Activity />, text: "Real-time Binary Log Replication", active: true },
                   { icon: <CheckCircle2 />, text: "Zero-Downtime Incremental Sync", active: true },
-                  { icon: <Cpu />, text: "Context-Aware Stored Procedure Transpilation", active: true },
-                  { icon: <Shield />, text: "Enterprise-Wide Role-Based Obfuscation", active: false },
+                  { icon: <Cpu />, text: "AI-Powered Gemini Index Advisor", active: true },
+                  { icon: <Shield />, text: "Enterprise Oracle/SQL Server Adapters", active: true },
                 ].map((item, i) => (
                   <div key={i} className={`flex items-center gap-4 ${item.active ? 'opacity-100' : 'opacity-30'}`}>
                     <div className={`p-2.5 rounded-xl ${item.active ? 'bg-primary/20 text-primary' : 'bg-white/5 text-white'}`}>

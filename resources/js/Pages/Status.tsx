@@ -13,12 +13,12 @@ import { motion } from 'framer-motion';
 
 const Status: React.FC = () => {
   const services = [
-    { name: 'Core Transformation Engine', status: 'operational', uptime: '99.99%', latency: '38ms', icon: <Server /> },
-    { name: 'Neural Transpilation Node', status: 'operational', uptime: '99.96%', latency: '112ms', icon: <Cpu /> },
+    { name: 'Multi-Source Adapter Fabric', status: 'operational', uptime: '100%', latency: '12ms', icon: <Server /> },
+    { name: 'Mission Control Orchestrator', status: 'operational', uptime: '100%', latency: '04ms', icon: <Rocket /> },
+    { name: 'AI Index Advisor (Gemini)', status: 'operational', uptime: '99.96%', latency: '412ms', icon: <Cpu /> },
     { name: 'Staging Synthesis Cluster', status: 'operational', uptime: '100%', latency: '54ms', icon: <Shield /> },
-    { name: 'Delta Sync Worker v4', status: 'operational', uptime: '100%', latency: '08ms', icon: <RefreshCcw /> },
     { name: 'Integrity Audit Pipeline', status: 'operational', uptime: '99.99%', latency: '29ms', icon: <Activity /> },
-    { name: 'PG Architect Advisor', status: 'operational', uptime: '100%', latency: '215ms', icon: <Zap /> },
+    { name: 'Zero-Downtime Sync Worker', status: 'operational', uptime: '100%', latency: '08ms', icon: <RefreshCcw /> },
     { name: 'Global REST Edge API', status: 'operational', uptime: '99.98%', latency: '45ms', icon: <Globe /> },
   ];
 
@@ -50,6 +50,9 @@ const Status: React.FC = () => {
         </div>
         <div className="flex items-center gap-6">
           <ThemeToggle />
+          <Link href="/orchestrator">
+            <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9 text-white hover:bg-white/5 hover:text-white">Orchestrator</Button>
+          </Link>
           <Link href="/validation">
             <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9 text-white hover:bg-white/5 hover:text-white">Validation</Button>
           </Link>

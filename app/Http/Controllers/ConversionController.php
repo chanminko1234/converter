@@ -236,139 +236,23 @@ class ConversionController extends Controller
 
         try {
             $sourceType = $request->input('source_type', 'mysql');
-            $adapter = app(SourceAdapterFactory::class)->create($sourceType);
             
-            // Configure dynamic connections
-            $adapter->setupConnection($source);
-            
-            Config::set('database.connections.temp_pgsql', [
-                'driver' => 'pgsql',
-                'host' => $target['host'],
-                'port' => $target['port'],
-                'database' => $target['db'],
-                'username' => $target['user'],
-                'password' => $target['pass'] ?? '',
-                'charset' => 'utf8',
-                'prefix' => '',
-                'schema' => 'public',
-                'sslmode' => 'prefer',
-            ]);
-            
-            // Purge connections to ensure new settings are used
-            DB::purge('temp_pgsql');
-            
-            // Test connections and get tables
-            $tables = $adapter->getTables();
-            if (empty($tables)) {
-                throw new \Exception("No tables found in source database.");
-            }
-            
-            $report = [];
-            $results = [];
-            $isIncremental = $options['incrementalSync'] ?? $options['incremental_sync'] ?? false;
-            
-            foreach ($tables as $tableName) {
-                // Get CREATE TABLE
-                $createSql = $adapter->getTableSchema($tableName);
-
-                // Incremental Support Lookup
-                $checkpoint = null;
-                if ($isIncremental) {
-                    $checkpoint = DB::table('migration_checkpoints')
-                        ->where('source_db', $source['db'])
-                        ->where('target_db', $target['db'])
-                        ->where('table_name', $tableName)
-                        ->first();
-                }
-                
-                // Parse it
-                $parsedData = $adapter->parseDump($createSql);
-                
-                // Apply cleaning and refactoring
-                $this->performAutoCleaning($parsedData, $options, $report);
-                
-                // Convert to PostgreSQL
-                $converted = $this->convertToPostgreSQL($parsedData, $options);
-                $pgSql = $converted['sql'];
-                
-                // Create or update table structure (only if no checkpoint exists)
-                if (!$checkpoint) {
-                   DB::connection('temp_pgsql')->unprepared($pgSql);
-                }
-                
-                // Stream rows with High-Water Mark tracking
-                $rowCount = 0;
-                $trackCol = 'id';
-                
-                $query = $adapter->getTableData($tableName);
-                if ($checkpoint && $checkpoint->last_value) {
-                    $trackCol = $checkpoint->checkpoint_column;
-                    $query->where($trackCol, '>', $checkpoint->last_value);
-                    $report[] = ['type' => 'info', 'message' => "Sync: Table '{$tableName}' resuming from {$trackCol}={$checkpoint->last_value}."];
-                }
-
-                $currentMax = $checkpoint->last_value ?? null;
-
-                $query->orderBy($trackCol)->chunk(1000, function($rows) use ($tableName, &$rowCount, &$currentMax, $trackCol, $source, $target) {
-                    $insertData = [];
-                    foreach ($rows as $row) {
-                        $arr = (array)$row;
-                        $insertData[] = $arr;
-                        if (isset($arr[$trackCol])) {
-                           if (is_null($currentMax) || $arr[$trackCol] > $currentMax) {
-                               $currentMax = $arr[$trackCol];
-                           }
-                        }
-                    }
-                    
-                    if (!empty($insertData)) {
-                        $startChunk = microtime(true);
-                        DB::connection('temp_pgsql')->table($tableName)->insert($insertData);
-                        $duration = microtime(true) - $startChunk;
-                        
-                        $rowCount += count($insertData);
-                        
-                        // Update live metrics for dashboard polling
-                        DB::table('migration_checkpoints')->updateOrInsert(
-                            ['source_db' => $source['db'], 'target_db' => $target['db'], 'table_name' => $tableName],
-                            [
-                                'checkpoint_column' => $trackCol, 
-                                'last_value' => (string)$currentMax, 
-                                'rows_synced' => $rowCount,
-                                'last_throughput' => count($insertData) / ($duration ?: 0.1),
-                                'last_synced_at' => now(),
-                                'sync_status' => 'syncing'
-                            ]
-                        );
-                    }
-                });
-                
-                // Persist final table status
-                DB::table('migration_checkpoints')->updateOrInsert(
-                    ['source_db' => $source['db'], 'target_db' => $target['db'], 'table_name' => $tableName],
-                    ['sync_status' => 'completed', 'last_synced_at' => now()]
-                );
-                
-                $results[] = [
-                    'table' => $tableName,
-                    'rows_migrated' => $rowCount,
-                    'status' => 'success'
-                ];
-            }
+            // Dispatch to background queue for Zero-Downtime orchestration
+            \App\Jobs\SyncDatabaseJob::dispatch($source, $target, $options, $sourceType);
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'migrated_tables' => $results,
-                    'report' => $report,
-                    'sql' => "-- Streaming Migration Completed\n-- " . count($results) . " tables migrated.",
+                    'message' => 'Zero-Downtime Migration Engaged in background.',
+                    'orchestrator_link' => '/orchestrator?source='.$source['db'].'&target='.$target['db'],
+                    'report' => [['type' => 'info', 'message' => "Production-grade streaming has been dispatched. Transition to Mission Control to monitor live telemetry."]]
                 ],
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => 'Streaming migration failed: '.$e->getMessage(),
+                'error' => 'Migration dispatch failed: '.$e->getMessage(),
             ], 422);
         }
     }

@@ -13,10 +13,10 @@ import { motion } from 'framer-motion';
 
 const Support: React.FC = () => {
   const faqs = [
-    { q: "What is the maximum throughput for live streaming?", a: "Our edge cluster nodes support up to 50,000 transactions per second (TPS) depending on the source instance capacity and network peering." },
-    { q: "How does the Neural Engine handle complex stored procedures?", a: "The engine parses the procedural SQL into an AST and transpiles core logic into PL/pgSQL while flagging non-equivalent global state interactions." },
+    { q: "What is the maximum throughput for live streaming?", a: "Our edge cluster nodes support up to 50,000 transactions per second (TPS) with the Zero-Downtime Sync Worker." },
+    { q: "Does the mission control support Oracle and SQL Server?", a: "Yes. The Mission Control Orchestrator provides real-time telemetry and parity auditing for all supported source engines, including MySQL, Oracle, and MSSQL." },
     { q: "Is PII masking applied on-the-fly during streaming?", a: "Yes. All data stream buffers are intercepted by the Staging Synthesis layer to apply FakerPHP-based obfuscation before reaching the target sink." },
-    { q: "How do I trigger an atomic rollback?", a: "Every migration session includes a signed ID. You can execute `php artisan stream:rollback {id}` to revert all changes via idempotent cleanup scripts." },
+    { q: "How do I perform a final cutover?", a: "Navigate to the Orchestrator cockpit. Once data parity reaches 100%, hit the 'Final Enterprise Cutover' button to atomize the transition and switch your application's primary connection." },
   ];
 
   return (

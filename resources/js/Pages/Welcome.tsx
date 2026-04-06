@@ -234,13 +234,23 @@ const Welcome: React.FC = () => {
     } else {
       const sql = data.sql || data.script || '';
       setFullOutput(sql);
-      if (sql.length > 1024 * 1024) {
+      
+      if (data.orchestrator_link) {
+         setOutput(`-- Zero-Downtime Migration Engaged\n-- Mission Control: ${window.location.origin}${data.orchestrator_link}\n\nBackground job dispatched successfully.`);
+         toast.success('Migration Started! Redirecting to Orchestrator...', {
+             action: {
+                 label: 'Open Dashboard',
+                 onClick: () => window.location.href = data.orchestrator_link
+             },
+             duration: 10000
+         });
+      } else if (sql.length > 1024 * 1024) {
         setOutput(`-- Result is too large for editor preview (${(sql.length / 1024 / 1024).toFixed(2)} MB)\n-- Please use "Download" for the full SQL file.\n\n` + sql.substring(0, 5000) + "\n\n... (rest of file truncated) ...");
         toast.info("Result is large! Editor preview truncated for performance. Please download the full file.");
       } else {
         setOutput(sql);
       }
-      setConversionReport(result.report || []);
+      setConversionReport(data.report || result.report || []);
     }
   };
 
@@ -419,6 +429,9 @@ const Welcome: React.FC = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Engine Online</span>
           </div>
           <ThemeToggle />
+          <Link href="/orchestrator" className="hidden md:block">
+            <Button variant="ghost" className="rounded-full font-bold text-xs uppercase tracking-widest px-6 border border-white/5 h-9 text-white">Orchestrator</Button>
+          </Link>
           <Link href="/validation" className="hidden md:block">
             <Button variant="ghost" className="rounded-full font-bold text-xs uppercase tracking-widest px-6 border border-white/5 h-9 text-white">Validation</Button>
           </Link>

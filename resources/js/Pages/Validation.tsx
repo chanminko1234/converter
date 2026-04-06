@@ -77,10 +77,11 @@ const Validation: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-6">
                     <div className="hidden md:flex gap-4">
+                        <Link href="/orchestrator" className="text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity">Orchestrator</Link>
                         <Link href="/status" className="text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity">Status</Link>
                         <Link href="/docs" className="text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity">Docs</Link>
-                        <Link href="/validation" className="text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity">Validation</Link>
-                        <Link href="/index-advisor" className="text-[10px] font-black uppercase tracking-widest text-primary">Index Advisor</Link>
+                        <Link href="/validation" className="text-[10px] font-black uppercase tracking-widest text-primary">Validation</Link>
+                        <Link href="/index-advisor" className="text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity">Index Advisor</Link>
                     </div>
                     <ThemeToggle />
                     <Link href="/support">
