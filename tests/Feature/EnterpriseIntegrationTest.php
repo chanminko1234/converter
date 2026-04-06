@@ -10,14 +10,33 @@ class EnterpriseIntegrationTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * Test that all global navigation pages render successfully.
+     * Test that all global public navigation pages render successfully.
      */
-    public function test_global_pages_render(): void
+    public function test_global_public_pages_render(): void
     {
-        $pages = ['/', '/docs', '/status', '/support', '/overview'];
+        $pages = ['/', '/docs', '/status', '/support'];
 
         foreach ($pages as $page) {
             $response = $this->get($page);
+            $response->assertStatus(200);
+        }
+    }
+
+    /**
+     * Test that secure engineering modules require node clearance.
+     */
+    public function test_secure_internal_pages_require_clearance(): void
+    {
+        $securePages = ['/dashboard', '/overview', '/orchestrator', '/validation', '/index-advisor'];
+
+        foreach ($securePages as $page) {
+            $response = $this->get($page);
+            $response->assertRedirect('/login');
+        }
+
+        $user = \App\Models\User::factory()->create();
+        foreach ($securePages as $page) {
+            $response = $this->actingAs($user)->get($page);
             $response->assertStatus(200);
         }
     }

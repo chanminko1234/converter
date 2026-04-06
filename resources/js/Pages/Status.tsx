@@ -1,185 +1,161 @@
 import React from 'react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { 
-  Activity, Zap, Shield, Server, 
-  Clock, MessageSquare, Cpu, 
-  RefreshCcw, Globe, Rocket
+    Activity, Zap, Server, Clock, MessageSquare, Cpu, 
+    RefreshCcw, Globe, Rocket, Shield, Info, BarChart3
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Card } from '@/Components/ui/card';
+import { Badge } from '@/Components/ui/badge';
+import { Button } from '@/Components/ui/button';
 
-const Status: React.FC = () => {
-  const services = [
-    { name: 'Multi-Source Adapter Fabric', status: 'operational', uptime: '100%', latency: '12ms', icon: <Server /> },
-    { name: 'Mission Control Orchestrator', status: 'operational', uptime: '100%', latency: '04ms', icon: <Rocket /> },
-    { name: 'AI Index Advisor (Gemini)', status: 'operational', uptime: '99.96%', latency: '412ms', icon: <Cpu /> },
-    { name: 'Staging Synthesis Cluster', status: 'operational', uptime: '100%', latency: '54ms', icon: <Shield /> },
-    { name: 'Integrity Audit Pipeline', status: 'operational', uptime: '99.99%', latency: '29ms', icon: <Activity /> },
-    { name: 'Zero-Downtime Sync Worker', status: 'operational', uptime: '100%', latency: '08ms', icon: <RefreshCcw /> },
-    { name: 'Global REST Edge API', status: 'operational', uptime: '99.98%', latency: '45ms', icon: <Globe /> },
-  ];
+export default function Status() {
+    const services = [
+        { name: 'Adapter Fabric', status: 'operational', uptime: '100%', latency: '12ms', icon: <Server /> },
+        { name: 'Mission Orchestrator', status: 'operational', uptime: '100%', latency: '04ms', icon: <Rocket /> },
+        { name: 'Neural Advisor', status: 'operational', uptime: '99.96%', latency: '412ms', icon: <Cpu /> },
+        { name: 'Audit Pipeline', status: 'operational', uptime: '99.99%', latency: '29ms', icon: <Activity /> },
+        { name: 'Sync Worker Node', status: 'operational', uptime: '100%', latency: '08ms', icon: <RefreshCcw /> },
+        { name: 'Global Edge API', status: 'operational', uptime: '99.98%', latency: '45ms', icon: <Globe /> },
+    ];
 
-  return (
-    <div className="min-h-screen bg-background text-foreground font-sans relative overflow-hidden">
-      <Head>
-        <title>System Status | SQL STREAM</title>
-        <meta name="description" content="View the real-time operational status and uptime of the SQL STREAM migration ecosystem. Performance tracking for neural nodes and sync workers." />
-      </Head>
-      
-      {/* Background Effects */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-full bg-grid opacity-[0.03] dark:opacity-[0.07]" />
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500/10 blur-[120px] rounded-full animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full" />
-      </div>
-
-      <nav className="border-b glass fixed top-0 w-full z-50 px-8 py-4 flex items-center justify-between backdrop-blur-xl">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="bg-primary/20 p-2.5 rounded-xl ring-1 ring-primary/30">
-            <Zap className="h-6 w-6 text-primary fill-primary/20" />
-          </Link>
-          <div className="flex flex-col">
-            <span className="font-black text-xl tracking-tighter leading-none">
-              SQL<span className="text-primary italic">STREAM</span>
-            </span>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] opacity-40">Network Status</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-6">
-          <ThemeToggle />
-          <Link href="/orchestrator">
-            <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9 text-white hover:bg-white/5 hover:text-white">Orchestrator</Button>
-          </Link>
-          <Link href="/validation">
-            <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9 text-white hover:bg-white/5 hover:text-white">Validation</Button>
-          </Link>
-          <Link href="/index-advisor">
-            <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9 text-white hover:bg-white/5 hover:text-white">Index Advisor</Button>
-          </Link>
-          <Link href="/support">
-            <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9 text-white hover:bg-white/5 hover:text-white">Concierge</Button>
-          </Link>
-        </div>
-      </nav>
-
-      <main className="container max-w-5xl mx-auto px-4 pt-32 pb-20 relative z-10">
-        <section className="text-center mb-24 space-y-6">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4 shadow-xl"
-          >
-            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-            Hyper-Operational: ALL NODES ONLINE
-          </motion.div>
-          <h1 className="text-6xl font-black tracking-tighter leading-none mb-6">Infrastructure<br />Health Grid<span className="text-primary italic">.</span></h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-medium">Real-time performance metrics for the SQL STREAM globally distributed transformation network.</p>
-        </section>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-24">
-          {services.map((s, i) => (
-            <motion.div
-              key={s.name}
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <Card className="glass-card rounded-[2.5rem] p-8 border-white/10 hover:border-primary/30 transition-all group overflow-hidden shadow-2xl relative">
-                <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-10 transition-opacity">
-                   {React.cloneElement(s.icon as React.ReactElement<any>, { className: "h-24 w-24" })}
+    return (
+        <AuthenticatedLayout
+            header={
+                <div className="flex flex-col gap-4">
+                    <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[9px] font-black uppercase tracking-[0.2em] w-fit shadow-xl"
+                    >
+                        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                        Hyper-Operational: ALL NODES ONLINE
+                    </motion.div>
+                    <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase italic px-1">
+                        Network Status
+                    </h2>
                 </div>
-                <div className="flex items-center justify-between mb-8 relative z-10">
-                  <div className="h-12 w-12 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                    {React.cloneElement(s.icon as React.ReactElement<any>, { className: "h-6 w-6 text-primary/60 group-hover:text-primary transition-colors" })}
-                  </div>
-                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px] font-black tracking-widest px-3 py-1 rounded-lg uppercase">{s.status}</Badge>
-                </div>
-                <h3 className="font-black mb-2 text-lg tracking-tight relative z-10">{s.name}</h3>
-                <p className="text-[10px] uppercase font-black tracking-widest opacity-30 mb-6 relative z-10">Peak Capacity Guaranteed</p>
-                
-                <div className="flex items-center justify-between pt-6 border-t border-white/5 relative z-10">
-                  <div className="space-y-1">
-                    <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest opacity-40">Global Uptime</p>
-                    <p className="font-mono text-xs font-black text-emerald-400">{s.uptime}</p>
-                  </div>
-                  <div className="space-y-1 text-right">
-                    <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest opacity-40">IO Latency</p>
-                    <p className="font-mono text-xs font-black">{s.latency}</p>
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+            }
+        >
+            <Head title="System Status" />
 
-        <section className="space-y-8 mb-24">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black tracking-tighter flex items-center gap-3">
-              <Activity className="h-6 w-6 text-primary" />
-              Global Response Matrix (24h)
-            </h2>
-            <div className="flex items-center gap-2">
-               <div className="h-2 w-2 rounded-full bg-primary/40" />
-               <p className="text-[9px] font-black uppercase tracking-widest opacity-40">Updated every 30 seconds</p>
+            <div className="py-6 space-y-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 transition-all pb-24">
+                {/* Status Hero Section */}
+                <section className="space-y-6 max-w-2xl">
+                    <h1 className="text-6xl font-black tracking-tighter leading-none text-foreground uppercase italic px-1">
+                        Infrastructure <span className="text-primary italic">Health Grid.</span>
+                    </h1>
+                    <p className="text-xl text-foreground/40 font-bold leading-relaxed tracking-tight">
+                        Real-time performance metrics for the SQL STREAM globally distributed transformation network. Peak capacity guaranteed across all sharded nodes.
+                    </p>
+                </section>
+
+                {/* Services Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {services.map((s, i) => (
+                        <motion.div
+                            key={s.name}
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: i * 0.05 }}
+                        >
+                            <Card className="glass-card rounded-[2.5rem] p-10 border-foreground/5 dark:border-white/5 hover:border-primary/20 transition-all group overflow-hidden shadow-2xl relative">
+                                <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.08] transition-opacity">
+                                    {React.isValidElement(s.icon) && React.cloneElement(s.icon as React.ReactElement<any>, { className: "h-32 w-32" })}
+                                </div>
+                                <div className="flex items-center justify-between mb-10 relative z-10">
+                                    <div className="h-14 w-14 bg-foreground/5 dark:bg-white/5 rounded-2xl border border-foreground/10 dark:border-white/10 flex items-center justify-center group-hover:bg-primary/10 transition-colors ring-1 ring-white/5">
+                                        {React.isValidElement(s.icon) && React.cloneElement(s.icon as React.ReactElement<any>, { className: "h-6 w-6 text-primary/60 group-hover:text-primary transition-colors" })}
+                                    </div>
+                                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px] font-black tracking-widest px-4 py-1.5 rounded-xl uppercase shadow-glow-emerald">
+                                        {s.status}
+                                    </Badge>
+                                </div>
+                                <h3 className="font-black mb-2 text-xl tracking-tighter relative z-10 text-foreground uppercase italic leading-none">{s.name}</h3>
+                                <p className="text-[9px] uppercase font-black tracking-[0.2em] text-foreground/20 mb-8 relative z-10">Engine Readiness Verified</p>
+                                
+                                <div className="flex items-center justify-between pt-8 border-t border-foreground/5 dark:border-white/5 relative z-10">
+                                    <div className="space-y-1">
+                                        <p className="text-[8px] font-black text-foreground/20 uppercase tracking-[0.2em]">Global Uptime</p>
+                                        <p className="font-black text-[12px] text-emerald-500 tracking-tighter">{s.uptime}</p>
+                                    </div>
+                                    <div className="space-y-1 text-right">
+                                        <p className="text-[8px] font-black text-foreground/20 uppercase tracking-[0.2em]">IO Latency</p>
+                                        <p className="font-black text-[12px] text-foreground tracking-tighter">{s.latency}</p>
+                                    </div>
+                                </div>
+                            </Card>
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* Pulse Visualizer */}
+                <section className="space-y-8">
+                    <div className="flex items-center justify-between px-2">
+                        <div className="flex items-center gap-4">
+                            <BarChart3 className="h-6 w-6 text-primary" />
+                            <h2 className="text-3xl font-black uppercase tracking-tighter italic text-foreground text-foreground">Response Matrix</h2>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="h-2 w-2 rounded-full bg-primary/40 animate-pulse" />
+                            <p className="text-[9px] font-black uppercase tracking-widest text-foreground/20">Updated: T+30s</p>
+                        </div>
+                    </div>
+                    
+                    <Card className="glass-card rounded-[3.5rem] border-foreground/5 dark:border-white/5 p-12 h-96 flex items-end gap-1.5 overflow-hidden relative shadow-2xl group shadow-inner">
+                        {Array.from({ length: 80 }).map((_, i) => (
+                            <motion.div 
+                                key={i} 
+                                initial={{ height: 0 }}
+                                animate={{ height: `${Math.floor(Math.random() * 60) + 40}%` }}
+                                transition={{ delay: i * 0.005, duration: 1.5, repeat: Infinity, repeatType: "reverse" }}
+                                className="flex-1 bg-primary/10 group-hover:bg-primary/30 transition-all rounded-t-lg" 
+                            />
+                        ))}
+                        <div className="absolute inset-x-0 bottom-0 p-10 flex justify-between items-center bg-gradient-to-t from-background/95 via-background/60 to-transparent backdrop-blur-sm border-t border-white/5">
+                            <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-foreground/30">
+                                <Clock className="h-4 w-4 text-primary" />
+                                Peak Node: 1x-B-4 • London Fabric
+                            </div>
+                            <div className="font-black text-[12px] text-primary tracking-tighter uppercase italic">1.48M Syncs / S</div>
+                        </div>
+                    </Card>
+                </section>
+
+                {/* Community Portal Footer */}
+                <footer className="p-1.5 bg-gradient-to-r from-primary/20 via-indigo-500/20 to-primary/20 rounded-[4rem] shadow-2xl relative">
+                    <div className="p-14 rounded-[3.8rem] bg-background/60 backdrop-blur-3xl flex flex-col md:flex-row items-center justify-between gap-12 border border-white/5 overflow-hidden">
+                        <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none group-hover:rotate-12 transition-transform">
+                            <Globe className="w-64 h-64 text-primary" />
+                        </div>
+                        <div className="flex items-center gap-10 relative z-10">
+                            <div className="h-20 w-20 bg-primary/20 rounded-[2.5rem] flex items-center justify-center ring-1 ring-primary/30 shadow-2xl">
+                                <MessageSquare className="text-primary h-10 w-10 shadow-glow-primary" />
+                            </div>
+                            <div className="text-center md:text-left space-y-2">
+                                <h3 className="text-4xl font-black tracking-tighter text-foreground uppercase italic leading-none">Engineering Hub</h3>
+                                <p className="text-[11px] text-foreground/40 font-bold uppercase tracking-widest">Connect with the developers behind the protocol.</p>
+                            </div>
+                        </div>
+                        
+                        <a href="https://github.com/chanminko1234/converter" target="_blank" rel="noopener noreferrer" className="relative z-10">
+                            <Button className="group relative rounded-3xl px-12 h-20 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[11px] tracking-widest active:scale-95 transition-all shadow-[0_20px_60px_rgba(var(--primary),0.3)] ring-1 ring-white/20">
+                                <span className="relative flex items-center gap-4">
+                                    Join Core Community
+                                    <Rocket className="h-4 w-4" />
+                                </span>
+                            </Button>
+                        </a>
+                    </div>
+                </footer>
             </div>
-          </div>
-          
-          <Card className="glass-card rounded-[3rem] border-white/10 p-12 h-80 flex items-end gap-1.5 overflow-hidden relative shadow-2xl">
-            {/* Visualizer bars */}
-            {Array.from({ length: 64 }).map((_, i) => (
-              <motion.div 
-                key={i} 
-                initial={{ height: 0 }}
-                animate={{ height: `${Math.floor(Math.random() * 50) + 50}%` }}
-                transition={{ delay: i * 0.01, duration: 1 }}
-                className="flex-1 bg-primary/10 hover:bg-primary/40 transition-all rounded-t-lg" 
-              />
-            ))}
-            <div className="absolute inset-x-0 bottom-0 py-6 px-12 flex justify-between items-center bg-gradient-to-t from-background/80 to-transparent backdrop-blur-sm">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-40">
-                  <Clock className="h-4 w-4" />
-                  Peak Throughput Cluster: 1x-Beta-4
-                </div>
-                <div className="font-mono text-[10px] font-black text-primary">TRANSFORMING 14.8M OPS/s</div>
-            </div>
-          </Card>
-        </section>
 
-        <footer className="p-1 bg-gradient-to-r from-primary/30 via-indigo-500/30 to-primary/30 rounded-[3.5rem] shadow-2xl">
-          <div className="p-12 rounded-[3.2rem] bg-background/60 backdrop-blur-3xl flex flex-col md:flex-row items-center justify-between gap-12 border border-white/5">
-            <div className="flex items-center gap-8">
-              <div className="h-20 w-20 bg-primary/10 rounded-[2.5rem] flex items-center justify-center ring-1 ring-primary/30 shadow-inner">
-                <MessageSquare className="text-primary h-10 w-10" />
-              </div>
-              <div className="text-center md:text-left space-y-2">
-                <h3 className="text-3xl font-black tracking-tighter">Engineering Hub</h3>
-                <p className="text-sm text-muted-foreground font-medium">Connect with the developers behind the SQL STREAM protocol.</p>
-              </div>
-            </div>
-            
-            <a href="https://github.com/chanminko1234/converter" target="_blank" rel="noopener noreferrer">
-              <Button className="group relative rounded-2xl px-12 py-8 font-black uppercase tracking-[0.2em] text-[10px] overflow-hidden transition-all bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/40">
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-                <span className="relative flex items-center gap-3">
-                  Join Community
-                  <Rocket className="h-4 w-4" />
-                </span>
-              </Button>
-            </a>
-          </div>
-        </footer>
-      </main>
-
-      <style>{`
-        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); }
-        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(40px); }
-        .bg-grid { background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 40px 40px; }
-      `}</style>
-    </div>
-  );
-};
-
-export default Status;
+            <style>{`
+                .glass-card { background: rgba(var(--background), 0.4); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); }
+                .shadow-glow-emerald { filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.2)); }
+                .shadow-glow-primary { filter: drop-shadow(0 0 12px rgba(var(--primary), 0.4)); }
+            `}</style>
+        </AuthenticatedLayout>
+    );
+}

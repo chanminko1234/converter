@@ -1,31 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Head } from '@inertiajs/react';
+import { Link, Head, usePage } from '@inertiajs/react';
+import { PageProps } from '@/types';
 import axios from 'axios';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Button } from '@/Components/ui/button';
+import { Textarea } from '@/Components/ui/textarea';
+import { Card } from '@/Components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
+import { Badge } from '@/Components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/Components/ui/sheet';
+import { Checkbox } from '@/Components/ui/checkbox';
+import { Label } from '@/Components/ui/label';
+import { Progress } from '@/Components/ui/progress';
+import { Dialog, DialogContent } from '@/Components/ui/dialog';
 import {
   Copy, Download, Upload, Settings,
   Github, Rocket, Eraser, Activity, Zap, Terminal, Search,
-  Database, Server, Maximize2, Check, ShieldCheck, AlertOctagon, X
+  Database, Server, Maximize2, Check, ShieldCheck, AlertOctagon, X,
+  Menu, User, LogOut, ChevronDown
 } from 'lucide-react';
+import Dropdown from '@/Components/Dropdown';
 import { ConversionReport } from '@/lib/sqlConverter';
-import { CodeHighlighter } from '@/components/ui/syntax-highlighter';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { CodeHighlighter } from '@/Components/ui/syntax-highlighter';
+import { ThemeToggle } from '@/Components/theme-toggle';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ERDVisualizer } from '@/components/ERDVisualizer';
-import { DiffExplorer } from '@/components/DiffExplorer';
-import { MigrationMapper } from '@/components/MigrationMapper';
-import { LiveMigrationDashboard } from '@/components/LiveMigrationDashboard';
+import { ERDVisualizer } from '@/Components/ERDVisualizer';
+import { DiffExplorer } from '@/Components/DiffExplorer';
+import { MigrationMapper } from '@/Components/MigrationMapper';
+import { LiveMigrationDashboard } from '@/Components/LiveMigrationDashboard';
 
 type TargetFormat = 'postgresql' | 'csv' | 'xlsx' | 'xls' | 'sqlite' | 'psql';
 
@@ -53,6 +56,7 @@ interface ConversionOptions {
 }
 
 const Welcome: React.FC = () => {
+  const { auth } = usePage<PageProps>().props;
   const [mysqlInput, setMysqlInput] = useState('');
   const [output, setOutput] = useState('');
   const [fullOutput, setFullOutput] = useState('');
@@ -234,16 +238,16 @@ const Welcome: React.FC = () => {
     } else {
       const sql = data.sql || data.script || '';
       setFullOutput(sql);
-      
+
       if (data.orchestrator_link) {
-         setOutput(`-- Zero-Downtime Migration Engaged\n-- Mission Control: ${window.location.origin}${data.orchestrator_link}\n\nBackground job dispatched successfully.`);
-         toast.success('Migration Started! Redirecting to Orchestrator...', {
-             action: {
-                 label: 'Open Dashboard',
-                 onClick: () => window.location.href = data.orchestrator_link
-             },
-             duration: 10000
-         });
+        setOutput(`-- Zero-Downtime Migration Engaged\n-- Mission Control: ${window.location.origin}${data.orchestrator_link}\n\nBackground job dispatched successfully.`);
+        toast.success('Migration Started! Redirecting to Orchestrator...', {
+          action: {
+            label: 'Open Dashboard',
+            onClick: () => window.location.href = data.orchestrator_link
+          },
+          duration: 10000
+        });
       } else if (sql.length > 1024 * 1024) {
         setOutput(`-- Result is too large for editor preview (${(sql.length / 1024 / 1024).toFixed(2)} MB)\n-- Please use "Download" for the full SQL file.\n\n` + sql.substring(0, 5000) + "\n\n... (rest of file truncated) ...");
         toast.info("Result is large! Editor preview truncated for performance. Please download the full file.");
@@ -406,9 +410,9 @@ const Welcome: React.FC = () => {
       {/* Background Effects */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-grid opacity-[0.03] dark:opacity-[0.07]" />
-        <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] bg-primary/25 blur-[160px] rounded-full animate-blob mix-blend-screen overflow-hidden" />
-        <div className="absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] bg-indigo-500/20 blur-[160px] rounded-full animate-blob animation-delay-2000 mix-blend-screen overflow-hidden" />
-        <div className="absolute top-[30%] left-[60%] w-[40%] h-[40%] bg-pink-500/15 blur-[140px] rounded-full animate-blob animation-delay-4000 mix-blend-screen overflow-hidden" />
+        <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] bg-primary/20 dark:bg-primary/25 blur-[160px] rounded-full animate-blob mix-blend-multiply dark:mix-blend-screen overflow-hidden" />
+        <div className="absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] bg-indigo-500/15 dark:bg-indigo-500/20 blur-[160px] rounded-full animate-blob animation-delay-2000 mix-blend-multiply dark:mix-blend-screen overflow-hidden" />
+        <div className="absolute top-[30%] left-[60%] w-[40%] h-[40%] bg-pink-500/10 dark:bg-pink-500/15 blur-[140px] rounded-full animate-blob animation-delay-4000 mix-blend-multiply dark:mix-blend-screen overflow-hidden" />
       </div>
 
       <nav className="border-b glass fixed top-0 w-full z-50 px-8 py-5 flex items-center justify-between backdrop-blur-3xl shadow-2xl shadow-black/10">
@@ -417,35 +421,165 @@ const Welcome: React.FC = () => {
             <Rocket className="h-7 w-7 text-primary fill-primary/30 rotate-12 group-hover:rotate-0 transition-transform duration-500" />
           </div>
           <div className="flex flex-col">
-            <span className="font-black text-2xl tracking-tighter leading-none bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+            <span className="font-black text-2xl tracking-tighter leading-none bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
               SQL<span className="text-primary italic">STREAM</span>
             </span>
             <span className="text-[10px] font-black uppercase tracking-[0.25em] text-primary/70 mt-1">High Performance Migration</span>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Engine Online</span>
+        <div className="flex items-center gap-6">
+          <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-foreground/[0.03] dark:bg-foreground/5 rounded-full border border-foreground/10 ring-1 ring-foreground/5">
+            <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+            <span className="text-[10px] font-black uppercase tracking-[0.1em] text-foreground/70 dark:text-foreground/50">Core Engine Online</span>
           </div>
-          <ThemeToggle />
-          <Link href="/orchestrator" className="hidden md:block">
-            <Button variant="ghost" className="rounded-full font-bold text-xs uppercase tracking-widest px-6 border border-white/5 h-9 text-white">Orchestrator</Button>
-          </Link>
-          <Link href="/validation" className="hidden md:block">
-            <Button variant="ghost" className="rounded-full font-bold text-xs uppercase tracking-widest px-6 border border-white/5 h-9 text-white">Validation</Button>
-          </Link>
-          <Link href="/index-advisor" className="hidden md:block">
-            <Button variant="ghost" className="rounded-full font-bold text-xs uppercase tracking-widest px-6 border border-white/5 h-9 text-white">Index Advisor</Button>
-          </Link>
-          <Link href="/support" className="hidden md:block">
-            <Button variant="ghost" className="rounded-full font-bold text-xs uppercase tracking-widest px-6 border border-white/5 h-9 text-white hover:bg-white/5 hover:text-white">Support</Button>
-          </Link>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <a href="https://github.com/chanminko1234/converter" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
-              <Github className="h-5 w-5" />
-            </a>
-          </Button>
+
+          <div className="h-6 w-[1px] bg-foreground/10 hidden md:block" />
+
+          <div className="hidden md:flex items-center gap-1">
+            <Link href="/orchestrator">
+              <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-4 h-9 text-foreground/70 dark:text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-all">Orchestrator</Button>
+            </Link>
+            <Link href="/validation">
+              <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-4 h-9 text-foreground/70 dark:text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-all">Validation</Button>
+            </Link>
+            <Link href="/index-advisor">
+              <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-4 h-9 text-foreground/70 dark:text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-all">Index Advisor</Button>
+            </Link>
+            <Link href="/support">
+              <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-4 h-9 text-foreground/70 dark:text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-all">Support</Button>
+            </Link>
+          </div>
+
+          <div className="h-6 w-[1px] bg-foreground/10 hidden md:block" />
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              {auth.user ? (
+                <div className="flex items-center gap-2">
+                  <Dropdown>
+                    <Dropdown.Trigger>
+                      <Button variant="ghost" className="rounded-full h-9 px-4 font-black text-[10px] uppercase tracking-widest text-foreground/70 flex items-center gap-2 hover:bg-foreground/5 transition-all">
+                        <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+                          <User className="w-3 h-3 text-primary" />
+                        </div>
+                        <span className="max-w-[100px] truncate">{auth.user.name}</span>
+                        <ChevronDown className="w-3 h-3 opacity-50" />
+                      </Button>
+                    </Dropdown.Trigger>
+
+                    <Dropdown.Content contentClasses="py-2 bg-background/95 backdrop-blur-xl border border-foreground/10 shadow-2xl rounded-2xl min-w-[180px]">
+                      <div className="px-4 py-2 mb-2 border-b border-foreground/5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Node Identity</p>
+                        <p className="text-[11px] font-bold truncate text-foreground/80">{auth.user.email}</p>
+                      </div>
+
+                      <Dropdown.Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-foreground/60 hover:text-primary hover:bg-primary/5 transition-all outline-none">
+                        <User className="w-3.5 h-3.5" />
+                        Access Profile
+                      </Dropdown.Link>
+
+                      <Dropdown.Link href="/logout" method="post" as="button" className="flex items-center gap-3 w-full px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-foreground/60 hover:text-red-500 hover:bg-red-500/5 transition-all outline-none">
+                        <LogOut className="w-3.5 h-3.5" />
+                        Terminate Node
+                      </Dropdown.Link>
+                    </Dropdown.Content>
+                  </Dropdown>
+                </div>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-4 h-9 text-foreground/70 dark:text-foreground/40 hover:text-foreground transition-colors">Sign In</Button>
+                  </Link>
+                  <Link href="/register" className="hidden sm:block">
+                    <Button className="rounded-full font-black text-[10px] px-6 h-9 uppercase tracking-widest shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-primary-foreground ring-1 ring-foreground/20">Join Port</Button>
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <div className="h-6 w-[1px] bg-foreground/10" />
+
+            <ThemeToggle />
+
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-6 w-6 text-foreground" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="glass border-l-foreground/10 w-[300px]">
+                <div className="flex flex-col gap-6 pt-10">
+                  <div className="flex flex-col mb-4">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2">Navigation Port</span>
+                    <div className="h-[1px] w-full bg-foreground/10" />
+                  </div>
+                  <Link href="/orchestrator" className="text-sm font-black uppercase tracking-widest text-foreground/60 hover:text-foreground flex items-center gap-3 group">
+                    <div className="p-2 rounded-lg bg-foreground/5 border border-foreground/5 group-hover:bg-primary/20 group-hover:border-primary/40 transition-all"><Zap className="h-4 w-4" /></div>
+                    Orchestrator
+                  </Link>
+                  <Link href="/validation" className="text-sm font-black uppercase tracking-widest text-foreground/60 hover:text-foreground flex items-center gap-3 group">
+                    <div className="p-2 rounded-lg bg-foreground/5 border border-foreground/5 group-hover:bg-primary/20 group-hover:border-primary/40 transition-all"><Check className="h-4 w-4" /></div>
+                    Validation
+                  </Link>
+                  <Link href="/index-advisor" className="text-sm font-black uppercase tracking-widest text-foreground/60 hover:text-foreground flex items-center gap-3 group">
+                    <div className="p-2 rounded-lg bg-foreground/5 border border-foreground/5 group-hover:bg-primary/20 group-hover:border-primary/40 transition-all"><Database className="h-4 w-4" /></div>
+                    Index Advisor
+                  </Link>
+                  <Link href="/docs" className="text-sm font-black uppercase tracking-widest text-foreground/60 hover:text-foreground flex items-center gap-3 group">
+                    <div className="p-2 rounded-lg bg-foreground/5 border border-foreground/5 group-hover:bg-primary/20 group-hover:border-primary/40 transition-all"><Terminal className="h-4 w-4" /></div>
+                    Documentation
+                  </Link>
+                  <Link href="/status" className="text-sm font-black uppercase tracking-widest text-foreground/60 hover:text-foreground flex items-center gap-3 group">
+                    <div className="p-2 rounded-lg bg-foreground/5 border border-foreground/5 group-hover:bg-primary/20 group-hover:border-primary/40 transition-all"><Activity className="h-4 w-4" /></div>
+                    System Status
+                  </Link>
+                  <Link href="/support" className="text-sm font-black uppercase tracking-widest text-foreground/60 hover:text-foreground flex items-center gap-3 group">
+                    <div className="p-2 rounded-lg bg-foreground/5 border border-foreground/5 group-hover:bg-primary/20 group-hover:border-primary/40 transition-all"><Server className="h-4 w-4" /></div>
+                    Technical Support
+                  </Link>
+
+                  <div className="mt-8 pt-8 border-t border-foreground/5 space-y-4">
+                    {auth.user ? (
+                      <div className="space-y-3">
+                        <Link href="/overview">
+                          <Button className="w-full rounded-2xl font-black text-xs h-12 uppercase tracking-[0.2em] shadow-lg shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground">Access Overview</Button>
+                        </Link>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Link href="/profile">
+                            <Button variant="outline" className="w-full rounded-2xl font-black text-[10px] h-12 uppercase tracking-widest border-foreground/10 text-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-all flex items-center justify-center gap-2">
+                              <User className="w-3.5 h-3.5" />
+                              Profile
+                            </Button>
+                          </Link>
+                          <Link href="/logout" method="post" as="button">
+                            <Button variant="outline" className="w-full rounded-2xl font-black text-[10px] h-12 uppercase tracking-widest border-foreground/10 text-foreground/60 hover:text-red-500 hover:bg-red-500/5 transition-all flex items-center justify-center gap-2">
+                              <LogOut className="w-3.5 h-3.5" />
+                              Logout
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <Link href="/login">
+                          <Button variant="outline" className="w-full rounded-2xl font-black text-xs h-12 uppercase tracking-[0.2em] border-foreground/10 text-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-all">Sign In</Button>
+                        </Link>
+                        <Link href="/register">
+                          <Button className="w-full rounded-2xl font-black text-xs h-12 uppercase tracking-[0.2em] shadow-lg shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground">Initialize Port</Button>
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex items-center justify-center">
+              <a href="https://github.com/chanminko1234/converter" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
+                <Github className="h-5 w-5" />
+              </a>
+            </Button>
+          </div>
         </div>
       </nav>
 
@@ -459,7 +593,7 @@ const Welcome: React.FC = () => {
           <Badge variant="outline" className="px-5 py-1.5 rounded-full border-primary/30 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-4 shadow-[0_0_20px_rgba(109,40,217,0.3)] border-2">
             Engineering Preview v2.0
           </Badge>
-          <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-none text-white overflow-visible">
+          <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-none text-foreground overflow-visible">
             Migrate <span className="text-primary italic">Better.</span>
           </h1>
           <p className="text-xl text-slate-400 max-w-3xl mx-auto font-medium leading-relaxed font-sans">

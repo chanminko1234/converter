@@ -1,6 +1,6 @@
 import { Moon, Sun } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { useTheme } from '@/components/theme-provider';
+import { Button } from '@/Components/ui/button';
+import { useTheme } from '@/Components/theme-provider';
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -24,11 +24,11 @@ export function ThemeToggle() {
 
   const getLabel = () => {
     if (theme === 'dark') {
-      return 'Dark mode';
+      return '';
     } else if (theme === 'light') {
-      return 'Light mode';
+      return '';
     }
-    return 'System theme';
+    return '';
   };
 
   return (
@@ -36,7 +36,7 @@ export function ThemeToggle() {
       variant="outline"
       size="sm"
       onClick={toggleTheme}
-      className="flex items-center gap-2"
+      className="flex items-center"
       title={`Current: ${getLabel()}. Click to toggle.`}
     >
       {getIcon()}

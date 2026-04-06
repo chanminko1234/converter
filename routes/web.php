@@ -6,7 +6,7 @@ use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
-})->name('dashboard');
+});
 
 Route::get('/docs', function () {
     return Inertia::render('Docs');
@@ -20,23 +20,28 @@ Route::get('/support', function () {
     return Inertia::render('Support');
 });
 
-Route::get('/overview', function () {
-    return Inertia::render('Overview');
-});
-
-Route::get('/validation', function () {
-    return Inertia::render('Validation');
-});
-
-Route::get('/index-advisor', function () {
-    return Inertia::render('IndexAdvisor');
-});
-
-Route::get('/orchestrator', function () {
-    return Inertia::render('Orchestrator');
-});
 
 Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->name('dashboard');
+    
+    Route::get('/overview', function () {
+        return Inertia::render('Overview');
+    })->name('overview');
+
+    Route::get('/validation', function () {
+        return Inertia::render('Validation');
+    })->name('validation');
+
+    Route::get('/index-advisor', function () {
+        return Inertia::render('IndexAdvisor');
+    })->name('index-advisor');
+
+    Route::get('/orchestrator', function () {
+        return Inertia::render('Orchestrator');
+    })->name('orchestrator');
+
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [\App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');

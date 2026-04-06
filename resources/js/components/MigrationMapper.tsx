@@ -17,7 +17,7 @@ import ReactFlow, {
   BackgroundVariant
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import { Database, Zap, Split, Key, ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
 

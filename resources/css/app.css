@@ -93,26 +93,26 @@
 
 @layer components {
   .glass {
-    @apply bg-background/60 backdrop-blur-xl border border-white/10;
+    @apply bg-background/80 dark:bg-background/60 backdrop-blur-2xl border border-foreground/10 dark:border-foreground/5;
   }
   
   .glass-card {
-    @apply bg-card/40 backdrop-blur-md border border-white/5 shadow-2xl;
+    @apply bg-card/40 backdrop-blur-md border border-foreground/5 shadow-2xl;
   }
 
   .text-glow {
-    text-shadow: 0 0 20px hsla(var(--brand), 0.5);
+    text-shadow: 0 0 20px hsla(var(--brand), 0.3);
   }
 
   .bg-grid {
     background-size: 40px 40px;
     background-image: 
-      linear-gradient(to right, hsla(var(--foreground), 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, hsla(var(--foreground), 0.05) 1px, transparent 1px);
+      linear-gradient(to right, hsla(var(--foreground), 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, hsla(var(--foreground), 0.03) 1px, transparent 1px);
   }
 
   .bg-dot-grid {
-    background-image: radial-gradient(hsla(var(--foreground), 0.1) 1px, transparent 1px);
+    background-image: radial-gradient(hsla(var(--foreground), 0.05) 1px, transparent 1px);
     background-size: 24px 24px;
   }
 }

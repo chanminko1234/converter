@@ -1,54 +1,53 @@
-# SQL STREAM: Enterprise Database Migration Platform
+# SQL STREAM: Engineering Node Architecture v4.0
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/chanminko/sql-stream)
-[![Tests](https://img.shields.io/badge/tests-126%20passed-blue.svg)](https://github.com/chanminko/sql-stream)
-[![Technology](https://img.shields.io/badge/stack-Laravel%20%7C%20React%20%7C%20Inertia-red.svg)](https://github.com/chanminko/sql-stream)
+[![Tests](https://img.shields.io/badge/tests-134%20passed-blue.svg)](https://github.com/chanminko/sql-stream)
+[![Technology](https://img.shields.io/badge/stack-Laravel%2011%20%7C%20React%20%7C%20Inertia-red.svg)](https://github.com/chanminko/sql-stream)
+[![Design](https://img.shields.io/badge/design-Engineering%20Node-7c3aed.svg)](https://github.com/chanminko/sql-stream)
 
-**SQL STREAM** is an enterprise-grade migration ecosystem designed to transform complex, stateful database transitions into a seamless, automated, and observable experience. Built for scale, it handles multi-source migrations (MySQL, Oracle, SQL Server) to modern PostgreSQL targets with zero downtime.
-
----
-
-## 🚀 Key Features
-
-### 1. Multi-Source Adapter Fabric
-- **Oracle to PostgreSQL**: Native type mapping for Oracle-specific objects (RAW, NUMBER, CLOB).
-- **SQL Server to PostgreSQL**: Robust conversion for MSSQL-specific syntax (TOP, [bracketed identifiers], T-SQL functions).
-- **MySQL to PostgreSQL**: Idempotent SQL generation with automatic enum and JSON normalization.
-
-### 2. Zero-Downtime Migration Orchestrator
-- **Live Fabric Monitoring**: Real-time throughput (Rows/s) and progress telemetry via a high-fidelity React cockpit.
-- **Background Streaming**: Offloads heavy data movement to **Async Jobs**, ensuring 100% UI responsiveness.
-- **Neural Simulation Mode**: Test cutover logic and charting with synthetic telemetry before connecting live production nodes.
-
-### 3. AI-Powered Index Advisor (Gemini)
-- **Schema Deep-Scan**: Leverages Google Gemini to analyze source schemas and recommend high-performance PostgreSQL-native indexing strategies (GIN, BRIN, Partial).
-- **Architectural Rationale**: Provides DDL snippets alongside detailed engineering justifications for each recommendation.
-
-### 4. High-Fidelity Data Integrity
-- **Parity Auditing**: Real-time row-count and MD5 checksum validation between source and target sharding.
-- **Cutover Guardrails**: Prevents cutover completion if pending binlog/CDC (Change Data Capture) transactions are detected.
+**SQL STREAM** is a premium, mission-critical migration ecosystem designed to transform complex, stateful database transitions into a seamless, high-fidelity engineering experience. From its glass-morphic "Security Clearance" gateway to its real-time "Node Control Center," every layer is engineered for absolute observability and zero-downtime performance.
 
 ---
 
-## 🛠️ Architecture
+## 🚀 High-Fidelity Ecosystem
 
-SQL STREAM follows a highly modular, decoupled architecture:
-- **Source Adapters**: Implemented via a `SourceAdapterInterface` and resolved through a container-based `SourceAdapterFactory`.
-- **Inertia.js + React**: A premium, "Mission Control" visual aesthetic using **Framer Motion**, **Radix UI**, and **Tailwind CSS**.
-- **Migration Checkpoints**: Maintains a stateful audit trail of sync progress, allowing for resilient resumes and incremental synchronization.
+### 🔳 Node Control Center (Dashboard)
+- **Real-Time Telemetry**: Monitor active migration streams, system throughput (MB/s), and database parity via a sophisticated, glass-morphic cockpit.
+- **Operational Feed**: Track high-precision engineering logs, including identity verification successes and schema transpilation deltas.
+- **Fast Response Hub**: Instant access to the Orchestrator, Validation Suite, and AI Advisor modules from a centralized command hub.
+
+### 🔳 Security Clearance (Auth Architecture)
+- **Engineering Node Identity**: A stateful, multi-layered authentication system with specialized "Access Key Rotation" and "Node Termination" protocols.
+- **Strict Isolation**: Mission-critical routes (Overview, Orchestrator, Validation) are strictly isolated behind a robust `Security Clearance` middleware.
+- **Identity Integrity**: Dynamic user identity gateway with real-time status indicators and secure session management.
+
+### 🔳 Migration Orchestrator v4.0
+- **Zero-Downtime Data Fabric**: Executes direct node-to-node synchronization with millisecond latency and O(1) performance.
+- **Oracle/SQL/MySQL Adapters**: Comprehensive type-mapping and structural normalization for enterprise-grade source engines.
+- **AI-Powered Index Advisor**: Leverages Google Gemini to analyze source schemas and recommend high-performance PostgreSQL-native indexing strategies.
 
 ---
 
-## 🎯 Getting Started
+## 🛠️ Design System: "Engineering Node"
 
-### Installation
-1. Clone and install dependencies:
+SQL STREAM utilizes a custom, premium design language defined by:
+- **Glass-Morphism**: Deep blur effects (`backdrop-blur-3xl`) and subtle primary-keyed borders for a mission-critical "Mission Control" feel.
+- **Dynamic Backgrounds**: Animated infrastructure grids and pulsing primary blobs representing the platform's active pulse.
+- **Modern Typography**: Specialized tracking-heavy headers and monospace telemetry fonts for high-precision technical oversight.
+- **Lucide Integration**: Seamless, icon-driven navigation for instant recognition of core operational modules.
+
+---
+
+## 🎯 Launch Protocol
+
+### Deployment
+1. Clone and initialize the engineering node:
 ```bash
 composer install
 npm install
 ```
 
-2. Configure your `.env` to use **PostgreSQL** for internal metadata tracking:
+2. Configure your `.env` for **PostgreSQL** metadata tracking:
 ```env
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
@@ -58,24 +57,23 @@ DB_USERNAME=postgres
 DB_PASSWORD=
 ```
 
-3. Initialize the migration engine:
+3. Initialize the core engines:
 ```bash
 php artisan migrate
 npm run dev
 ```
 
-### Starting a Migration
-1. Navigate to the **Home** page and select your source engine.
-2. Enter your credentials and hit **Start Sync**.
-3. Use the **Mission Control Dashboard** (Orchestrator) to monitor the data flow.
-4. Once parity reaches 100%, perform a **Final Enterprise Cutover**.
+### Accessing the Hub
+1.  **Register Identity**: Navigate to [`/register`](/register) to create your node clearance.
+2.  **Authenticate**: Use the [`/login`](/login) protocol to gain security clearance.
+3.  **Command Center**: Access your node's overview and telemetry at [`/dashboard`](/dashboard).
 
 ---
 
-## 🧪 Testing
-The platform maintains a rigorous test suite covering 100% of the migration lifecycle.
+## 🧪 Operational Verification
+SQL STREAM maintains a 100% verified test suite covering every phase of the migration lifecycle.
 ```bash
 php artisan test
 ```
 
-*Developed with ❤️ by Antigravity.*
+*Engineered with precision by Antigravity.*
