@@ -43,6 +43,8 @@ Route::middleware(['throttle:60,1'])->group(function () {
     Route::post('/convert/sandbox', [ConversionController::class, 'sandboxRun'])->name('convert.sandbox');
     Route::post('/convert/tune', [ConversionController::class, 'recommendTuning'])->name('convert.tune');
     Route::post('/translate-query', [ConversionController::class, 'translateQuery'])->name('translate.query');
+    Route::post('/cdc/capture', [ConversionController::class, 'captureCdcChange'])->name('cdc.capture');
+    Route::post('/cdc/replay', [ConversionController::class, 'replayCdcChanges'])->name('cdc.replay');
 });
 
 require __DIR__.'/auth.php';

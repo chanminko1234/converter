@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\GeminiService;
+use App\Services\BinlogListener;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -16,10 +17,12 @@ use Faker\Factory as Faker;
 class ConversionController extends Controller
 {
     protected GeminiService $gemini;
+    protected BinlogListener $binlog;
 
-    public function __construct(GeminiService $gemini)
+    public function __construct(GeminiService $gemini, BinlogListener $binlog)
     {
         $this->gemini = $gemini;
+        $this->binlog = $binlog;
     }
 
     /**
@@ -1471,226 +1474,185 @@ class ConversionController extends Controller
         $originalDefinition = $definition;
         $isPredictive = $options['predictiveRefactoring'] ?? $options['predictive_refactoring'] ?? false;
         
-        // Remove MySQL-specific collations that don't exist in PostgreSQL
+        // Clean up MySQL-specific attributes
         $definition = preg_replace('/\s+COLLATE\s+[a-zA-Z0-9_]+/i', '', $definition);
-        
-        // Remove MySQL-specific CHARACTER SET clauses that don't exist in PostgreSQL
         $definition = preg_replace('/\s+CHARACTER\s+SET\s+[a-zA-Z0-9_]+/i', '', $definition);
-        
-        // Remove MySQL-specific COMMENT clauses that don't exist in PostgreSQL column definitions
-        $definition = preg_replace('/\s+COMMENT\s+([\'"])[^\1]*\1/i', '', $definition);
-        
-        // Remove MySQL-specific ON UPDATE clauses that don't exist in PostgreSQL column definitions
-        // (PostgreSQL requires triggers for this functionality)
         $definition = preg_replace('/\s+ON\s+UPDATE\s+CURRENT_TIMESTAMP(?:\(\d+\))?/i', '', $definition);
         $definition = preg_replace('/\s+ON\s+UPDATE\s+NOW\(\)/i', '', $definition);
-        
-        // Remove MySQL-specific UNSIGNED keyword that doesn't exist in PostgreSQL
-        $definition = preg_replace('/\s+UNSIGNED/i', '', $definition);
-        
-        // Predictive Refactoring: Suggest TIMESTAMPTZ for TIMESTAMP/DATETIME
-        if ($isPredictive && (stripos($definition, 'TIMESTAMP') !== false || stripos($definition, 'DATETIME') !== false)) {
-            $report[] = [
-                'type' => 'info',
-                'message' => "AI Insight: Column '{$columnName}' converted to TIMESTAMP WITH TIME ZONE (TIMESTAMPTZ) for better timezone handling."
-            ];
-        }
+        $definition = preg_replace('/\bUNSIGNED\b/i', '', $definition);
 
-        // First, handle DATETIME conversion with timezone options
-        if (stripos($definition, 'DATETIME') !== false) {
-            $timezoneHandling = $options['timezoneHandling'] ?? $options['timezone_handling'] ?? 'with_timezone';
-            if ($timezoneHandling === 'preserve') {
-                $definition = str_ireplace('DATETIME', 'TIMESTAMP', $definition);
-            } else {
-                // To keep precision correctly, we can replace DATETIME with TIMESTAMP WITH TIME ZONE
-                $definition = str_ireplace('DATETIME', 'TIMESTAMP WITH TIME ZONE', $definition);
+        // Robustly strip COMMENT clauses
+        $definition = preg_replace('/\s+COMMENT\s+([\'"])(?:(?!\1).|\\.)*\1/i', '', $definition);
+
+        if ($isPredictive) {
+            $isUuidCandidate = preg_match('/\b(uuid|uid|guid)\b/i', $columnName) || (preg_match('/\b(id)\b/i', $columnName) && preg_match('/(char|varchar)\s*\(36\)/i', $definition));
+            if ($isUuidCandidate) {
+                $definition = preg_replace('/(char|varchar)\s*\(36\)/i', 'UUID', $definition);
+                $report[] = [
+                    'type' => 'info',
+                    'message' => "AI Insight: Column '{$columnName}' appears to store UUIDs. Converted to native UUID type for performance."
+                ];
             }
-            return trim($definition);
-        }
 
-        // Handle TIMESTAMP conversion similarly
-        if (stripos($definition, 'TIMESTAMP') !== false && !str_contains(strtoupper($definition), 'WITH TIME ZONE')) {
-            $timezoneHandling = $options['timezoneHandling'] ?? $options['timezone_handling'] ?? 'with_timezone';
-            if ($timezoneHandling !== 'preserve') {
-                $definition = str_ireplace('TIMESTAMP', 'TIMESTAMP WITH TIME ZONE', $definition);
-                // Correctly restore CURRENT_TIMESTAMP after indiscriminate replacement
-                $definition = str_ireplace('CURRENT_TIMESTAMP WITH TIME ZONE', 'CURRENT_TIMESTAMP', $definition);
+            if (stripos($definition, 'TIMESTAMP') !== false || stripos($definition, 'DATETIME') !== false) {
+                $report[] = [
+                    'type' => 'info',
+                    'message' => "AI Insight: Column '{$columnName}' converted to TIMESTAMP WITH TIME ZONE (TIMESTAMPTZ) for better timezone handling."
+                ];
             }
-            return trim($definition);
+
+            if (preg_match('/varchar\s*\(\d+\)/i', $definition, $m)) {
+                $len = (int)filter_var($m[0], FILTER_SANITIZE_NUMBER_INT);
+                if ($len >= 255) {
+                    $definition = preg_replace('/varchar\s*\(\d+\)/i', 'TEXT', $definition);
+                    $report[] = [
+                        'type' => 'info',
+                        'message' => "AI Insight: Broad VARCHAR({$len}) for '{$columnName}' converted to TEXT. PostgreSQL's TEXT is optimized and highly flexible."
+                    ];
+                }
+            }
         }
 
-
-        // Handle BIT(1) as BOOLEAN
-        if (stripos($definition, 'BIT(1)') !== false) {
-            return 'BOOLEAN';
+        // --- Isolation Strategy ---
+        $boundaries = ['NOT NULL', 'NULL', 'DEFAULT', 'AUTO_INCREMENT', 'PRIMARY KEY', 'UNIQUE', 'CHECK'];
+        $splitPos = -1;
+        foreach ($boundaries as $boundary) {
+            $pos = stripos($definition, $boundary);
+            if ($pos !== false && ($splitPos === -1 || $pos < $splitPos)) {
+                $splitPos = $pos;
+            }
         }
+
+        $typePart = ($splitPos !== -1) ? substr($definition, 0, $splitPos) : $definition;
+        $attrPart = ($splitPos !== -1) ? substr($definition, $splitPos) : '';
+
+        $isHandled = false;
 
         // Handle ENUM types
-        if (preg_match('/enum\((.+)\)/i', $originalDefinition, $matches)) {
-            switch ($options['handleEnums'] ?? $options['handle_enums'] ?? 'check_constraint') {
-                case 'enum_table':
-                    return 'TEXT /* ENUM converted to separate table */';
-                case 'check_constraint':
-                case 'varchar':
-                default:
-                    return 'TEXT';
+        if (preg_match('/enum\((.+)\)/i', $typePart, $matches)) {
+            $enumPart = $matches[0];
+            $postgresType = 'TEXT';
+            if (($options['handleEnums'] ?? $options['handle_enums'] ?? 'check_constraint') === 'enum_table') {
+                $postgresType = 'TEXT /* ENUM converted to separate table */';
             }
+            $typePart = str_replace($enumPart, $postgresType, $typePart);
+            $isHandled = true;
         }
 
         // Handle SET types
-        if (preg_match('/set\((.+)\)/i', $originalDefinition, $matches)) {
-            switch ($options['handleSets'] ?? $options['handle_sets'] ?? 'array') {
-                case 'varchar':
-                    return 'TEXT';
-                case 'separate_table':
-                    return 'TEXT /* SET converted to separate table */';
-                case 'array':
-                default:
-                    return 'TEXT[]';
+        if (!$isHandled && preg_match('/set\((.+)\)/i', $typePart, $matches)) {
+            $setPart = $matches[0];
+            $postgresType = 'TEXT[]';
+            $handleSets = $options['handleSets'] ?? $options['handle_sets'] ?? 'array';
+            if ($handleSets === 'varchar' || $handleSets === 'separate_table') {
+                $postgresType = $handleSets === 'separate_table' ? 'TEXT /* SET converted to separate table */' : 'TEXT';
             }
+            $typePart = str_replace($setPart, $postgresType, $typePart);
+            $isHandled = true;
         }
 
-        // Comprehensive type mapping
-        $typeMap = [
-            // Integer types (order matters - longer matches first)
-            'tinyint(1)' => 'BOOLEAN',
-            'bigint' => 'BIGINT',
-            'mediumint' => 'INTEGER',
-            'smallint' => 'SMALLINT',
-            'tinyint' => 'SMALLINT',
-            'integer' => 'INTEGER',
-            'int' => 'INTEGER',
-
-            // String types (order matters - longer matches first)
-            'char' => 'TEXT',
-            'varchar' => 'TEXT',
-            'longtext' => 'TEXT',
-            'mediumtext' => 'TEXT',
-            'tinytext' => 'TEXT',
-            'text' => 'TEXT',
-            'varbinary' => 'BYTEA',
-            'binary' => 'BYTEA',
-            'longblob' => 'BYTEA',
-            'mediumblob' => 'BYTEA',
-            'tinyblob' => 'BYTEA',
-            'blob' => 'BYTEA',
-
-            // Numeric types
-            'decimal' => 'DECIMAL',
-            'numeric' => 'NUMERIC',
-            'float' => 'REAL',
-            'double' => 'DOUBLE PRECISION',
-            'real' => 'REAL',
-            'bit' => 'BIT',
-
-            // Date/Time types
-            'date' => 'DATE',
-            'time' => 'TIME',
-            'datetime' => 'TIMESTAMP WITH TIME ZONE',
-            'timestamp' => 'TIMESTAMP WITH TIME ZONE',
-            'year' => 'SMALLINT',
-
-            // JSON type
-            'json' => 'JSONB',
-        ];
-
-        // Handle DOUBLE PRECISION as a special case first to avoid double conversion
-        if (preg_match('/\bDOUBLE\s+PRECISION\s*(?:\(\d+(?:,\d+)?\))?/i', $definition)) {
-            $converted = preg_replace('/\bDOUBLE\s+PRECISION\s*\(\d+(?:,\d+)?\)/i', 'DOUBLE PRECISION', $definition);
-            return trim($converted);
+        // Handle BIT(1)
+        if (!$isHandled && stripos($typePart, 'BIT(1)') !== false) {
+            $typePart = str_ireplace('BIT(1)', 'BOOLEAN', $typePart);
+            $isHandled = true;
         }
-        
-        // Predictive Refactoring: UUID for CHAR(36) or VARCHAR(36) named exactly 'id' or 'uuid'
-        if ($isPredictive && 
-            preg_match('/\b(CHAR|VARCHAR)\b\s*\(36\)/i', $definition) && 
-            (strtolower($columnName) === 'id' || strtolower($columnName) === 'uuid')) {
-            $report[] = [
-                'type' => 'info', 
-                'message' => "AI Insight: Column '{$columnName}' looks like a primary UUID. Converted to UUID type for better performance and validation."
+
+        // Handle Date/Time
+        if (!$isHandled && (stripos($typePart, 'DATETIME') !== false || stripos($typePart, 'TIMESTAMP') !== false || stripos($typePart, 'TIMESTAMPTZ') !== false)) {
+            $timezoneHandling = $options['timezoneHandling'] ?? $options['timezone_handling'] ?? 'with_timezone';
+            $pgType = ($timezoneHandling === 'preserve') ? 'TIMESTAMP' : 'TIMESTAMP WITH TIME ZONE';
+            
+            // Sequential replacement with array can cause double replacement if one target contains another.
+            // Using preg_replace with word boundaries.
+            $typePart = preg_replace('/\b(DATETIME|TIMESTAMP|TIMESTAMPTZ)\b/i', $pgType, $typePart);
+            
+            // Re-normalize CURRENT_TIMESTAMP (stay as CURRENT_TIMESTAMP, not with TIME ZONE in the keyword itself)
+            $typePart = str_ireplace('CURRENT_TIMESTAMP WITH TIME ZONE', 'CURRENT_TIMESTAMP', $typePart);
+            $isHandled = true;
+        }
+
+        if (!$isHandled) {
+            $typeMap = [
+                'tinyint(1)' => 'BOOLEAN',
+                'bigint' => 'BIGINT',
+                'mediumint' => 'INTEGER',
+                'smallint' => 'SMALLINT',
+                'tinyint' => 'SMALLINT',
+                'integer' => 'INTEGER',
+                'int' => 'INTEGER',
+                'char' => 'TEXT',
+                'varchar' => 'TEXT',
+                'longtext' => 'TEXT',
+                'mediumtext' => 'TEXT',
+                'tinytext' => 'TEXT',
+                'text' => 'TEXT',
+                'varbinary' => 'BYTEA',
+                'binary' => 'BYTEA',
+                'longblob' => 'BYTEA',
+                'mediumblob' => 'BYTEA',
+                'tinyblob' => 'BYTEA',
+                'blob' => 'BYTEA',
+                'decimal' => 'DECIMAL',
+                'numeric' => 'NUMERIC',
+                'float' => 'REAL',
+                'double' => 'DOUBLE PRECISION',
+                'real' => 'REAL',
+                'bit' => 'BIT',
+                'date' => 'DATE',
+                'time' => 'TIME',
+                'year' => 'SMALLINT',
+                'json' => 'JSONB',
             ];
-            return 'UUID';
-        }
 
-        // Apply type conversions with word boundaries to avoid partial matches
-        foreach ($typeMap as $mysql => $postgres) {
-            if (preg_match('/\b' . preg_quote($mysql, '/') . '\b/i', $definition)) {
-                $converted = preg_replace('/\b' . preg_quote($mysql, '/') . '\b/i', $postgres, $definition);
-
-                // Predictive Refactoring: Report VARCHAR to TEXT conversion
-                if ($isPredictive && (stripos($mysql, 'VARCHAR') !== false || stripos($mysql, 'CHAR') !== false) && $postgres === 'TEXT') {
-                    $report[] = [
-                        'type' => 'info',
-                        'message' => "AI Insight: PostgreSQL handles TEXT as efficiently as VARCHAR(n). Converted '{$columnName}' to TEXT to avoid 'value too long' errors."
-                    ];
+            foreach ($typeMap as $mysqlType => $pgType) {
+                if (preg_match('/\b' . preg_quote($mysqlType, '/') . '\b/i', $typePart)) {
+                    $typePart = preg_replace('/\b' . preg_quote($mysqlType, '/') . '\b/i', $pgType, $typePart);
+                    break;
                 }
-
-                // Critical safety: Convert VARCHAR to TEXT for PostgreSQL
-                // PostgreSQL's TEXT has the same performance as VARCHAR but prevents 'value too long' errors.
-                if (strtoupper($postgres) === 'VARCHAR') {
-                    $converted = preg_replace('/\bVARCHAR\b\s*\(\d+\)/i', 'TEXT', $converted);
-                    $postgres = 'TEXT';
-                }
-
-                // Remove precision/scale parameters for types that don't support them in PostgreSQL
-                // (e.g., INTEGER(10), BIGINT(20), SMALLINT(5), REAL, DOUBLE PRECISION, TEXT)
-                $noPrecisionTypes = ['INTEGER', 'BIGINT', 'SMALLINT', 'DOUBLE PRECISION', 'REAL', 'BOOLEAN', 'TEXT', 'UUID'];
-                foreach ($noPrecisionTypes as $npType) {
-                    if (str_contains(strtoupper($converted), $npType)) {
-                        $converted = preg_replace('/\b' . preg_quote($npType, '/') . '\s*\(\d+(?:,\d+)?\)/i', $npType, $converted);
-                    }
-                }
-
-                // Handle AUTO_INCREMENT and strip precision for SERIAL conversion
-                if (str_contains(strtoupper($converted), 'AUTO_INCREMENT')) {
-                    if ($options['preserveIdentity'] ?? $options['preserve_identity'] ?? true) {
-                        $postgresType = '';
-                        if (str_contains($postgres, 'SMALLINT')) $postgresType = 'SMALLSERIAL';
-                        elseif (str_contains($postgres, 'BIGINT')) $postgresType = 'BIGSERIAL';
-                        else $postgresType = 'SERIAL';
-                        
-                        // Replace the entire mysql type, precision, and AUTO_INCREMENT with SERIAL
-                        // We also remove NOT NULL because SERIAL implies it in PostgreSQL
-                        $converted = preg_replace('/^\s*\w+\s*(?:\(\d+(?:,\d+)?\))?\s*(?:NOT\s+NULL\s+)?AUTO_INCREMENT/i', $postgresType, $converted);
-                        // If it didn't match the start (rare), just fallback to stripping AUTO_INCREMENT
-                        if (str_contains(strtoupper($converted), 'AUTO_INCREMENT')) {
-                            $converted = str_ireplace('AUTO_INCREMENT', '', $converted);
-                        }
-                    } else {
-                        $converted = str_ireplace('AUTO_INCREMENT', '', $converted);
-                    }
-                }
-
-                // Special handling for date/time types to allow NULL even if MySQL set NOT NULL
-                // This is required because MySQL's '0000-00-00' is converted to NULL for PostgreSQL
-                $dateTimeTypes = ['DATE', 'TIME', 'TIMESTAMP WITH TIME ZONE', 'TIMESTAMP'];
-                foreach ($dateTimeTypes as $dtType) {
-                    if (str_contains(strtoupper($converted), $dtType)) {
-                        $converted = str_ireplace('NOT NULL', '', $converted);
-                        break;
-                    }
-                }
-
-                // Collapse double spaces potentially left by NOT NULL removal
-                $converted = preg_replace('/\s+/', ' ', $converted);
-
-                return trim($converted);
             }
         }
-        
-        // Fallback: Direct DATETIME conversion if not caught above
-        if (str_contains(strtoupper($definition), 'DATETIME') || str_contains(strtoupper($definition), 'TIMESTAMP')) {
-            $converted = str_ireplace(['DATETIME', 'TIMESTAMP'], 'TIMESTAMP WITH TIME ZONE', $definition);
-            
-            // Critical fix: If we are converting '0000-00-00' to NULL in data rows,
-            // we MUST allow NULL in the schema, even if MySQL said NOT NULL.
-            // PostgreSQL does not support zero-dates, so NULL is the only logical equivalent.
-            $converted = str_ireplace('NOT NULL', '', $converted);
-            
-            return trim($converted);
+
+        // Cleanup precision parameters for types that don't support it
+        $noPrecisionTypes = ['INTEGER', 'BIGINT', 'SMALLINT', 'DOUBLE PRECISION', 'REAL', 'BOOLEAN', 'TEXT', 'UUID'];
+        foreach ($noPrecisionTypes as $npType) {
+            if (stripos($typePart, $npType) !== false) {
+                $typePart = preg_replace('/\b' . preg_quote($npType, '/') . '\s*\(\d+(?:,\d+)?\)/i', $npType, $typePart);
+            }
         }
-        
-        // If no conversion was applied, return the cleaned definition
-        return $definition;
+
+        // Re-assemble
+        if ($splitPos !== -1) {
+            $converted = trim($typePart) . ' ' . trim($attrPart);
+        } else {
+            $converted = trim($typePart);
+        }
+
+        // AUTO_INCREMENT Special Handling
+        if (stripos($converted, 'AUTO_INCREMENT') !== false) {
+            $serialType = 'SERIAL';
+            if (stripos($converted, 'BIGINT') !== false) $serialType = 'BIGSERIAL';
+            elseif (stripos($converted, 'SMALLINT') !== false) $serialType = 'SMALLSERIAL';
+            
+            // Rewrite JUST the type part to SERIAL
+            $converted = preg_replace('/^\s*(?:INTEGER|BIGINT|SMALLINT|INT)\b/i', $serialType, $converted);
+            
+            // Cleanup attributes
+            $converted = str_ireplace(['AUTO_INCREMENT', 'NOT NULL'], '', $converted);
+            // Ensure no double spaces
+            $converted = preg_replace('/\s+/', ' ', $converted);
+        }
+
+        // Date compatibility
+        $dtT = ['TIMESTAMP WITH TIME ZONE', 'TIMESTAMP', 'DATE', 'TIME'];
+        foreach ($dtT as $dt) {
+            if (stripos($converted, $dt) !== false) {
+                $converted = str_ireplace('NOT NULL', '', $converted);
+                break;
+            }
+        }
+
+        $converted = preg_replace('/\s+/', ' ', $converted);
+        return trim($converted);
     }
 
     /**
@@ -2283,5 +2245,54 @@ class ConversionController extends Controller
             'max_parallel_workers' => (string)$maxParallelWorkers,
             'max_parallel_maintenance_workers' => (string)$maxParallelMaintenanceWorkers,
         ];
+    }
+    /**
+     * Capture a data change during migration (Simulated CDC/Binlog)
+     */
+    public function captureCdcChange(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'source_db' => 'required|string',
+            'target_db' => 'required|string',
+            'table' => 'required|string',
+            'data' => 'required|array',
+            'operation' => 'required|string|in:INSERT,UPDATE,DELETE'
+        ]);
+
+        $change = $this->binlog->captureChange(
+            $validated['source_db'],
+            $validated['target_db'],
+            $validated['table'],
+            $validated['data'],
+            $validated['operation']
+        );
+
+        return response()->json([
+            'success' => true,
+            'captured_id' => $change->id,
+            'message' => 'Change captured for replay'
+        ]);
+    }
+
+    /**
+     * Replay pending CDC changes to target database
+     */
+    public function replayCdcChanges(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'source_db' => 'required|string',
+            'target_db' => 'required|string'
+        ]);
+
+        $result = $this->binlog->replayPendingChanges(
+            $validated['source_db'],
+            $validated['target_db']
+        );
+
+        return response()->json([
+            'success' => true,
+            'replayed_count' => $result['replayed_count'],
+            'errors' => $result['errors']
+        ]);
     }
 }

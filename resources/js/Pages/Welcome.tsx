@@ -55,6 +55,7 @@ interface ConversionOptions {
 const Welcome: React.FC = () => {
   const [mysqlInput, setMysqlInput] = useState('');
   const [output, setOutput] = useState('');
+  const [fullOutput, setFullOutput] = useState('');
   const [isConverting, setIsConverting] = useState(false);
   const [conversionReport, setConversionReport] = useState<ConversionReport[]>([]);
   const [targetFormat, setTargetFormat] = useState<TargetFormat>('postgresql');
@@ -106,6 +107,8 @@ const Welcome: React.FC = () => {
   });
   const [tuningResult, setTuningResult] = useState<any>(null);
   const [isTuning, setIsTuning] = useState(false);
+  const [cdcResult, setCdcResult] = useState<{ replayed_count: number; errors: any[] } | null>(null);
+  const [isReplayingCdc, setIsReplayingCdc] = useState(false);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -173,7 +176,7 @@ const Welcome: React.FC = () => {
   };
 
   const runSandbox = async () => {
-    if (!output) {
+    if (!fullOutput) {
       toast.error('Generate SQL first before running sandbox validation');
       return;
     }
@@ -182,7 +185,7 @@ const Welcome: React.FC = () => {
     setSandboxResult(null);
 
     try {
-      const response = await axios.post('/convert/sandbox', { sql: output });
+      const response = await axios.post('/convert/sandbox', { sql: fullOutput });
       setSandboxResult({ success: true, message: response.data.message });
       toast.success('Sandbox validation successful!');
     } catch (err: any) {
@@ -230,6 +233,7 @@ const Welcome: React.FC = () => {
       }
     } else {
       const sql = data.sql || data.script || '';
+      setFullOutput(sql);
       if (sql.length > 1024 * 1024) {
         setOutput(`-- Result is too large for editor preview (${(sql.length / 1024 / 1024).toFixed(2)} MB)\n-- Please use "Download" for the full SQL file.\n\n` + sql.substring(0, 5000) + "\n\n... (rest of file truncated) ...");
         toast.info("Result is large! Editor preview truncated for performance. Please download the full file.");
@@ -349,8 +353,36 @@ const Welcome: React.FC = () => {
     }
   };
 
+  const handleCdcReplay = async () => {
+    if (!sourceConn.db || !targetConn.db) return toast.error('Source and Target DB are required for CDC replay');
+
+    setIsReplayingCdc(true);
+    try {
+      const response = await axios.post('/cdc/replay', {
+        source_db: sourceConn.db,
+        target_db: targetConn.db
+      }, {
+        headers: {
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        }
+      });
+
+      if (response.data.success) {
+        setCdcResult(response.data);
+        toast.success(`CDC Replay: ${response.data.replayed_count} changes applied successfully`);
+      } else {
+        throw new Error(response.data.errors?.[0]?.error || 'CDC Replay failed');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'CDC Replay failed');
+    } finally {
+      setIsReplayingCdc(false);
+    }
+  };
+
   const clearInput = () => {
     setMysqlInput('');
+    setFullOutput('');
     toast.info('Input cleared');
   };
 
@@ -1050,8 +1082,11 @@ const Welcome: React.FC = () => {
                       <TabsTrigger value="report" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-primary flex items-center gap-2">
                         <Terminal className="h-3 w-3" /> Log
                       </TabsTrigger>
-                      <TabsTrigger value="tuning_advisor" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-amber-500 flex items-center gap-2">
+                      <TabsTrigger value="tuning_advisor" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-amber-600 flex items-center gap-2">
                         <Zap className="h-3 w-3" /> PG Architect
+                      </TabsTrigger>
+                      <TabsTrigger value="cdc_sync" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-emerald-600 flex items-center gap-2">
+                        <Activity className="h-3 w-3" /> CDC Stream
                       </TabsTrigger>
                     </TabsList>
                   </div>
@@ -1178,18 +1213,27 @@ const Welcome: React.FC = () => {
                                     onClick={runSandbox}
                                     disabled={isSandboxRunning}
                                     variant="outline"
-                                    className={`rounded-2xl flex border-white/5 bg-white/5 hover:bg-primary/20 hover:border-primary/40 transition-all font-black text-[10px] uppercase tracking-widest px-6 ${isSandboxRunning ? 'animate-pulse' : ''}`}
+                                    className={`rounded-2xl flex border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/40 transition-all font-black text-[10px] uppercase tracking-widest px-6 text-emerald-400 ${isSandboxRunning ? 'animate-pulse' : ''}`}
                                   >
                                     {isSandboxRunning ? (
-                                      <Activity className="w-3 h-4 mr-2 animate-spin text-primary" />
+                                      <Activity className="w-3 h-4 mr-2 animate-spin text-emerald-400" />
                                     ) : (
-                                      <ShieldCheck className="w-3 h-4 mr-2 text-primary" />
+                                      <ShieldCheck className="w-3 h-4 mr-2 text-emerald-400" />
                                     )}
                                     {isSandboxRunning ? 'Validating...' : 'Dry Run Sandbox'}
                                   </Button>
 
                                   <Button
-                                    onClick={() => downloadSql(output, 'migration.sql')}
+                                    onClick={() => copyToClipboard(fullOutput)}
+                                    variant="outline"
+                                    className="rounded-2xl flex border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 hover:border-amber-500/40 transition-all font-black text-[10px] uppercase tracking-widest px-6 text-amber-500"
+                                  >
+                                    <Copy className="w-3 h-4 mr-2 opacity-100 text-amber-500" />
+                                    Copy SQL
+                                  </Button>
+
+                                  <Button
+                                    onClick={() => downloadSql(fullOutput, 'migration.sql')}
                                     className="rounded-2xl flex shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 transition-all font-black text-[10px] uppercase tracking-widest px-8 group/btn"
                                   >
                                     <Download className="w-3 h-4 mr-2 group-hover/btn:-translate-y-0.5 transition-transform" />
@@ -1306,6 +1350,51 @@ const Welcome: React.FC = () => {
                           >
                             <Maximize2 className="h-4 w-4 text-primary" />
                           </Button>
+                        </div>
+                      )}
+
+                      {activeTab === 'cdc_sync' && (
+                        <div className="p-10 flex flex-col items-center justify-center h-[500px] text-center space-y-8">
+                          <div className="relative">
+                            <div className="absolute -inset-8 bg-emerald-500/20 blur-[50px] rounded-full animate-pulse" />
+                            <Activity className={`h-24 w-24 text-emerald-500 relative z-10 ${isReplayingCdc ? 'animate-spin' : ''}`} />
+                          </div>
+
+                          <div className="space-y-3">
+                            <h2 className="text-3xl font-black tracking-tighter italic uppercase">Zero-Downtime Replay</h2>
+                            <p className="text-slate-400 max-w-sm mx-auto text-xs font-bold leading-relaxed uppercase tracking-[0.2em] opacity-60">
+                              Capture binlog events during the migration snapshot and replay them to ensure data consistency.
+                            </p>
+                          </div>
+
+                          <Card className="glass border-emerald-500/20 px-8 py-4 rounded-[2rem] bg-emerald-500/5 flex items-center gap-6">
+                            <div className="text-left">
+                              <p className="text-[10px] font-black uppercase text-emerald-500/60 tracking-wider">Source Context</p>
+                              <p className="font-mono text-sm font-bold">{sourceConn.db || 'Unnamed Source'}</p>
+                            </div>
+                            <div className="h-8 w-px bg-emerald-500/20" />
+                            <div className="text-left">
+                              <p className="text-[10px] font-black uppercase text-emerald-500/60 tracking-wider">Target Node</p>
+                              <p className="font-mono text-sm font-bold">{targetConn.db || 'None Selected'}</p>
+                            </div>
+                          </Card>
+
+                          <div className="flex flex-col gap-4 w-full max-w-xs">
+                            <Button
+                              onClick={handleCdcReplay}
+                              disabled={isReplayingCdc}
+                              className="w-full flex justify-center bg-emerald-500 hover:bg-emerald-600 rounded-full font-black uppercase tracking-[0.3em] text-[11px] shadow-2xl shadow-emerald-500/40 active:scale-95 transition-all"
+                            >
+                              {isReplayingCdc ? <Activity className="w-5 h-5 animate-spin mr-2" /> : <Zap className="w-5 h-5 mr-2" />}
+                              Replay Delta Events
+                            </Button>
+
+                            {cdcResult && (
+                              <Badge variant="outline" className="py-2 px-6 rounded-xl border-emerald-500/40 bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-widest">
+                                {cdcResult.replayed_count} events synced
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       )}
 

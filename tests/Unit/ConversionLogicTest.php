@@ -15,9 +15,10 @@ class ConversionLogicTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Mock GeminiService to satisfy constructor
+        // Mock services to satisfy constructor
         $gemini = $this->createMock(\App\Services\GeminiService::class);
-        $this->controller = new ConversionController($gemini);
+        $binlog = $this->createMock(\App\Services\BinlogListener::class);
+        $this->controller = new ConversionController($gemini, $binlog);
         $this->reflection = new ReflectionClass($this->controller);
     }
 
