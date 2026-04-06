@@ -2076,7 +2076,7 @@ class ConversionController extends Controller
     public function recommendTuning(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'slow_query_log' => 'sometimes|string|max:1024000',
+            'slow_query_log' => 'sometimes|nullable|string|max:1024000',
             'ram_gb' => 'required|numeric|min:1',
             'cpu_cores' => 'required|integer|min:1',
             'storage_type' => 'required|string|in:ssd,hdd',
