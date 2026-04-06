@@ -13,9 +13,10 @@ import { motion } from 'framer-motion';
 const Status: React.FC = () => {
   const services = [
     { name: 'Transformation Engine', status: 'operational', uptime: '99.98%', latency: '42ms' },
-    { name: 'PII Defense Engine', status: 'operational', uptime: '100%', latency: '18ms' },
+    { name: 'AI Translation Engine', status: 'operational', uptime: '99.95%', latency: '124ms' },
+    { name: 'Staging Synthesis Pipeline', status: 'operational', uptime: '100%', latency: '65ms' },
+    { name: 'Enterprise Rollback Worker', status: 'operational', uptime: '100%', latency: '12ms' },
     { name: 'Integrity Audit Pipeline', status: 'operational', uptime: '99.99%', latency: '35ms' },
-    { name: 'File Storage Service', status: 'operational', uptime: '100%', latency: '12ms' },
     { name: 'REST API 2.0', status: 'operational', uptime: '99.95%', latency: '84ms' },
   ];
 

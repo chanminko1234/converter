@@ -390,9 +390,9 @@ class ConversionControllerTest extends TestCase
         $this->assertStringNotContainsString('john.doe@example.com', $sql);
         $this->assertStringContainsString('@', $sql);
         
-        // Check phone masking: '+1-555-0199' -> '+1-555-****'
+        // Check phone masking: '+1-555-0199' -> Faker Phone
         $this->assertStringNotContainsString('0199', $sql);
-        $this->assertStringContainsString('****', $sql);
+        $this->assertStringNotContainsString('+1-555-0199', $sql);
     }
 
     public function test_pii_discovery_tags_sensitive_columns(): void

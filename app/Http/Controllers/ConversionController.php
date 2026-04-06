@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Validation\ValidationException;
+use Faker\Factory as Faker;
 
 class ConversionController extends Controller
 {
@@ -18,7 +19,13 @@ class ConversionController extends Controller
     public function convert(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'mysql_dump' => 'required|string|max:102400000', // 100MB character limit
+            'mysql_dump' => 'required_without:source|string|max:102400000', // 100MB character limit
+            'source' => 'sometimes|array',
+            'source.host' => 'required_with:source|string',
+            'source.port' => 'required_with:source|string',
+            'source.user' => 'required_with:source|string',
+            'source.pass' => 'present_with:source|string|nullable',
+            'source.db' => 'required_with:source|string',
             'target_format' => 'required|string|in:postgresql,csv,xlsx,xls,sqlite,psql',
             'options' => 'sometimes|array',
             'options.preserve_identity' => 'sometimes|boolean',
@@ -55,13 +62,20 @@ class ConversionController extends Controller
         }
 
         $validated = $validator->validated();
-        $mysqlDump = $validated['mysql_dump'];
+        $mysqlDump = $validated['mysql_dump'] ?? null;
+        $source = $request->input('source');
         $targetFormat = $validated['target_format'];
         $options = $validated['options'] ?? [];
 
         try {
-            // Parse MySQL dump
-            $parsedData = $this->parseMysqlDump($mysqlDump);
+            // Fetch schema either from dump or live source
+            if ($mysqlDump) {
+                $parsedData = $this->parseMysqlDump($mysqlDump);
+            } elseif ($source) {
+                $parsedData = $this->fetchFromSource($source, $options);
+            } else {
+                throw new \Exception('No MySQL input provided (Dump or Credentials expected)');
+            }
             
             // Validate that we found some valid SQL structure
             if (empty($parsedData['tables']) && !$parsedData['has_valid_sql_keywords']) {
@@ -81,6 +95,7 @@ class ConversionController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $result,
+                'rollback' => $this->generateRollbackSQL($parsedData),
                 'metadata' => [
                     'tables_processed' => count($parsedData['tables'] ?? []),
                     'target_format' => $targetFormat,
@@ -198,17 +213,7 @@ class ConversionController extends Controller
 
         try {
             // Configure dynamic connections
-            Config::set('database.connections.temp_mysql', [
-                'driver' => 'mysql',
-                'host' => $source['host'],
-                'port' => $source['port'],
-                'database' => $source['db'],
-                'username' => $source['user'],
-                'password' => $source['pass'] ?? '',
-                'charset' => 'utf8mb4',
-                'collation' => 'utf8mb4_unicode_ci',
-                'prefix' => '',
-            ]);
+            $this->setupSourceConnection($source);
 
             Config::set('database.connections.temp_pgsql', [
                 'driver' => 'pgsql',
@@ -334,6 +339,101 @@ class ConversionController extends Controller
                 'error' => 'Streaming migration failed: '.$e->getMessage(),
             ], 422);
         }
+    }
+
+    /**
+     * Fetch schema info from a live MySQL database
+     */
+    private function fetchFromSource(array $source, array $options): array
+    {
+        $this->setupSourceConnection($source);
+        
+        $mysqlDbName = $source['db'];
+        $mysqlTables = DB::connection('temp_mysql')->select("SHOW TABLES");
+        $tablesField = "Tables_in_{$mysqlDbName}";
+        
+        $allTablesData = [];
+        $rawDump = "";
+        
+        foreach ($mysqlTables as $tableRow) {
+            if (!isset($tableRow->$tablesField)) continue;
+            $tableName = $tableRow->$tablesField;
+            
+            $createRes = DB::connection('temp_mysql')->select("SHOW CREATE TABLE `{$tableName}`");
+            if (!empty($createRes)) {
+                $createSql = $createRes[0]->{'Create Table'};
+                $parsed = $this->parseMysqlDump($createSql);
+                if (isset($parsed['tables'][$tableName])) {
+                    $allTablesData[$tableName] = $parsed['tables'][$tableName];
+                }
+            }
+        }
+        
+        return [
+            'tables' => $allTablesData,
+            'raw_dump' => $rawDump,
+            'has_valid_sql_keywords' => !empty($allTablesData)
+        ];
+    }
+
+    /**
+     * Generate PostgreSQL rollback SQL (cleanup/revert)
+     */
+    private function generateRollbackSQL(array $data): string
+    {
+        $rollback = "-- ==========================================================\n";
+        $rollback .= "-- SQL STREAM ENTERPRISE ROLLBACK SCRIPT\n";
+        $rollback .= "-- Generated: " . date('Y-m-d H:i:s') . "\n";
+        $rollback .= "-- WARNING: This script will PERMANENTLY DELETE data.\n";
+        $rollback .= "-- Use with EXTREME caution in production environments.\n";
+        $rollback .= "-- ==========================================================\n\n";
+        
+        $rollback .= "BEGIN;\n\n";
+
+        // 1. Drop Functions
+        $rollback .= "-- Reverting Compatibility Functions\n";
+        $rollback .= "DROP FUNCTION IF EXISTS substring_index(text, text, integer);\n\n";
+
+        if (isset($data['tables'])) {
+            $rollback .= "-- Reverting Table Structures\n";
+            // Drop tables in reverse order to handle potential FK constraints better, 
+            // though CASCADE in PostgreSQL is very robust.
+            $tableNames = array_keys($data['tables']);
+            $tableNames = array_reverse($tableNames);
+            
+            foreach ($tableNames as $tableName) {
+                // Ensure identifiers are correctly quoted
+                $quotedName = $this->quotePostgreSQLIdentifier($tableName);
+                $rollback .= "DROP TABLE IF EXISTS {$quotedName} CASCADE;\n";
+            }
+        }
+
+        // 2. Drop Custom Types (if we created any specialized types for enums etc)
+        // For now our enum handling creates check constraints or tables, which are handled by CASCADE above.
+
+        $rollback .= "\nCOMMIT;\n";
+        $rollback .= "\n-- End of Rollback Block\n";
+        
+        return $rollback;
+    }
+
+    /**
+     * Setup dynamic mysql connection
+     */
+    private function setupSourceConnection(array $source): void
+    {
+        Config::set('database.connections.temp_mysql', [
+            'driver' => 'mysql',
+            'host' => $source['host'],
+            'port' => $source['port'],
+            'database' => $source['db'],
+            'username' => $source['user'],
+            'password' => $source['pass'] ?? '',
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+        ]);
+        DB::purge('temp_mysql');
     }
 
     /**
@@ -635,9 +735,17 @@ class ConversionController extends Controller
     public function analyze(Request $request): JsonResponse
     {
         $mysqlDump = $request->input('mysql_dump', '');
+        $source = $request->input('source');
         $options = $request->input('options', []);
         
-        $data = $this->parseMysqlDump($mysqlDump);
+        if ($mysqlDump) {
+            $data = $this->parseMysqlDump($mysqlDump);
+        } elseif ($source) {
+            $data = $this->fetchFromSource($source, $options);
+        } else {
+            return response()->json(['success' => false, 'error' => 'No analysis input provided'], 422);
+        }
+
         $converted = $this->convertToPostgreSQL($data, $options);
         
         return response()->json([
@@ -780,7 +888,7 @@ class ConversionController extends Controller
                 }
 
                 // Apply Data Masking if enabled
-                $line = $this->maskSensitiveData($line, $options);
+                $line = $this->maskSensitiveData($line, $options, $data['tables'] ?? []);
                 $trimmed = trim($line);
 
                 // Convert MySQL backticks (`) to PostgreSQL double quotes (") for identifiers
@@ -1532,41 +1640,138 @@ class ConversionController extends Controller
     }
 
     /**
-     * Mask sensitive PII (emails, phones) in SQL insert values
+     * Mask sensitive PII (emails, names, phones) in SQL insert values using Faker
      */
-    private function maskSensitiveData(string $line, array $options): string
+    private function maskSensitiveData(string $line, array $options, array $tables = []): string
     {
         if (!($options['dataMasking'] ?? $options['data_masking'] ?? false)) {
             return $line;
         }
 
-        // Only handle leaf values in single quotes to avoid breaking SQL structure
-        // 1. Mask Emails: 'my-email@test.com' -> 'm***l@t***.com'
-        $line = preg_replace_callback('/\'([^\'@\s]+)@([^\'@\s]+\.[^\'@\s]+)\'/', function($m) {
-            $user = $m[1];
-            $domain = $m[2];
-            $maskedUser = (strlen($user) > 2) ? substr($user, 0, 1) . '***' . substr($user, -1) : '***';
+        static $faker = null;
+        if (is_null($faker)) {
+            $faker = Faker::create();
+        }
+
+        // 1. Column-Aware replacement for INSERT/REPLACE statements
+        // Example: INSERT INTO `users` (`first_name`, `email`) VALUES ('John', 'john@test.com');
+        if (preg_match('/^\s*(?:INSERT|REPLACE)\s+INTO\s+[`"]?([^`"\s\(]+)[`"]?\s*\((.+)\)\s*VALUES\s*(.*)/i', $line, $metaMatches)) {
+            $tableName = trim($metaMatches[1], ' `"');
+            $columnStr = $metaMatches[2];
+            $valuesPart = $metaMatches[3];
+
+            $columnNames = array_map(fn($c) => trim($c, ' `"'), explode(',', $columnStr));
             
-            // Handle subdomains and long extensions
-            $domParts = explode('.', $domain);
-            $ext = array_pop($domParts);
-            $domBody = implode('.', $domParts);
-            $maskedDomain = (strlen($domBody) > 2) ? substr($domBody, 0, 1) . '***' . substr($domBody, -1) : '***';
-            
-            return "'$maskedUser@$maskedDomain.$ext'";
+            // Map column indices to Faker methods
+            $fakerMap = [];
+            foreach ($columnNames as $i => $colName) {
+                $tag = $this->detectPiiTag($colName);
+                if ($tag) {
+                    $fakerMap[$i] = match($tag) {
+                        'EMAIL' => fn() => "'" . $faker->safeEmail() . "'",
+                        'PHONE' => fn() => "'" . $faker->phoneNumber() . "'",
+                        'NAME' => str_contains(strtolower($colName), 'first') ? fn() => "'" . $faker->firstName() . "'" 
+                                : (str_contains(strtolower($colName), 'last') ? fn() => "'" . $faker->lastName() . "'" 
+                                : fn() => "'" . $faker->name() . "'"),
+                        'ADDRESS' => fn() => "'" . $faker->address() . "'",
+                        'PASSWORD' => fn() => "'" . password_hash('secret123', PASSWORD_BCRYPT) . "'",
+                        'BIRTH' => fn() => "'" . $faker->date() . "'",
+                        'SSN' => fn() => "'" . $faker->isbn10() . "'",
+                        'CREDIT_CARD' => fn() => "'" . $faker->creditCardNumber() . "'",
+                        default => null
+                    };
+                }
+            }
+
+            if (!empty($fakerMap)) {
+                // Split multi-row values: (r1_c1, r1_c2), (r2_c1, r2_c2)
+                $rows = $this->splitSqlValues($valuesPart, '(', ')');
+                $newRows = [];
+
+                foreach ($rows as $row) {
+                    $row = trim($row, ' ();');
+                    if (empty($row)) continue;
+
+                    $rowValues = $this->splitSqlValues($row);
+                    foreach ($fakerMap as $index => $fakerFn) {
+                        if (isset($rowValues[$index]) && trim($rowValues[$index]) !== 'NULL') {
+                            $rowValues[$index] = $fakerFn();
+                        }
+                    }
+                    $newRows[] = '(' . implode(', ', $rowValues) . ')';
+                }
+
+                if (!empty($newRows)) {
+                    return substr($line, 0, strpos(strtoupper($line), 'VALUES') + 6) . ' ' . implode(', ', $newRows) . ';';
+                }
+            }
+        }
+
+        // 2. Fallback: Generic pattern masking for emails and phones if column context not available
+        // Mask Emails: 'my-email@test.com' -> 'faker@email.com'
+        $line = preg_replace_callback('/\'([^\'@\s]+)@([^\'@\s]+\.[^\'@\s]+)\'/', function($m) use ($faker) {
+            return "'" . $faker->safeEmail() . "'";
         }, $line);
 
-        // 2. Mask Phone Numbers: '+1-123-456-7890' -> '+1-123-456-****'
-        $line = preg_replace_callback('/\'(\+?[\d\s\-\.\(\)]{7,18})\'/', function($m) {
-            $num = $m[1];
-            // Only mask if it looks like a phone number (contains at least 7 digits)
-            if (preg_match_all('/\d/', $num) >= 7) {
-                return "'" . substr($num, 0, strlen($num)-4) . "****'";
+        // Mask Phone Numbers: '+1-123-456-7890' -> Faker Phone
+        $line = preg_replace_callback('/\'(\+?[\d\s\-\.\(\)]{7,18})\'/', function($m) use ($faker) {
+            if (preg_match_all('/\d/', $m[1]) >= 7) {
+                return "'" . $faker->phoneNumber() . "'";
             }
             return $m[0];
         }, $line);
 
         return $line;
+    }
+
+    /**
+     * Parse SQL values or rows while respecting quotes and parentheses
+     */
+    private function splitSqlValues(string $input, string $open = '', string $close = ''): array
+    {
+        $parts = [];
+        $current = '';
+        $inQuote = false;
+        $quoteChar = null;
+        $depth = 0;
+        
+        $len = strlen($input);
+        for ($i = 0; $i < $len; $i++) {
+            $char = $input[$i];
+            
+            // Handle quotes
+            if (($char === "'" || $char === '"') && ($i === 0 || $input[$i-1] !== '\\')) {
+                if (!$inQuote) {
+                    $inQuote = true;
+                    $quoteChar = $char;
+                } elseif ($char === $quoteChar) {
+                    $inQuote = false;
+                    $quoteChar = null;
+                }
+            } 
+            
+            // Handle delimiters outside quotes
+            if (!$inQuote) {
+                if ($open && $char === $open) $depth++;
+                if ($close && $char === $close) $depth--;
+                
+                if ($char === ',' && $depth === 0) {
+                    if (trim($current) !== '') {
+                        $parts[] = trim($current);
+                    }
+                    $current = '';
+                    continue;
+                }
+            }
+            
+            $current .= $char;
+        }
+        
+        if (trim($current) !== '') {
+            $parts[] = trim($current);
+        }
+        
+        return $parts;
     }
 
     /**
@@ -1691,9 +1896,95 @@ class ConversionController extends Controller
                                "WHERE t.{$localCol} IS NOT NULL AND r.{$refCol} IS NULL;\n";
                 }
             }
-            $script .= "\n";
+                $script .= "\n";
         }
 
         return $script;
+    }
+
+    /**
+     * Translate a MySQL query string to PostgreSQL
+     */
+    public function translateQuery(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'query' => 'required|string|max:1024000',
+        ]);
+        
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+        
+        $query = $request->input('query');
+        
+        try {
+            $translated = $this->transpileQuery($query);
+            return response()->json([
+                'success' => true,
+                'translated' => $translated
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Query translation failed: '.$e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Perform the actual transpilation using regex patterns
+     */
+    private function transpileQuery(string $query): string
+    {
+        // 1. IFNULL(a, b) -> COALESCE(a, b)
+        $query = preg_replace('/IFNULL\s*\(/i', 'COALESCE(', $query);
+        
+        // 2. ISNULL(expr) -> (expr IS NULL)
+        $query = preg_replace('/ISNULL\s*\(\s*([^)]+)\s*\)/i', '($1 IS NULL)', $query);
+
+        // 3. DATE_SUB/DATE_ADD logic
+        $query = preg_replace_callback('/(DATE_SUB|DATE_ADD)\s*\(\s*([^,]+)\s*,\s*INTERVAL\s+(["\']?.*?["\']?\s+[a-z]+)\s*\)/i', function($m) {
+            $func = strtoupper($m[1]);
+            $date = trim($m[2]);
+            $interval = trim($m[3], " '\"");
+            $op = $func === 'DATE_SUB' ? '-' : '+';
+            
+            // Handle if it's already a string/literal vs a column name
+            if (!preg_match('/^[\'"]/', $date) && !is_numeric($date)) {
+               return "($date $op INTERVAL '$interval')";
+            }
+            return "(CAST($date AS TIMESTAMP) $op INTERVAL '$interval')";
+        }, $query);
+
+        // 4. NOW/CURDATE
+        $query = preg_replace('/NOW\s*\(\s*\)/i', 'CURRENT_TIMESTAMP', $query);
+        $query = preg_replace('/CURDATE\s*\(\s*\)/i', 'CURRENT_DATE', $query);
+
+        // 5. SUBSTRING_INDEX support (PostgreSQL compatibility function)
+        $query = preg_replace('/SUBSTRING_INDEX\s*\(/i', 'substring_index(', $query);
+
+        // 6. LIMIT conversion
+        $query = preg_replace('/\bLIMIT\s+(\d+)\s*,\s*(\d+)\b/i', 'LIMIT $2 OFFSET $1', $query);
+
+        // 7. UNIX_TIMESTAMP() -> epoch
+        $query = preg_replace('/UNIX_TIMESTAMP\s*\(\s*\)/i', 'EXTRACT(EPOCH FROM NOW())', $query);
+
+        // 8. GROUP_CONCAT -> STRING_AGG
+        $query = preg_replace_callback('/GROUP_CONCAT\s*\(\s*([^ )]+)(?:\s+SEPARATOR\s+[\'"](.+?)[\'"])?\s*\)/i', function($m) {
+            $expr = trim($m[1]);
+            $sep = $m[2] ?? ',';
+            return "STRING_AGG($expr, '$sep')";
+        }, $query);
+
+        // 9. DATEDIFF(a, b) -> (a::date - b::date)
+        $query = preg_replace('/DATEDIFF\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/i', '(($1)::date - ($2)::date)', $query);
+
+        // 10. UTC_TIMESTAMP() -> (NOW() AT TIME ZONE \'UTC\')
+        $query = preg_replace('/UTC_TIMESTAMP\s*\(\s*\)/i', "(NOW() AT TIME ZONE 'UTC')", $query);
+
+        // 11. Backticks to Quotes
+        $query = preg_replace('/`([^` ]+)`/', '"$1"', $query);
+
+        return $query;
     }
 }

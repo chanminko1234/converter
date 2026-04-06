@@ -20,10 +20,15 @@ Route::get('/support', function () {
     return Inertia::render('Support');
 });
 
+Route::get('/overview', function () {
+    return Inertia::render('Overview');
+});
+
 // Conversion API endpoints with CSRF protection and throttling
 Route::middleware(['throttle:60,1'])->group(function () {
     Route::post('/convert', [ConversionController::class, 'convert'])->name('convert');
     Route::post('/convert/upload', [ConversionController::class, 'upload'])->name('convert.upload');
     Route::post('/convert/stream', [ConversionController::class, 'stream'])->name('convert.stream');
     Route::post('/convert/analyze', [ConversionController::class, 'analyze'])->name('convert.analyze');
+    Route::post('/translate-query', [ConversionController::class, 'translateQuery'])->name('translate.query');
 });

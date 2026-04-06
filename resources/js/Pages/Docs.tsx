@@ -6,7 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import {
   Zap, Terminal, Code,
   Rocket, Shield, Settings,
-  FileJson, Github
+  FileJson, Github, Search,
+  Activity, Eraser, Database,
+  Lock, RefreshCcw
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { motion } from 'framer-motion';
@@ -72,6 +74,82 @@ const Docs: React.FC = () => {
     "preserveIdentity": true
   }
 }`}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'staging-generator',
+      title: 'Staging Generator',
+      icon: <Lock className="h-5 w-5 text-emerald-400" />,
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground">Automatically clone your production schema while replacing sensitive data with realistic synthetic values using <strong>FakerPHP</strong>.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <Card className="p-4 bg-white/5 border-white/5 rounded-2xl">
+               <h5 className="font-bold text-xs uppercase tracking-widest mb-2 text-emerald-400">PII Detection</h5>
+               <p className="text-[11px] opacity-70">Identifies columns like <code>first_name</code>, <code>email</code>, and <code>phone</code> automatically to apply context-aware masking.</p>
+             </Card>
+             <Card className="p-4 bg-white/5 border-white/5 rounded-2xl">
+               <h5 className="font-bold text-xs uppercase tracking-widest mb-2 text-emerald-400">Realistic Data</h5>
+               <p className="text-[11px] opacity-70">Uses locale-aware synthetic generators so your staging apps remain functional during testing.</p>
+             </Card>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'query-translator',
+      title: 'Query Translator',
+      icon: <Zap className="h-5 w-5 text-amber-500" />,
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground">Migration is more than just schema. Use our high-fidelity transpiler to update your raw application SQL queries.</p>
+          <div className="bg-black/50 p-6 rounded-2xl border border-white/10 font-mono text-sm">
+            <p className="text-amber-500/80 mb-2">-- MySQL Input</p>
+            <p className="text-white/60 italic">SELECT * FROM users WHERE created_at {'>'} DATE_SUB(NOW(), INTERVAL 1 DAY);</p>
+            <p className="text-emerald-500/80 mt-4 mb-2">-- PostgreSQL Result</p>
+            <p className="text-white">SELECT * FROM "users" WHERE created_at {'>'} (CURRENT_TIMESTAMP - INTERVAL '1 DAY');</p>
+          </div>
+          <p className="text-xs text-muted-foreground italic">Supports: DATE_SUB, IFNULL, GROUP_CONCAT, DATEDIFF, and more.</p>
+        </div>
+      ),
+    },
+    {
+      id: 'rollback-engine',
+      title: 'Rollback Engine',
+      icon: <Eraser className="h-5 w-5 text-red-400" />,
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground">Every migration generates a mathematically sound <strong>Enterprise Rollback Script</strong> to protect against deployment failure.</p>
+          <ul className="space-y-2 text-sm text-muted-foreground">
+            <li className="flex items-center gap-2"><div className="h-1 w-1 rounded-full bg-red-400" /> Atomic Transaction (BEGIN/COMMIT)</li>
+            <li className="flex items-center gap-2"><div className="h-1 w-1 rounded-full bg-red-400" /> Reverse-Dependency Drop Order</li>
+            <li className="flex items-center gap-2"><div className="h-1 w-1 rounded-full bg-red-400" /> Cascading Entity Cleanup</li>
+          </ul>
+        </div>
+      ),
+    },
+    {
+      id: 'contributing',
+      title: 'Contributing',
+      icon: <Github className="h-5 w-5 text-indigo-400" />,
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground">We welcome contributions to help improve the transformation engine. Follow these standards for all submissions:</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <Card className="p-4 bg-white/5 border-white/5 rounded-2xl">
+               <h5 className="font-bold text-xs uppercase tracking-widest mb-2 text-indigo-400">Technical Standards</h5>
+               <ul className="text-[11px] opacity-70 list-disc ml-4 space-y-1">
+                 <li>PHP: PSR-12 coding standard</li>
+                 <li>JS: ESLint + Prettier</li>
+                 <li>Tests: PHPUnit is required for logic</li>
+               </ul>
+             </Card>
+             <Card className="p-4 bg-white/5 border-white/5 rounded-2xl">
+               <h5 className="font-bold text-xs uppercase tracking-widest mb-2 text-indigo-400">Process</h5>
+               <p className="text-[11px] opacity-70 italic">Fork, Branch, and PR. Please ensure all existing feature tests pass before submitting your migration logic changes.</p>
+             </Card>
           </div>
         </div>
       ),

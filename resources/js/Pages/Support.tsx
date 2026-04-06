@@ -12,10 +12,10 @@ import { motion } from 'framer-motion';
 
 const Support: React.FC = () => {
   const faqs = [
-    { q: "Is there a file size limit?", a: "Standard uploads support files up to 100MB. For larger databases, please use our CLI tool or streaming endpoint." },
-    { q: "How accurate is the transformation?", a: "We maintain a 99.9% accuracy rate for standard SQL. Complex stored procedures may require a manual review." },
-    { q: "Does the system scan for sensitive data?", a: "Yes. Our PII Defense Engine auto-detects fields like passwords, SSRNs, and credit cards and applies one-way hashing to obfuscate them before export." },
-    { q: "How do I verify the migration?", a: "When transforming to PostgreSQL, the engine automatically generates an 'Integrity Validation Script' containing queries to verify row counts, sum totals, and foreign keys." },
+    { q: "Is there a file size limit?", a: "Standard uploads support files up to 100MB. For larger databases, please use our CLI tool or direct streaming node." },
+    { q: "How does the Staging Generator work?", a: "It clones your prod schema but uses FakerPHP to inject realistic synthetic data into PII columns (emails, names, etc.) so your dev teams stay safe." },
+    { q: "Can it translate application SQL?", a: "Yes. Use the 'Query Translator' tab to paste your MySQL SELECT statements. We'll transpile them to standard PostgreSQL syntax automatically." },
+    { q: "What if the migration fails?", a: "Every conversion generates a dedicated 'Rollback Script' that reverts all changes in the correct dependency order within an atomic transaction." },
   ];
 
   return (

@@ -15,7 +15,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   Copy, Download, Upload, Settings,
   Github, Rocket, Eraser, Activity, Zap, Terminal, Search,
-  Database, Server, Maximize2
+  Database, Server, Maximize2, Check
 } from 'lucide-react';
 import { ConversionReport } from '@/lib/sqlConverter';
 import { CodeHighlighter } from '@/components/ui/syntax-highlighter';
@@ -59,6 +59,7 @@ const Welcome: React.FC = () => {
   const [activeTab, setActiveTab] = useState('output');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [conversionData, setConversionData] = useState<any>(null);
+  const [rollbackScript, setRollbackScript] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [schemaData, setSchemaData] = useState<any[] | null>(null);
   const [isFullScreenERD, setIsFullScreenERD] = useState(false);
@@ -85,8 +86,12 @@ const Welcome: React.FC = () => {
     frameworkPreset: 'none',
   });
   const [mode, setMode] = useState<'sql' | 'stream'>('sql');
+  const [inputMethod, setInputMethod] = useState<'manual' | 'live'>('manual');
   const [sourceConn, setSourceConn] = useState({ host: 'localhost', port: '3306', user: '', pass: '', db: '' });
   const [targetConn, setTargetConn] = useState({ host: 'localhost', port: '5432', user: '', pass: '', db: '' });
+  const [queryInput, setQueryInput] = useState('');
+  const [queryOutput, setQueryOutput] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -141,6 +146,7 @@ const Welcome: React.FC = () => {
       }
 
       processResult(result);
+      if (result.rollback) setRollbackScript(result.rollback);
       toast.success(`Converted ${file.name} to ${targetFormat.toUpperCase()}`);
     } catch (err: any) {
       const msg = err.response?.status === 413 ? 'File too large for server (Check php.ini upload_max_filesize)' : (err.response?.data?.error || err.message || 'File conversion failed');
@@ -183,13 +189,13 @@ const Welcome: React.FC = () => {
   };
 
   const handleAnalyze = async () => {
-    if (mode === 'sql' && !mysqlInput.trim()) return toast.error('Please enter MySQL code to analyze');
-    if (mode === 'stream' && !sourceConn.db) return toast.error('Please provide source database details');
+    if (mode === 'sql' && inputMethod === 'manual' && !mysqlInput.trim()) return toast.error('Please enter MySQL code to analyze');
+    if ((mode === 'stream' || (mode === 'sql' && inputMethod === 'live')) && !sourceConn.db) return toast.error('Please provide source database details');
 
     setIsAnalyzing(true);
     try {
       const payload = mode === 'sql'
-        ? { mysql_dump: mysqlInput, options }
+        ? (inputMethod === 'manual' ? { mysql_dump: mysqlInput, options } : { source: sourceConn, options })
         : { source: sourceConn, options };
 
       const response = await fetch('/convert/analyze', {
@@ -220,7 +226,9 @@ const Welcome: React.FC = () => {
     try {
       const endpoint = mode === 'sql' ? '/convert' : '/convert/stream';
       const payload = mode === 'sql'
-        ? { mysql_dump: mysqlInput, target_format: targetFormat, options }
+        ? (inputMethod === 'manual'
+          ? { mysql_dump: mysqlInput, target_format: targetFormat, options }
+          : { source: sourceConn, target_format: targetFormat, options })
         : { source: sourceConn, target: targetConn, options };
 
       const response = await fetch(endpoint, {
@@ -234,11 +242,36 @@ const Welcome: React.FC = () => {
       const result = await response.json();
       if (!result.success) throw new Error(result.error);
       processResult(result);
+      if (result.rollback) setRollbackScript(result.rollback);
       toast.success(mode === 'sql' ? `Converted to ${targetFormat.toUpperCase()}` : 'Live Migration Completed');
     } catch (err: any) {
       toast.error(err.message || 'Conversion failed');
     } finally {
       setIsConverting(false);
+    }
+  };
+
+  const handleTranslateQuery = async () => {
+    if (!queryInput.trim()) return toast.error('Please enter a query to translate');
+    setIsTranslating(true);
+    try {
+      const response = await axios.post('/translate-query', {
+        query: queryInput
+      }, {
+        headers: {
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        }
+      });
+      if (response.data.success) {
+        setQueryOutput(response.data.translated);
+        toast.success('MySQL Query translated to PostgreSQL');
+      } else {
+        throw new Error(response.data.error);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Query translation failed');
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -271,6 +304,20 @@ const Welcome: React.FC = () => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success('Download started');
+  };
+
+  const handleDownloadRollback = () => {
+    if (!rollbackScript) return toast.error('No rollback script available');
+    const blob = new Blob([rollbackScript], { type: 'text/sql' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rollback_${new Date().getTime()}.sql`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.warning('Rollback script downloaded. Use with caution.');
   };
 
   const handleCopy = () => {
@@ -354,7 +401,7 @@ const Welcome: React.FC = () => {
                 variant={mode === 'sql' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setMode('sql')}
-                className="rounded-xl px-6 font-bold text-[10px] uppercase tracking-widest"
+                className="rounded-xl flex px-6 font-bold text-[10px] uppercase tracking-widest"
               >
                 <Terminal className="w-3 h-3 mr-2" />
                 SQL Dump
@@ -363,7 +410,7 @@ const Welcome: React.FC = () => {
                 variant={mode === 'stream' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setMode('stream')}
-                className="rounded-xl px-6 font-bold text-[10px] uppercase tracking-widest"
+                className="rounded-xl flex px-6 font-bold text-[10px] uppercase tracking-widest"
               >
                 <Server className="w-3 h-3 mr-2" />
                 Live Stream
@@ -401,18 +448,18 @@ const Welcome: React.FC = () => {
                 <div className="space-y-6 py-6 overflow-x-hidden">
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Framework Optimization</Label>
-                    <Select 
-                      value={options.frameworkPreset} 
+                    <Select
+                      value={options.frameworkPreset}
                       onValueChange={(v: any) => setOptions(p => ({ ...p, frameworkPreset: v }))}
                     >
                       <SelectTrigger className="w-full bg-white/5 border-white/10 rounded-xl focus:ring-primary h-12">
                         <SelectValue placeholder="Select Framework" />
                       </SelectTrigger>
                       <SelectContent className="glass border-white/10 text-white rounded-xl overflow-hidden shadow-2xl">
-                         <SelectItem value="none" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3">General (Standard SQL)</SelectItem>
-                         <SelectItem value="wordpress" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium">WordPress Presets</SelectItem>
-                         <SelectItem value="laravel" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium text-amber-500">Laravel Optimization</SelectItem>
-                         <SelectItem value="magento" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium text-orange-500">Magento Ecosystem</SelectItem>
+                        <SelectItem value="none" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3">General (Standard SQL)</SelectItem>
+                        <SelectItem value="wordpress" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium">WordPress Presets</SelectItem>
+                        <SelectItem value="laravel" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium text-amber-500">Laravel Optimization</SelectItem>
+                        <SelectItem value="magento" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium text-orange-500">Magento Ecosystem</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -426,103 +473,112 @@ const Welcome: React.FC = () => {
                     <Checkbox checked={options.schemaOnly} onCheckedChange={(c) => setOptions(p => ({ ...p, schemaOnly: !!c }))} />
                   </div>
 
-                  <div className="mt-8 p-6 bg-gradient-to-br from-primary/10 via-purple-500/10 to-blue-500/10 rounded-[2rem] border border-primary/20 shadow-xl overflow-hidden relative group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                      <Zap className="w-12 h-12 text-primary" />
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="bg-primary/20 p-2.5 rounded-xl mt-1">
-                        <Zap className="h-4 w-4 text-primary fill-primary" />
+                  <div className="space-y-4">
+                    <div
+                      onClick={() => setOptions(p => ({ ...p, predictiveRefactoring: !p.predictiveRefactoring }))}
+                      className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.predictiveRefactoring
+                          ? 'bg-primary/10 border-primary/40 shadow-[0_0_40px_rgba(var(--primary),0.1)]'
+                          : 'bg-white/5 border-white/10 hover:border-primary/30 hover:bg-white/[0.07]'
+                        }`}
+                    >
+                      <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Zap className={`w-16 h-16 ${options.predictiveRefactoring ? 'text-primary' : 'text-white'}`} />
                       </div>
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-black text-xs uppercase tracking-widest text-primary">Predictive Refactoring</h3>
-                          <Badge variant="outline" className="text-[8px] bg-primary/20 border-primary/40 text-primary font-black uppercase tracking-tighter">AI Enabled</Badge>
+                      <div className="flex items-start gap-5 relative z-10">
+                        <div className={`p-4 rounded-2xl transition-all duration-500 ${options.predictiveRefactoring ? 'bg-primary shadow-lg shadow-primary/40' : 'bg-white/10'}`}>
+                          <Zap className={`h-5 w-5 ${options.predictiveRefactoring ? 'text-white fill-white' : 'text-white/40'}`} />
                         </div>
-                        <p className="text-[10px] font-medium leading-relaxed opacity-60">Uses advanced heuristics to suggest modern PostgreSQL types (e.g., VARCHAR(255) → TEXT, TIMESTAMPTZ).</p>
-                        <div className="pt-2 flex items-center justify-end">
-                          <Checkbox
-                            id="predictive-refactoring"
-                            checked={options.predictiveRefactoring}
-                            onCheckedChange={(c) => setOptions(p => ({ ...p, predictiveRefactoring: !!c }))}
-                            className="bg-primary/10 border-primary/20 data-[state=checked]:bg-primary"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 p-6 bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-red-500/10 rounded-[2rem] border border-amber-500/20 shadow-xl overflow-hidden relative group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                      <Eraser className="w-12 h-12 text-amber-500" />
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="bg-amber-500/20 p-2.5 rounded-xl mt-1">
-                        <Eraser className="h-4 w-4 text-amber-500 fill-amber-500" />
-                      </div>
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-black text-xs uppercase tracking-widest text-amber-500">Auto-Cleaning</h3>
-                          <Badge variant="outline" className="text-[8px] bg-amber-500/20 border-amber-500/40 text-amber-500 font-black uppercase tracking-tighter">Optimization</Badge>
-                        </div>
-                        <p className="text-[10px] font-medium leading-relaxed opacity-60">Detects inconsistent naming conventions and redundant structural patterns.</p>
-                        <div className="pt-2 flex items-center justify-end">
-                          <Checkbox
-                            id="auto-cleaning"
-                            checked={options.autoCleaning}
-                            onCheckedChange={(c) => setOptions(p => ({ ...p, autoCleaning: !!c }))}
-                            className="bg-amber-500/10 border-amber-500/20 data-[state=checked]:bg-amber-500"
-                          />
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-black text-xs uppercase tracking-widest text-white">Predictive Refactoring</h3>
+                            <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.predictiveRefactoring ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-white/5 border-white/10 text-white/30'}`}>AI Enabled</Badge>
+                          </div>
+                          <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Uses advanced heuristics to suggest modern PostgreSQL types and optimizations.</p>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 p-6 bg-gradient-to-br from-green-500/10 via-emerald-500/10 to-teal-500/10 rounded-[2rem] border border-green-500/20 shadow-xl overflow-hidden relative group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                      <Terminal className="w-12 h-12 text-green-500" />
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="bg-green-500/20 p-2.5 rounded-xl mt-1">
-                        <Activity className="h-4 w-4 text-green-500" />
-                      </div>
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-black text-xs uppercase tracking-widest text-green-500">Incremental Sync</h3>
-                          <Badge variant="outline" className="text-[8px] bg-green-500/20 border-green-500/40 text-green-500 font-black uppercase tracking-tighter">Zero Downtime</Badge>
-                        </div>
-                        <p className="text-[10px] font-medium leading-relaxed opacity-60">Tracks the high-water mark of your data to only migrate records changed or added since the last run.</p>
-                        <div className="pt-2 flex items-center justify-end">
-                          <Checkbox
-                            id="incremental-sync"
-                            checked={options.incrementalSync}
-                            onCheckedChange={(c) => setOptions(p => ({ ...p, incrementalSync: !!c }))}
-                            className="bg-green-500/10 border-green-500/20 data-[state=checked]:bg-green-500"
-                          />
-                        </div>
+                      <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.predictiveRefactoring ? 'bg-primary scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
+                        <Check className="h-3 w-3 text-white" />
                       </div>
                     </div>
-                  </div>
-                  <div className="mt-4 p-6 bg-gradient-to-br from-blue-500/10 via-cyan-500/10 to-indigo-500/10 rounded-[2rem] border border-blue-500/20 shadow-xl overflow-hidden relative group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                      <Search className="w-12 h-12 text-blue-500" />
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="bg-blue-500/20 p-2.5 rounded-xl mt-1">
-                        <Maximize2 className="h-4 w-4 text-blue-500" />
+
+                    <div
+                      onClick={() => setOptions(p => ({ ...p, autoCleaning: !p.autoCleaning }))}
+                      className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.autoCleaning
+                          ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_40px_rgba(245,158,11,0.1)]'
+                          : 'bg-white/5 border-white/10 hover:border-amber-500/30 hover:bg-white/[0.07]'
+                        }`}
+                    >
+                      <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Eraser className={`w-16 h-16 ${options.autoCleaning ? 'text-amber-500' : 'text-white'}`} />
                       </div>
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-black text-xs uppercase tracking-widest text-blue-500">Data Masking (PII)</h3>
-                          <Badge variant="outline" className="text-[8px] bg-blue-500/20 border-blue-500/40 text-blue-500 font-black uppercase tracking-tighter">Privacy Mode</Badge>
+                      <div className="flex items-start gap-5 relative z-10">
+                        <div className={`p-4 rounded-2xl transition-all duration-500 ${options.autoCleaning ? 'bg-amber-500 shadow-lg shadow-amber-500/40' : 'bg-white/10'}`}>
+                          <Eraser className={`h-5 w-5 ${options.autoCleaning ? 'text-white fill-white' : 'text-white/40'}`} />
                         </div>
-                        <p className="text-[10px] font-medium leading-relaxed opacity-60">Automatically obfuscates sensitive data like emails and phone numbers for staging environments.</p>
-                        <div className="pt-2 flex items-center justify-end">
-                          <Checkbox
-                            id="data-masking"
-                            checked={options.dataMasking}
-                            onCheckedChange={(c) => setOptions(p => ({ ...p, dataMasking: !!c }))}
-                            className="bg-blue-500/10 border-blue-500/20 data-[state=checked]:bg-blue-500"
-                          />
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-black text-xs uppercase tracking-widest text-white">Auto-Cleaning</h3>
+                            <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.autoCleaning ? 'bg-amber-500/20 border-amber-500/40 text-amber-500' : 'bg-white/5 border-white/10 text-white/30'}`}>Optimization</Badge>
+                          </div>
+                          <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Detects inconsistent naming conventions and redundant structural patterns.</p>
                         </div>
+                      </div>
+                      <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.autoCleaning ? 'bg-amber-500 scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
+                        <Check className="h-3 w-3 text-white" />
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => setOptions(p => ({ ...p, incrementalSync: !p.incrementalSync }))}
+                      className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.incrementalSync
+                          ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_40px_rgba(16,185,129,0.1)]'
+                          : 'bg-white/5 border-white/10 hover:border-emerald-500/30 hover:bg-white/[0.07]'
+                        }`}
+                    >
+                      <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Activity className={`w-16 h-16 ${options.incrementalSync ? 'text-emerald-500' : 'text-white'}`} />
+                      </div>
+                      <div className="flex items-start gap-5 relative z-10">
+                        <div className={`p-4 rounded-2xl transition-all duration-500 ${options.incrementalSync ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40' : 'bg-white/10'}`}>
+                          <Activity className={`h-5 w-5 ${options.incrementalSync ? 'text-white' : 'text-white/40'}`} />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-black text-xs uppercase tracking-widest text-white">Incremental Sync</h3>
+                            <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.incrementalSync ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-500' : 'bg-white/5 border-white/10 text-white/30'}`}>Zero Downtime</Badge>
+                          </div>
+                          <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Tracks the high-water mark of your data to migrate only delta records.</p>
+                        </div>
+                      </div>
+                      <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.incrementalSync ? 'bg-emerald-500 scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
+                        <Check className="h-3 w-3 text-white" />
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => setOptions(p => ({ ...p, dataMasking: !p.dataMasking }))}
+                      className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.dataMasking
+                          ? 'bg-blue-500/10 border-blue-500/40 shadow-[0_0_40px_rgba(59,130,246,0.1)]'
+                          : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/[0.07]'
+                        }`}
+                    >
+                      <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Search className={`w-16 h-16 ${options.dataMasking ? 'text-blue-500' : 'text-white'}`} />
+                      </div>
+                      <div className="flex items-start gap-5 relative z-10">
+                        <div className={`p-4 rounded-2xl transition-all duration-500 ${options.dataMasking ? 'bg-blue-500 shadow-lg shadow-blue-500/40' : 'bg-white/10'}`}>
+                          <Maximize2 className={`h-5 w-5 ${options.dataMasking ? 'text-white' : 'text-white/40'}`} />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-black text-xs uppercase tracking-widest text-white">Staging Masking</h3>
+                            <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.dataMasking ? 'bg-blue-500/20 border-blue-500/40 text-blue-500' : 'bg-white/5 border-white/10 text-white/30'}`}>Privacy Mode</Badge>
+                          </div>
+                          <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Automatically obfuscates PII data like emails and phones using FakerPHP.</p>
+                        </div>
+                      </div>
+                      <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.dataMasking ? 'bg-blue-500 scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
+                        <Check className="h-3 w-3 text-white" />
                       </div>
                     </div>
                   </div>
@@ -570,16 +626,37 @@ const Welcome: React.FC = () => {
                   <div className="h-3 w-3 rounded-full bg-emerald-500/50" />
                 </div>
                 {mode === 'sql' && (
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={clearInput} className="text-[10px] font-black uppercase tracking-tighter opacity-40 hover:opacity-100 flex items-center gap-1">
-                      <Eraser className="h-3 w-3" /> Clear
-                    </Button>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-black tracking-widest text-primary/40 uppercase">Max 100MB</span>
-                      <Button variant="ghost" size="sm" onClick={() => document.getElementById('f')?.click()} disabled={isConverting} className="text-[10px] font-black uppercase tracking-tighter opacity-40 hover:opacity-100 flex items-center gap-1">
-                        {isConverting ? <Activity className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />} Upload
+                  <div className="flex gap-4 items-center">
+                    <div className="bg-white/5 p-1 rounded-xl flex gap-1 border border-white/5 ring-1 ring-white/10">
+                      <Button
+                        variant={inputMethod === 'manual' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setInputMethod('manual')}
+                        className="h-8 rounded-lg text-[9px] font-black uppercase tracking-widest px-4"
+                      >
+                        Manual SQL
                       </Button>
-                      <input id="f" type="file" accept=".sql" className="hidden" onChange={handleFileUpload} disabled={isConverting} />
+                      <Button
+                        variant={inputMethod === 'live' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setInputMethod('live')}
+                        className="h-8 rounded-lg text-[9px] font-black uppercase tracking-widest px-4"
+                      >
+                        Live Node
+                      </Button>
+                    </div>
+                    <div className="h-4 w-[1px] bg-white/10" />
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={clearInput} className="text-[10px] font-black uppercase tracking-tighter opacity-40 hover:opacity-100 flex items-center gap-1">
+                        <Eraser className="h-3 w-3" /> Clear
+                      </Button>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black tracking-widest text-primary/40 uppercase">Max 100MB</span>
+                        <Button variant="ghost" size="sm" onClick={() => document.getElementById('f')?.click()} disabled={isConverting} className="text-[10px] font-black uppercase tracking-tighter opacity-40 hover:opacity-100 flex items-center gap-1">
+                          {isConverting ? <Activity className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />} Upload
+                        </Button>
+                        <input id="f" type="file" accept=".sql" className="hidden" onChange={handleFileUpload} disabled={isConverting} />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -589,10 +666,9 @@ const Welcome: React.FC = () => {
               </div>
 
               {/* Context Switch */}
-              <div className="flex-1 overflow-auto">
-                {mode === 'sql' ? (
+              <div className="flex-1 overflow-auto bg-slate-950/20 backdrop-blur-3xl">
+                {mode === 'sql' && inputMethod === 'manual' ? (
                   <>
-                    {/* Upload Progress Bar */}
                     <AnimatePresence>
                       {isConverting && (
                         <motion.div
@@ -617,115 +693,182 @@ const Welcome: React.FC = () => {
                       value={mysqlInput}
                       onChange={(e) => setMysqlInput(e.target.value)}
                       placeholder="-- Paste MySQL here..."
-                      className="min-h-[500px] p-8 bg-transparent border-none focus-visible:ring-0 font-mono text-base resize-none leading-relaxed"
+                      className="min-h-[500px] p-8 bg-transparent border-none focus-visible:ring-0 font-mono text-base resize-none leading-relaxed placeholder:text-white/10"
                     />
                   </>
-                ) : (
+                ) : mode === 'sql' && inputMethod === 'live' ? (
                   <div className="p-10 space-y-12">
+                    <div className="flex items-center gap-6 mb-2">
+                      <Badge variant="outline" className="px-6 py-1.5 rounded-full border-primary/40 bg-primary/10 text-primary font-black uppercase text-[10px] tracking-widest shadow-2xl">Source Logic Cluster</Badge>
+                    </div>
+                    <p className="text-[11px] font-black uppercase tracking-widest text-white/30 italic">Target a live MySQL instance to extract structural patterns and object relationships.</p>
+
                     <div className="space-y-6">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-amber-500/10 p-2 rounded-xl">
-                          <Database className="w-4 h-4 text-amber-500" />
-                        </div>
-                        <h3 className="font-black text-sm uppercase tracking-widest opacity-60">Source: MySQL</h3>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Host</Label>
+                      <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Node Host</Label>
                           <input
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-1 ring-primary/40 outline-none"
+                            placeholder="e.g. cluster-01.db.local"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
                             value={sourceConn.host}
                             onChange={e => setSourceConn(p => ({ ...p, host: e.target.value }))}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Port</Label>
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Cluster Port</Label>
                           <input
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-1 ring-primary/40 outline-none"
+                            placeholder="3306"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
                             value={sourceConn.port}
                             onChange={e => setSourceConn(p => ({ ...p, port: e.target.value }))}
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Username</Label>
+                      <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Access Token / User</Label>
                           <input
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-1 ring-primary/40 outline-none"
+                            placeholder="admin"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
                             value={sourceConn.user}
                             onChange={e => setSourceConn(p => ({ ...p, user: e.target.value }))}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Password</Label>
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Secure Secret / Pass</Label>
                           <input
                             type="password"
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-1 ring-primary/40 outline-none"
+                            placeholder="••••••••"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
                             value={sourceConn.pass}
                             password-autofill="false"
                             onChange={e => setSourceConn(p => ({ ...p, pass: e.target.value }))}
                           />
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Database Name</Label>
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Database Namespace</Label>
                         <input
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-1 ring-primary/40 outline-none"
+                          placeholder="primary_db"
+                          className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                          value={sourceConn.db}
+                          onChange={e => setSourceConn(p => ({ ...p, db: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-10 space-y-12">
+                    <div className="flex items-center gap-6 mb-2">
+                      <Badge variant="outline" className="px-6 py-1.5 rounded-full border-primary/40 bg-primary/10 text-primary font-black uppercase text-[10px] tracking-widest shadow-2xl">Source Logic Cluster</Badge>
+                    </div>
+                    <p className="text-[11px] font-black uppercase tracking-widest text-white/30 italic">Connect directly to an external MySQL node to stream schema and data without intermediate artifacts.</p>
+
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Node Host</Label>
+                          <input
+                            placeholder="e.g. cluster-01.db.local"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                            value={sourceConn.host}
+                            onChange={e => setSourceConn(p => ({ ...p, host: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Cluster Port</Label>
+                          <input
+                            placeholder="3306"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                            value={sourceConn.port}
+                            onChange={e => setSourceConn(p => ({ ...p, port: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Access Token / User</Label>
+                          <input
+                            placeholder="admin"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                            value={sourceConn.user}
+                            onChange={e => setSourceConn(p => ({ ...p, user: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Secure Secret / Pass</Label>
+                          <input
+                            type="password"
+                            placeholder="••••••••"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                            value={sourceConn.pass}
+                            password-autofill="false"
+                            onChange={e => setSourceConn(p => ({ ...p, pass: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Database Namespace</Label>
+                        <input
+                          placeholder="primary_db"
+                          className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
                           value={sourceConn.db}
                           onChange={e => setSourceConn(p => ({ ...p, db: e.target.value }))}
                         />
                       </div>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="pt-8 border-t border-white/5 space-y-6">
                       <div className="flex items-center gap-3">
-                        <div className="bg-primary/10 p-2 rounded-xl">
-                          <Database className="w-4 h-4 text-primary" />
+                        <div className="bg-primary/20 p-2.5 rounded-xl">
+                          <Database className="w-5 h-5 text-primary" />
                         </div>
-                        <h3 className="font-black text-sm uppercase tracking-widest opacity-60">Target: PostgreSQL</h3>
+                        <h3 className="font-black text-xs uppercase tracking-widest text-primary italic">Target Synchronization Node</h3>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <p className="text-[11px] font-black uppercase tracking-widest text-white/30 italic">Highly optimized for live production clusters. Ensure SSL/TLS is active for direct migration.</p>
+
+                      <div className="grid grid-cols-2 gap-8">
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Host</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Target Host</Label>
                           <input
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-1 ring-primary/40 outline-none"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none"
                             value={targetConn.host}
                             onChange={e => setTargetConn(p => ({ ...p, host: e.target.value }))}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Port</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Target Port</Label>
                           <input
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-1 ring-primary/40 outline-none"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none"
                             value={targetConn.port}
                             onChange={e => setTargetConn(p => ({ ...p, port: e.target.value }))}
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-8">
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Username</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Target User</Label>
                           <input
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-1 ring-primary/40 outline-none"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none"
                             value={targetConn.user}
                             onChange={e => setTargetConn(p => ({ ...p, user: e.target.value }))}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Password</Label>
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Target Pass</Label>
                           <input
                             type="password"
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-1 ring-primary/40 outline-none"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none"
                             value={targetConn.pass}
                             password-autofill="false"
                             onChange={e => setTargetConn(p => ({ ...p, pass: e.target.value }))}
                           />
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Database Name</Label>
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Target DB Name</Label>
                         <input
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-1 ring-primary/40 outline-none"
+                          className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none"
                           value={targetConn.db}
                           onChange={e => setTargetConn(p => ({ ...p, db: e.target.value }))}
                         />
@@ -745,16 +888,41 @@ const Welcome: React.FC = () => {
           >
             <Card className="glass-card rounded-[2.5rem] overflow-hidden border-white/10 shadow-2xl h-full flex flex-col">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-                <div className="px-8 py-4 border-b border-white/5 flex items-center justify-between gap-4">
-                  <TabsList className="bg-white/5 rounded-full p-1 ring-1 ring-white/10">
-                    <TabsTrigger value="output" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-primary">Output</TabsTrigger>
-                    <TabsTrigger value="visualization" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-indigo-500">ERD</TabsTrigger>
-                    <TabsTrigger value="diff" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-primary">Diff</TabsTrigger>
-                    <TabsTrigger value="report" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-primary">Log</TabsTrigger>
-                  </TabsList>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!output} className="h-9 w-9 rounded-xl hover:bg-white/5"><Copy className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={handleDownload} disabled={!output} className="h-9 w-9 rounded-xl hover:bg-white/5"><Download className="h-4 w-4" /></Button>
+                <div className="px-6 py-4 border-b border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="w-full overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+                    <TabsList className="bg-white/5 rounded-full p-1 ring-1 ring-white/10 flex-shrink-0 w-max min-w-full">
+                      <TabsTrigger value="output" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-primary flex items-center gap-2">
+                        <Rocket className="h-3 w-3" /> Output
+                      </TabsTrigger>
+                      <TabsTrigger value="translator" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-amber-500 flex items-center gap-2">
+                        <Zap className="h-3 w-3" /> Translator
+                      </TabsTrigger>
+                      <TabsTrigger value="rollback" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-red-500 flex items-center gap-2">
+                        <Eraser className="h-3 w-3" /> Rollback
+                      </TabsTrigger>
+                      <TabsTrigger value="visualization" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-indigo-500 flex items-center gap-2">
+                        <Database className="h-3 w-3" /> ERD
+                      </TabsTrigger>
+                      <TabsTrigger value="diff" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-primary flex items-center gap-2">
+                        <Activity className="h-3 w-3" /> Diff
+                      </TabsTrigger>
+                      <TabsTrigger value="report" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-primary flex items-center gap-2">
+                        <Terminal className="h-3 w-3" /> Log
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+                  <div className="flex gap-2 items-center flex-shrink-0 w-full sm:w-auto justify-end border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0">
+                    {rollbackScript && (
+                      <Button variant="ghost" size="sm" onClick={handleDownloadRollback} title="Download Rollback (Safety Script)" className="h-9 rounded-xl hover:bg-red-500/10 text-red-400 font-bold text-[9px] uppercase tracking-wider px-3">
+                        <Eraser className="h-3 w-3 mr-2" /> Rollback
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={handleCopy} disabled={!output} className="h-9 rounded-xl hover:bg-white/5 font-bold text-[9px] uppercase tracking-wider px-3 border border-white/5">
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                    <Button variant="default" size="sm" onClick={handleDownload} disabled={!output} className="h-9 rounded-xl font-bold text-[9px] uppercase tracking-wider px-4 shadow-lg shadow-primary/20">
+                      <Download className="h-3 w-3" />
+                    </Button>
                   </div>
                 </div>
 
@@ -771,6 +939,82 @@ const Welcome: React.FC = () => {
                             <div className="h-full flex flex-col items-center justify-center opacity-20 p-20 text-center">
                               <Terminal className="h-16 w-16 mb-4" />
                               <p className="font-bold text-sm uppercase tracking-[0.2em]">Awaiting Execution</p>
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+
+                      {activeTab === 'translator' && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col p-6 space-y-6">
+                          <div className="flex-1 grid grid-rows-2 gap-6">
+                            <div className="relative group">
+                              <Badge variant="outline" className="absolute top-4 left-4 z-10 bg-amber-500/10 border-amber-500/30 text-amber-500 font-black uppercase text-[8px] tracking-widest">MySQL Source Query</Badge>
+                              <Textarea
+                                value={queryInput}
+                                onChange={(e) => setQueryInput(e.target.value)}
+                                placeholder="SELECT * FROM `users` WHERE `created_at` > DATE_SUB(NOW(), INTERVAL 1 DAY);"
+                                className="h-full w-full p-10 pt-14 bg-slate-950/40 border-white/5 rounded-[2rem] font-mono text-sm resize-none focus:ring-1 ring-amber-500/40 outline-none placeholder:opacity-20"
+                              />
+                              <Button
+                                onClick={handleTranslateQuery}
+                                disabled={isTranslating || !queryInput.trim()}
+                                className="absolute bottom-6 right-6 rounded-xl bg-amber-500 hover:bg-amber-600 font-bold px-6 shadow-xl shadow-amber-500/20 active:scale-95 transition-all"
+                              >
+                                {isTranslating ? <Activity className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+                                Transpile SQL
+                              </Button>
+                            </div>
+                            <div className="relative group">
+                              <Badge variant="outline" className="absolute top-4 left-4 z-10 bg-emerald-500/10 border-emerald-500/30 text-emerald-500 font-black uppercase text-[8px] tracking-widest">PostgreSQL Result</Badge>
+                              <div className="h-full w-full p-10 pt-14 bg-slate-950/20 border border-white/5 rounded-[2rem] font-mono text-sm overflow-auto text-emerald-400">
+                                {queryOutput ? (
+                                  <pre className="whitespace-pre-wrap">{queryOutput}</pre>
+                                ) : (
+                                  <div className="h-full flex items-center justify-center opacity-10">
+                                    <Activity className="h-10 w-10 mr-4" />
+                                    <span className="font-bold uppercase tracking-widest text-xs">Ready for input</span>
+                                  </div>
+                                )}
+                              </div>
+                              {queryOutput && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(queryOutput);
+                                    toast.success('Translated query copied');
+                                  }}
+                                  className="absolute bottom-6 right-6 rounded-xl bg-white/5 hover:bg-white/10"
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {activeTab === 'rollback' && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full">
+                          {rollbackScript ? (
+                            <div className="h-[500px] overflow-auto relative group">
+                              <div className="absolute top-4 right-4 z-10 flex gap-2">
+                                <Button variant="outline" size="sm" onClick={() => {
+                                  navigator.clipboard.writeText(rollbackScript);
+                                  toast.success('Rollback script copied');
+                                }} className="rounded-xl font-bold text-[10px] uppercase tracking-widest bg-slate-900/40 backdrop-blur-md border-white/10">
+                                  <Copy className="h-3 w-3 mr-2" /> Copy
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={handleDownloadRollback} className="rounded-xl font-bold text-[10px] uppercase tracking-widest bg-red-500/20 text-red-400 border-red-500/20 hover:bg-red-500/30">
+                                  <Download className="h-3 w-3 mr-2" /> Download
+                                </Button>
+                              </div>
+                              <CodeHighlighter code={rollbackScript} language="sql" />
+                            </div>
+                          ) : (
+                            <div className="h-full flex flex-col items-center justify-center opacity-10 p-20 text-center gap-4">
+                              <Eraser className="h-16 w-16" />
+                              <p className="font-bold text-sm uppercase tracking-[0.2em]">Run conversion to generate rollback</p>
                             </div>
                           )}
                         </motion.div>
@@ -801,7 +1045,7 @@ const Welcome: React.FC = () => {
 
                       {activeTab === 'diff' && (
                         <div className="h-[500px] p-2">
-                           <DiffExplorer oldCode={mysqlInput} newCode={output} />
+                          <DiffExplorer oldCode={mysqlInput} newCode={output} />
                         </div>
                       )}
 
@@ -855,10 +1099,11 @@ const Welcome: React.FC = () => {
         <footer className="mt-20 pt-10 border-t border-white/5 flex items-center justify-between opacity-30 text-xs font-bold uppercase tracking-widest">
           <div>© 2026 Converter Tooling System</div>
           <div className="flex gap-8">
+            <Link href="/overview" className="hover:text-primary transition-colors">Overview</Link>
             <Link href="/docs" className="hover:text-primary transition-colors">Docs</Link>
             <a href="https://github.com/chanminko1234/converter" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">GitHub</a>
             <Link href="/status" className="hover:text-primary transition-colors">Status</Link>
-            <Link href="/support#donation" className="hover:text-primary transition-colors text-amber-500/80">Donate</Link>
+            <Link href="/support" className="hover:text-primary transition-colors text-amber-500/80">Support</Link>
           </div>
         </footer>
       </main>
