@@ -30,5 +30,10 @@ Route::middleware(['throttle:60,1'])->group(function () {
     Route::post('/convert/upload', [ConversionController::class, 'upload'])->name('convert.upload');
     Route::post('/convert/stream', [ConversionController::class, 'stream'])->name('convert.stream');
     Route::post('/convert/analyze', [ConversionController::class, 'analyze'])->name('convert.analyze');
+    /**
+     * Get real-time migration status for dashboard
+     */
+    Route::post('/convert/status', [ConversionController::class, 'getStatus'])->name('convert.status');
+    Route::post('/convert/sandbox', [ConversionController::class, 'sandboxRun'])->name('convert.sandbox');
     Route::post('/translate-query', [ConversionController::class, 'translateQuery'])->name('translate.query');
 });

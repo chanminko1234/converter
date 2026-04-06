@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
-  Zap, Terminal, Code,
-  Rocket, Shield, Settings,
+  Zap, Terminal,
+  Rocket, Shield,
   FileJson, Github, Search,
   Activity, Eraser, Database,
-  Lock, RefreshCcw
+  Lock, RefreshCcw, Cpu, Globe
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { motion } from 'framer-motion';
@@ -18,167 +18,131 @@ const Docs: React.FC = () => {
     {
       id: 'quick-start',
       title: 'Quick Start',
-      icon: <Zap className="h-5 w-5 text-primary" />,
+      icon: <Rocket className="h-5 w-5 text-primary" />,
       content: (
         <div className="space-y-4">
-          <p className="text-muted-foreground">The MySQL to PostgreSQL Converter is designed for high-performance database migrations. Get started by pasting your MySQL dump or uploading a file directly.</p>
-          <div className="bg-black/50 p-6 rounded-2xl border border-white/10 font-mono text-sm group relative overflow-hidden">
+          <p className="text-muted-foreground font-medium">SQL STREAM is engineered for zero-artifact database migrations. Get started via the CLI or use our live streaming node cluster.</p>
+          <div className="bg-black/50 p-6 rounded-2xl border border-white/10 font-mono text-xs group relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-40 transition-opacity">
               <Terminal className="h-4 w-4" />
             </div>
-            <p className="text-primary/80 mb-2"># Install dependencies</p>
-            <p className="text-white">composer install</p>
-            <p className="text-white">npm install && npm run build</p>
-            <p className="text-primary/80 mt-4 mb-2"># Run the engine</p>
-            <p className="text-white">php artisan serve</p>
+            <p className="text-primary/80 mb-2"># Install the stream engine</p>
+            <p className="text-white">composer require sql-stream/core</p>
+            <p className="text-white">npm install @sql-stream/react</p>
+            <p className="text-primary/80 mt-4 mb-2"># Initialize a live migration node</p>
+            <p className="text-white">php artisan stream:init --cluster=us-east-1</p>
           </div>
         </div>
       ),
     },
     {
-      id: 'core-features',
-      title: 'Core Features',
-      icon: <Shield className="h-5 w-5 text-purple-400" />,
-      content: (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            { title: 'PII Defense', desc: 'Automatically discovers and masks sensitive Personal Identifiable Information directly during transpilation.', icon: <Shield /> },
-            { title: 'Framework Presets', desc: 'Optimized conversion pipelines targeting Laravel, WordPress, and Magento ecosystems specifically.', icon: <Code /> },
-            { title: 'Integrity Tracking', desc: 'Auto-generates strict validation SQL scripts to guarantee mathematically proven migration fidelity.', icon: <FileJson /> },
-            { title: 'Complex Logic', desc: 'Supports predictive refactoring and intelligent trigger conversion for legacy syntax gaps.', icon: <Rocket /> },
-          ].map((f, i) => (
-            <div key={i} className="p-4 rounded-2xl glass border border-white/5 hover:border-primary/20 transition-all group">
-              <div className="p-2 w-fit rounded-lg bg-white/5 mb-3 group-hover:bg-primary/10 transition-colors">
-                {React.cloneElement(f.icon as React.ReactElement<any>, { className: "h-4 w-4 opacity-60 group-hover:opacity-100 transition-opacity" })}
-              </div>
-              <h4 className="font-bold mb-1">{f.title}</h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      ),
-    },
-    {
-      id: 'api-usage',
-      title: 'API Integration',
-      icon: <Code className="h-5 w-5 text-blue-400" />,
+      id: 'neural-engine',
+      title: 'Predictive AI Transpiler',
+      icon: <Cpu className="h-5 w-5 text-purple-400" />,
       content: (
         <div className="space-y-4">
-          <p className="text-muted-foreground">Integrate the transformation engine directly into your automation pipelines using our RESTful API.</p>
-          <div className="bg-black/50 p-6 rounded-2xl border border-white/10 font-mono text-sm">
-            <p className="text-emerald-400 font-bold mb-2">POST /convert</p>
-            <div className="text-white whitespace-pre">{`{
-  "mysql_dump": "CREATE TABLE users...",
-  "target_format": "postgresql",
-  "options": {
-    "preserveIdentity": true
-  }
-}`}</div>
+          <p className="text-muted-foreground font-medium">Our Neural Transpilation Engine (NTE) goes beyond regex. It understands the abstract syntax tree (AST) of your MySQL queries and maps them to highly optimized PostgreSQL equivalents.</p>
+          <div className="bg-black/50 p-6 rounded-2xl border border-white/10 font-mono text-xs">
+            <p className="text-amber-500/80 mb-2">-- Legacy MySQL Pattern</p>
+            <p className="text-white/60 italic">SELECT name, GROUP_CONCAT(role SEPARATOR '|') FROM users GROUP BY name;</p>
+            <p className="text-emerald-500/80 mt-4 mb-2">-- Neural Optimized PostgreSQL</p>
+            <p className="text-white">SELECT name, string_agg(role, '|') FROM "users" GROUP BY name;</p>
+          </div>
+          <p className="text-[10px] uppercase font-black tracking-widest opacity-40">Supported: Recursive CTEs, Stored Procedures, Cross-Schema Triggers</p>
+        </div>
+      ),
+    },
+    {
+      id: 'direct-streaming',
+      title: 'Live Node Streaming',
+      icon: <Activity className="h-5 w-5 text-blue-400" />,
+      content: (
+        <div className="space-y-6">
+          <p className="text-muted-foreground font-medium">Connect directly to a source MySQL node and stream data to a target PostgreSQL cluster with zero-downtime and sub-millisecond lag.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <Card className="p-5 bg-white/5 border-white/5 rounded-2xl hover:bg-white/[0.08] transition-colors">
+               <div className="flex items-center gap-2 mb-2">
+                 <RefreshCcw className="h-3 w-3 text-blue-400" />
+                 <h5 className="font-bold text-[10px] uppercase tracking-widest">Delta Sync</h5>
+               </div>
+               <p className="text-[11px] opacity-70 leading-relaxed">Only migrates changes (INSERT/UPDATE/DELETE) since the last high-water mark, minimizing network load.</p>
+             </Card>
+             <Card className="p-5 bg-white/5 border-white/5 rounded-2xl hover:bg-white/[0.08] transition-colors">
+               <div className="flex items-center gap-2 mb-2">
+                 <Globe className="h-3 w-3 text-blue-400" />
+                 <h5 className="font-bold text-[10px] uppercase tracking-widest">Global Clusters</h5>
+               </div>
+               <p className="text-[11px] opacity-70 leading-relaxed">Distribute migration workload across our globally edge-optimized transformation nodes.</p>
+             </Card>
           </div>
         </div>
       ),
     },
     {
-      id: 'staging-generator',
-      title: 'Staging Generator',
+      id: 'staging-synthesis',
+      title: 'Staging Synthesis',
       icon: <Lock className="h-5 w-5 text-emerald-400" />,
       content: (
         <div className="space-y-4">
-          <p className="text-muted-foreground">Automatically clone your production schema while replacing sensitive data with realistic synthetic values using <strong>FakerPHP</strong>.</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <Card className="p-4 bg-white/5 border-white/5 rounded-2xl">
-               <h5 className="font-bold text-xs uppercase tracking-widest mb-2 text-emerald-400">PII Detection</h5>
-               <p className="text-[11px] opacity-70">Identifies columns like <code>first_name</code>, <code>email</code>, and <code>phone</code> automatically to apply context-aware masking.</p>
-             </Card>
-             <Card className="p-4 bg-white/5 border-white/5 rounded-2xl">
-               <h5 className="font-bold text-xs uppercase tracking-widest mb-2 text-emerald-400">Realistic Data</h5>
-               <p className="text-[11px] opacity-70">Uses locale-aware synthetic generators so your staging apps remain functional during testing.</p>
-             </Card>
+          <p className="text-muted-foreground font-medium">Protect your production data. Our PII Defense engine automatically obfuscates sensitive information during the stream.</p>
+          <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent border border-emerald-500/10">
+            <h5 className="font-bold text-xs mb-3 text-emerald-400 flex items-center gap-2">
+              <Search className="h-3 w-3" /> PII Discovery Patterns
+            </h5>
+            <ul className="text-[11px] space-y-2 opacity-80 list-disc ml-4">
+              <li>Automatic detection of <code>email</code>, <code>phone_number</code>, and <code>ssn</code> columns.</li>
+              <li>Context-aware FakerPHP synthesis for realistic dev data.</li>
+              <li>Encrypted-at-rest buffers for all staging transpiler workflows.</li>
+            </ul>
           </div>
         </div>
       ),
     },
     {
-      id: 'query-translator',
-      title: 'Query Translator',
-      icon: <Zap className="h-5 w-5 text-amber-500" />,
+      id: 'framework-presets',
+      title: 'Framework Presets',
+      icon: <FileJson className="h-5 w-5 text-amber-400" />,
       content: (
         <div className="space-y-4">
-          <p className="text-muted-foreground">Migration is more than just schema. Use our high-fidelity transpiler to update your raw application SQL queries.</p>
-          <div className="bg-black/50 p-6 rounded-2xl border border-white/10 font-mono text-sm">
-            <p className="text-amber-500/80 mb-2">-- MySQL Input</p>
-            <p className="text-white/60 italic">SELECT * FROM users WHERE created_at {'>'} DATE_SUB(NOW(), INTERVAL 1 DAY);</p>
-            <p className="text-emerald-500/80 mt-4 mb-2">-- PostgreSQL Result</p>
-            <p className="text-white">SELECT * FROM "users" WHERE created_at {'>'} (CURRENT_TIMESTAMP - INTERVAL '1 DAY');</p>
+          <p className="text-muted-foreground font-medium">Optimized logic for the world's most popular database-heavy ecosystems.</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { name: 'Laravel', color: 'text-amber-500', desc: 'UUID primary key support & Migration file exports.' },
+              { name: 'Wordpress', color: 'text-blue-400', desc: 'Serialized PHP data parsing & URL rewriting.' },
+              { name: 'Magento', color: 'text-orange-500', desc: 'EAV table flattening & high-performance joins.' }
+            ].map(f => (
+              <div key={f.name} className="p-4 rounded-xl bg-white/5 border border-white/5">
+                <h6 className={`font-black text-[10px] uppercase tracking-widest mb-2 ${f.color}`}>{f.name}</h6>
+                <p className="text-[10px] opacity-60 leading-relaxed font-medium">{f.desc}</p>
+              </div>
+            ))}
           </div>
-          <p className="text-xs text-muted-foreground italic">Supports: DATE_SUB, IFNULL, GROUP_CONCAT, DATEDIFF, and more.</p>
         </div>
       ),
     },
     {
       id: 'rollback-engine',
-      title: 'Rollback Engine',
+      title: 'Atomic Rollback',
       icon: <Eraser className="h-5 w-5 text-red-400" />,
       content: (
         <div className="space-y-4">
-          <p className="text-muted-foreground">Every migration generates a mathematically sound <strong>Enterprise Rollback Script</strong> to protect against deployment failure.</p>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-center gap-2"><div className="h-1 w-1 rounded-full bg-red-400" /> Atomic Transaction (BEGIN/COMMIT)</li>
-            <li className="flex items-center gap-2"><div className="h-1 w-1 rounded-full bg-red-400" /> Reverse-Dependency Drop Order</li>
-            <li className="flex items-center gap-2"><div className="h-1 w-1 rounded-full bg-red-400" /> Cascading Entity Cleanup</li>
-          </ul>
-        </div>
-      ),
-    },
-    {
-      id: 'contributing',
-      title: 'Contributing',
-      icon: <Github className="h-5 w-5 text-indigo-400" />,
-      content: (
-        <div className="space-y-4">
-          <p className="text-muted-foreground">We welcome contributions to help improve the transformation engine. Follow these standards for all submissions:</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <Card className="p-4 bg-white/5 border-white/5 rounded-2xl">
-               <h5 className="font-bold text-xs uppercase tracking-widest mb-2 text-indigo-400">Technical Standards</h5>
-               <ul className="text-[11px] opacity-70 list-disc ml-4 space-y-1">
-                 <li>PHP: PSR-12 coding standard</li>
-                 <li>JS: ESLint + Prettier</li>
-                 <li>Tests: PHPUnit is required for logic</li>
-               </ul>
-             </Card>
-             <Card className="p-4 bg-white/5 border-white/5 rounded-2xl">
-               <h5 className="font-bold text-xs uppercase tracking-widest mb-2 text-indigo-400">Process</h5>
-               <p className="text-[11px] opacity-70 italic">Fork, Branch, and PR. Please ensure all existing feature tests pass before submitting your migration logic changes.</p>
-             </Card>
+          <p className="text-muted-foreground font-medium">Never deploy without a safety net. Every migration generates a cryptographically signed rollback script.</p>
+          <div className="bg-slate-900 ring-1 ring-white/10 p-5 rounded-2xl space-y-3">
+             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-red-400/60">
+               <Shield className="h-3 w-3" /> Integrity Lock
+             </div>
+             <p className="text-[11px] opacity-70 italic">"Rollback scripts analyze the target state to ensure that reversing a migration will not cause data loss in newly formed relations."</p>
           </div>
         </div>
       ),
-    },
-    {
-      id: 'configuration',
-      title: 'Configuration',
-      icon: <Settings className="h-5 w-5 text-amber-400" />,
-      content: (
-        <div className="space-y-4">
-          <p className="text-muted-foreground">Fine-tune the conversion engine using Environment Variables or the UI Options panel.</p>
-          <div className="bg-black/50 p-6 rounded-2xl border border-white/10 font-mono text-sm">
-            <p className="text-primary/80 mb-2"># .env configuration</p>
-            <p className="text-white">DB_CONNECTION=sqlite</p>
-            <p className="text-white">SESSION_DRIVER=file</p>
-            <p className="text-primary/80 mt-4 mb-2"># Engine limits</p>
-            <p className="text-white">UPLOAD_MAX_SIZE=100M</p>
-          </div>
-        </div>
-      ),
-    },
+    }
   ];
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans relative overflow-hidden">
       <Head>
-        <title>Documentation | SQL Decoded MySQL to PostgreSQL</title>
-        <meta name="description" content="Complete documentation and user guide for the SQL Decoded database conversion engine. Learn how to map MySQL types, use framework presets, and integrate via REST API." />
-        <meta name="keywords" content="mysql to postgresql guide, database conversion documentation, sql type mapping, automate sql migration, mysql to postgresql API" />
+        <title>Engineering Docs | SQL STREAM</title>
+        <meta name="description" content="Technical documentation for the SQL STREAM database transformation ecosystem. Multi-node streaming, neural transpilation, and staging defense." />
       </Head>
       
       {/* Background Effects */}
@@ -187,40 +151,43 @@ const Docs: React.FC = () => {
         <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full" />
       </div>
 
-      <nav className="border-b glass fixed top-0 w-full z-50 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="bg-primary/10 p-2 rounded-xl ring-1 ring-primary/20">
+      <nav className="border-b glass fixed top-0 w-full z-50 px-8 py-4 flex items-center justify-between backdrop-blur-xl transition-all">
+        <div className="flex items-center gap-4">
+          <Link href="/" className="bg-primary/20 p-2.5 rounded-xl ring-1 ring-primary/30">
             <Zap className="h-6 w-6 text-primary fill-primary/20" />
           </Link>
-          <span className="font-bold text-xl tracking-tight">
-            Converter<span className="text-primary text-2xl">.</span>Docs
-          </span>
+          <div className="flex flex-col">
+            <span className="font-black text-xl tracking-tighter leading-none">
+              SQL<span className="text-primary italic">STREAM</span>
+            </span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] opacity-40">Documentation</span>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           <ThemeToggle />
           <Link href="/support" className="hidden md:block">
-            <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9">Support</Button>
+            <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9">Concierge</Button>
           </Link>
-          <Button variant="ghost" size="icon" className="rounded-full shrink-0 h-9 w-9 p-0 flex items-center justify-center">
+          <Button variant="ghost" size="icon" className="rounded-full shrink-0 h-9 w-9 p-0 flex items-center justify-center border border-white/5">
             <a href="https://github.com/chanminko1234/converter" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
-              <Github className="h-5 w-5" />
+              <Github className="h-4 w-4" />
             </a>
           </Button>
         </div>
       </nav>
 
-      <main className="container max-w-6xl mx-auto px-4 pt-32 pb-20 relative z-10 flex flex-col md:flex-row gap-12">
+      <main className="container max-w-6xl mx-auto px-4 pt-32 pb-20 relative z-10 flex flex-col md:flex-row gap-16">
         {/* Sidebar */}
         <aside className="w-full md:w-64 space-y-6">
           <div className="sticky top-32 space-y-8">
             <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-primary/60 mb-4 block">Navigation</Label>
+              <div className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/60 mb-6 px-4">System Guide</div>
               <div className="space-y-1">
                 {sections.map(s => (
                   <a 
                     key={s.id} 
                     href={`#${s.id}`} 
-                    className="flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-white/5 transition-all text-sm font-bold opacity-60 hover:opacity-100 group"
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-white/5 transition-all text-[11px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 group"
                   >
                     <div className="h-1 w-1 rounded-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                     {s.title}
@@ -229,23 +196,25 @@ const Docs: React.FC = () => {
               </div>
             </div>
 
-            <Card className="p-6 glass-card rounded-3xl border-white/5 space-y-4">
-              <h5 className="text-sm font-bold">Need Help?</h5>
-              <p className="text-xs text-muted-foreground leading-relaxed">Our engine is built to handle the most complex MySQL syntax. If you find a bug, please report it.</p>
-              <Button variant="outline" className="w-full rounded-xl text-xs font-bold border-white/10">Read Changelog</Button>
+            <Card className="p-6 glass-card rounded-[2rem] border-white/5 space-y-4 shadow-2xl">
+              <h5 className="text-xs font-black uppercase tracking-widest">Need Expert Help?</h5>
+              <p className="text-[10px] text-muted-foreground leading-relaxed font-medium">Join our enterprise cluster for 24/7 engineering support and architectural reviews.</p>
+              <Link href="/support">
+                <Button variant="outline" className="w-full rounded-xl text-[9px] font-black uppercase tracking-widest border-white/10 h-10">Open Inquiry</Button>
+              </Link>
             </Card>
           </div>
         </aside>
 
         {/* Content */}
-        <div className="flex-1 space-y-20">
+        <div className="flex-1 space-y-24">
           <section>
-            <Badge variant="outline" className="mb-4 border-primary/20 bg-primary/5 text-primary text-[10px] py-0.5 px-3 uppercase tracking-[0.2em] font-black">
-              Documentation
+            <Badge variant="outline" className="mb-6 border-primary/20 bg-primary/5 text-primary text-[10px] py-1 px-4 uppercase tracking-[0.3em] font-black rounded-full">
+              Core Documentation
             </Badge>
-            <h1 className="text-5xl font-black tracking-tight mb-6">Engine Documentation<span className="text-primary">.</span></h1>
+            <h1 className="text-6xl font-black tracking-tighter mb-8 leading-none">Engineering<br />The Pipeline<span className="text-primary italic">.</span></h1>
             <p className="text-xl text-muted-foreground font-medium leading-relaxed max-w-2xl">
-              Welcome to the SQL Decoded documentation. This guide will help you understand how to use our transformation engine effectively.
+              Master the high-performance SQL STREAM ecosystem. From complex structural transpilation to zero-downtime live migrations.
             </p>
           </section>
 
@@ -256,22 +225,29 @@ const Docs: React.FC = () => {
               viewport={{ once: true }}
               key={section.id} 
               id={section.id} 
-              className="space-y-6 scroll-mt-32"
+              className="space-y-8 scroll-mt-32"
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-white/5 rounded-xl border border-white/10">
+              <div className="flex items-center gap-4">
+                <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10 ring-1 ring-white/5 shadow-xl">
                   {section.icon}
                 </div>
-                <h2 className="text-3xl font-bold tracking-tight">{section.title}</h2>
+                <h2 className="text-4xl font-black tracking-tighter">{section.title}</h2>
               </div>
-              <div className="prose prose-invert max-w-none">
+              <div className="prose prose-invert max-w-none ml-2">
                 {section.content}
               </div>
             </motion.section>
           ))}
 
           <footer className="pt-20 border-t border-white/5 text-center">
-            <p className="text-sm font-bold opacity-30 uppercase tracking-widest">© 2026 Converter Tooling System</p>
+            <div className="flex items-center justify-center gap-3 mb-4 opacity-40">
+              <Database className="h-4 w-4" />
+              <div className="h-px w-12 bg-white/20" />
+              <Shield className="h-4 w-4" />
+              <div className="h-px w-12 bg-white/20" />
+              <Zap className="h-4 w-4" />
+            </div>
+            <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.4em]">© 2026 SQL STREAM INFRASTRUCTURE</p>
           </footer>
         </div>
       </main>
@@ -285,10 +261,5 @@ const Docs: React.FC = () => {
     </div>
   );
 };
-
-// Simple Label component since I don't want to import it from UI if it's missing or different
-const Label = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-  <span className={className}>{children}</span>
-);
 
 export default Docs;

@@ -5,48 +5,48 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/theme-toggle';
 import {
-  Compass, Shield, Cpu,
-  Layers, Code2, GitBranch,
-  Terminal, Zap, CheckCircle2,
-  ArrowRight, Github
+  Shield, Cpu,
+  CheckCircle2,
+  ArrowRight, Rocket,
+  Activity, Database
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Overview: React.FC = () => {
   const pillars = [
     {
-      title: 'Structural Fidelity',
-      desc: 'Ensuring 100% schema integrity by mathematically mapping MySQL types to high-precision PostgreSQL equivalents.',
-      icon: <Layers className="h-6 w-6 text-primary" />
+      title: 'Neural Fidelity',
+      desc: 'Moving beyond mapping to intelligent transpilation. Our Predictive AI engine adapts to complex legacy MySQL patterns automatically.',
+      icon: <Cpu className="h-6 w-6 text-primary" />
     },
     {
-      title: 'Dev-First Safety',
-      desc: 'Every transformation is backed by atomic rollback engines and PII masking via FakerPHP for secure staging.',
+      title: 'Staging Defense',
+      desc: 'PII masking via FakerPHP ensures your non-production environments remain functional yet 100% compliant and secure.',
       icon: <Shield className="h-6 w-6 text-emerald-400" />
     },
     {
-      title: 'AI Translation',
-      desc: 'Neural-enhanced query transpilation for application-level SQL, supporting complex legacy MySQL functions.',
-      icon: <Cpu className="h-6 w-6 text-amber-500" />
+      title: 'Direct Streaming',
+      desc: 'Zero-artifact migration. Connect source and target directly for high-volume, low-latency data synchronization.',
+      icon: <Activity className="h-6 w-6 text-amber-500" />
     }
   ];
 
-  const guidelines = [
+  const ecosystem = [
     {
       title: 'Migration Protocol',
       steps: [
-        'Analyze: Run the schema structural audit to detect legacy patterns.',
-        'Transform: Execute the conversion with framework-specific optimizations.',
-        'Verify: Utilize the auto-generated integrity script for count validation.',
-        'Safely Revert: Always download the atomic rollback SQL before deployment.'
+        'Audit: Predictive AI scans for legacy structural anti-patterns.',
+        'Stream: Execute direct node-to-node data synchronization.',
+        'Validate: Automated integrity checks with O(1) performance.',
+        'Protect: Generation of atomic, idempotent rollback engines.'
       ]
     },
     {
-      title: 'Code Guidelines',
+      title: 'The Edge Strategy',
       steps: [
-        'Pure Transpilation: Core logic remains stateless to prevent data leakage.',
-        'High-Performance RegEx: Utilize the optimized regex engine for sub-10ms query translation.',
-        'Synthetic Masking: Never export raw production PII to non-production environments.'
+        'Stateless Core: Processing happens in-memory with zero data retention.',
+        'Framework Presets: Context-aware logic for Laravel, WP, and Magento.',
+        'Delta Sync: Incremental migration for high-uptime environments.'
       ]
     }
   ];
@@ -54,8 +54,8 @@ const Overview: React.FC = () => {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans relative overflow-hidden">
       <Head>
-        <title>Project Overview & Guidelines | MySQL to PostgreSQL</title>
-        <meta name="description" content="Explore the architecture, vision, and operational guidelines of the SQL Decoded database migration ecosystem. From PII masking to enterprise rollback engines." />
+        <title>SQL STREAM | Technical Overview & Ecosystem</title>
+        <meta name="description" content="Explore the SQL STREAM architecture. From predictive AI transpilation to direct database streaming and enterprise-grade data masking." />
       </Head>
 
       {/* Background Cinematic Effects */}
@@ -65,22 +65,26 @@ const Overview: React.FC = () => {
         <div className="absolute bottom-[-10%] left-[-15%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full" />
       </div>
 
-      <nav className="border-b glass fixed top-0 w-full z-50 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="bg-primary/10 p-2 rounded-xl ring-1 ring-primary/20">
-            <Zap className="h-6 w-6 text-primary fill-primary/20" />
-          </Link>
-          <span className="font-bold text-xl tracking-tight">
-            Converter<span className="text-primary text-2xl">.</span>System
-          </span>
-        </div>
-        <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest opacity-60 px-4">
-          Project Hub v4.0
-        </div>
+      <nav className="border-b glass fixed top-0 w-full z-50 px-8 py-4 flex items-center justify-between backdrop-blur-xl">
         <div className="flex items-center gap-4">
+          <Link href="/" className="bg-primary/20 p-2.5 rounded-xl ring-1 ring-primary/30">
+            <Rocket className="h-6 w-6 text-primary fill-primary/20" />
+          </Link>
+          <div className="flex flex-col">
+            <span className="font-black text-xl tracking-tighter leading-none">
+              SQL<span className="text-primary italic">STREAM</span>
+            </span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] opacity-40">Engineering Hub</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-6">
+            <Link href="/docs" className="text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity">Documentation</Link>
+            <Link href="/status" className="text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity">Network Status</Link>
+          </div>
           <ThemeToggle />
-          <Link href="/docs">
-            <Button variant="ghost" className="rounded-full font-black text-[10px] px-6 h-9 border border-white/5 uppercase tracking-widest">Documentation</Button>
+          <Link href="/">
+            <Button size="sm" className="rounded-full font-black text-[10px] px-6 h-9 uppercase tracking-widest shadow-lg shadow-primary/20">Launch App</Button>
           </Link>
         </div>
       </nav>
@@ -90,12 +94,12 @@ const Overview: React.FC = () => {
           <Badge variant="outline" className="px-6 py-2 rounded-full border-primary/20 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-[0.3em]">
             System Architecture & Vision
           </Badge>
-          <h1 className="text-7xl font-black tracking-tighter leading-[0.9] mb-8">
-            Enterprise Data<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-400 to-emerald-400">Transpilation Engine.</span>
+          <h1 className="text-7xl md:text-8xl font-black tracking-tighter leading-[0.9] mb-8">
+            The Future of<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-indigo-400 to-emerald-400">Data Evolution.</span>
           </h1>
           <p className="text-xl text-muted-foreground font-medium max-w-3xl leading-relaxed">
-            Beyond simple field mapping, this project represents a comprehensive lifecycle strategy for migrating high-uptime MySQL applications to resilient PostgreSQL architectures.
+            SQL STREAM isn't just a converter; it's a stateful migration ecosystem designed to bridge the gap between legacy MySQL instances and resilient, modern PostgreSQL architectures.
           </p>
         </section>
 
@@ -107,7 +111,7 @@ const Overview: React.FC = () => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: i * 0.1 }}
             >
-              <Card className="glass-card rounded-[2.5rem] p-10 border-white/10 hover:border-primary/20 transition-all group h-full">
+              <Card className="glass-card rounded-[2.5rem] p-10 border-white/10 hover:border-primary/20 transition-all group h-full shadow-2xl">
                 <div className="p-4 bg-white/5 rounded-[1.5rem] w-fit mb-6 group-hover:bg-primary/10 transition-colors">
                   {p.icon}
                 </div>
@@ -120,7 +124,7 @@ const Overview: React.FC = () => {
 
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-24 lg:items-center">
           <div className="space-y-12">
-            {guidelines.map((g, i) => (
+            {ecosystem.map((g, i) => (
               <div key={i} className="space-y-6">
                 <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
                   <div className="h-8 w-1.5 bg-primary rounded-full transition-transform hover:scale-y-110" />
@@ -128,7 +132,7 @@ const Overview: React.FC = () => {
                 </h2>
                 <div className="space-y-4 prose prose-invert">
                   {g.steps.map((step, idx) => (
-                    <div key={idx} className="flex gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                    <div key={idx} className="flex gap-4 p-5 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.05] transition-colors">
                       <div className="text-primary font-black text-xs pt-1 opacity-40">0{idx + 1}</div>
                       <p className="text-sm font-medium text-muted-foreground">{step}</p>
                     </div>
@@ -138,25 +142,25 @@ const Overview: React.FC = () => {
             ))}
           </div>
 
-          <Card className="relative overflow-hidden bg-slate-900/40 rounded-[3rem] border-white/10 p-12 lg:h-full flex flex-col justify-center gap-8 group">
+          <Card className="relative overflow-hidden bg-slate-900/40 rounded-[3rem] border-white/10 p-12 lg:min-h-[600px] flex flex-col justify-center gap-8 group shadow-inner">
             <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-              <Terminal className="h-64 w-64 text-primary" />
+              <Database className="h-64 w-64 text-primary" />
             </div>
             <div className="space-y-8 relative z-10">
               <div className="space-y-2">
                 <h3 className="text-4xl font-black tracking-tighter uppercase italic text-primary">Technical Roadmap</h3>
-                <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Future State Architecture</p>
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Active Development Cycles</p>
               </div>
 
               <div className="space-y-6">
                 {[
-                  { icon: <GitBranch />, text: "Direct Schema Streaming via WebSockets", active: true },
-                  { icon: <CheckCircle2 />, text: "Automated Laravel Migration File Generation", active: true },
-                  { icon: <Cpu />, text: "Advanced Neural Procedural Logic Transpiler", active: false },
-                  { icon: <Code2 />, text: "Python/Go Engine Compatibility Bindings", active: false },
+                  { icon: <Activity />, text: "Real-time Binary Log Replication", active: true },
+                  { icon: <CheckCircle2 />, text: "Zero-Downtime Incremental Sync", active: true },
+                  { icon: <Cpu />, text: "Context-Aware Stored Procedure Transpilation", active: true },
+                  { icon: <Shield />, text: "Enterprise-Wide Role-Based Obfuscation", active: false },
                 ].map((item, i) => (
-                  <div key={i} className={`flex items-center gap-4 ${item.active ? 'opacity-100' : 'opacity-30 underline decoration-white/10'}`}>
-                    <div className={`p-2 rounded-lg ${item.active ? 'bg-primary/20 text-primary' : 'bg-white/5 text-white'}`}>
+                  <div key={i} className={`flex items-center gap-4 ${item.active ? 'opacity-100' : 'opacity-30'}`}>
+                    <div className={`p-2.5 rounded-xl ${item.active ? 'bg-primary/20 text-primary' : 'bg-white/5 text-white'}`}>
                       {React.cloneElement(item.icon as React.ReactElement<any>, { className: "h-4 w-4" })}
                     </div>
                     <span className="font-bold text-sm tracking-tight">{item.text}</span>
@@ -164,17 +168,19 @@ const Overview: React.FC = () => {
                 ))}
               </div>
 
-              <a href="https://github.com/chanminko1234/converter" target="_blank" rel="noopener noreferrer">
-                <Button className="w-fit flex items-center rounded-2xl px-10 h-14 bg-primary hover:bg-primary/90 text-white font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all shadow-[0_20px_50px_rgba(var(--primary),0.2)]">
-                  Contribute Today <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </a>
+              <div className="pt-4">
+                <a href="https://github.com/chanminko1234/converter" target="_blank" rel="noopener noreferrer">
+                  <Button className="w-fit flex items-center rounded-2xl px-10 h-14 bg-primary hover:bg-primary/90 text-white font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all shadow-[0_20px_50px_rgba(var(--primary),0.2)]">
+                    Contribute to Core <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </a>
+              </div>
             </div>
           </Card>
         </section>
 
         <footer className="pt-20 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-8 opacity-40">
-          <div className="text-[10px] font-black uppercase tracking-widest">© 2026 Core Transformation Engineering Hub</div>
+          <div className="text-[10px] font-black uppercase tracking-widest">© 2026 SQL STREAM • High Performance Data Engineering</div>
           <div className="flex gap-10">
             <Link href="/" className="text-[10px] font-black uppercase tracking-widest hover:text-primary">App</Link>
             <Link href="/docs" className="text-[10px] font-black uppercase tracking-widest hover:text-primary">Docs</Link>

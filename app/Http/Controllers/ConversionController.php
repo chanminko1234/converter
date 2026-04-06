@@ -2,17 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\GeminiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Faker\Factory as Faker;
 
 class ConversionController extends Controller
 {
+    protected GeminiService $gemini;
+
+    public function __construct(GeminiService $gemini)
+    {
+        $this->gemini = $gemini;
+    }
+
     /**
      * Convert MySQL dump to specified format
      */
@@ -291,7 +300,7 @@ class ConversionController extends Controller
 
                 $currentMax = $checkpoint->last_value ?? null;
 
-                $query->orderBy($trackCol)->chunk(1000, function($rows) use ($tableName, &$rowCount, &$currentMax, $trackCol) {
+                $query->orderBy($trackCol)->chunk(1000, function($rows) use ($tableName, &$rowCount, &$currentMax, $trackCol, $source, $target) {
                     $insertData = [];
                     foreach ($rows as $row) {
                         $arr = (array)$row;
@@ -304,18 +313,32 @@ class ConversionController extends Controller
                     }
                     
                     if (!empty($insertData)) {
-                       DB::connection('temp_pgsql')->table($tableName)->insert($insertData);
-                       $rowCount += count($insertData);
+                        $startChunk = microtime(true);
+                        DB::connection('temp_pgsql')->table($tableName)->insert($insertData);
+                        $duration = microtime(true) - $startChunk;
+                        
+                        $rowCount += count($insertData);
+                        
+                        // Update live metrics for dashboard polling
+                        DB::table('migration_checkpoints')->updateOrInsert(
+                            ['source_db' => $source['db'], 'target_db' => $target['db'], 'table_name' => $tableName],
+                            [
+                                'checkpoint_column' => $trackCol, 
+                                'last_value' => (string)$currentMax, 
+                                'rows_synced' => $rowCount,
+                                'last_throughput' => count($insertData) / ($duration ?: 0.1),
+                                'last_synced_at' => now(),
+                                'sync_status' => 'syncing'
+                            ]
+                        );
                     }
                 });
                 
-                // Persist high-water mark
-                if (!is_null($currentMax)) {
-                    DB::table('migration_checkpoints')->updateOrInsert(
-                        ['source_db' => $source['db'], 'target_db' => $target['db'], 'table_name' => $tableName],
-                        ['checkpoint_column' => $trackCol, 'last_value' => (string)$currentMax, 'last_synced_at' => now()]
-                    );
-                }
+                // Persist final table status
+                DB::table('migration_checkpoints')->updateOrInsert(
+                    ['source_db' => $source['db'], 'target_db' => $target['db'], 'table_name' => $tableName],
+                    ['sync_status' => 'completed', 'last_synced_at' => now()]
+                );
                 
                 $results[] = [
                     'table' => $tableName,
@@ -418,6 +441,78 @@ class ConversionController extends Controller
     }
 
     /**
+     * Get real-time migration status for dashboard
+     */
+    public function getStatus(Request $request): JsonResponse
+    {
+        $sourceDb = $request->input('source_db');
+        $targetDb = $request->input('target_db');
+
+        $stats = DB::table('migration_checkpoints')
+            ->where('source_db', $sourceDb)
+            ->where('target_db', $targetDb)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'stats' => $stats
+        ]);
+    }
+
+    /**
+     * Run SQL in a temporary sandbox schema for validation
+     */
+    public function sandboxRun(Request $request): JsonResponse
+    {
+        $sql = $request->input('sql');
+        if (empty($sql)) {
+            return response()->json(['success' => false, 'error' => 'No SQL provided for sandbox run'], 422);
+        }
+
+        $schemaId = 'sandbox_'.Str::random(8);
+        $report = [];
+
+        try {
+            // Use the pgsql connection
+            DB::connection('temp_pgsql')->beginTransaction();
+
+            // 1. Create a temporary schema
+            DB::connection('temp_pgsql')->unprepared("CREATE SCHEMA \"{$schemaId}\"");
+            
+            // 2. Set search path to this schema so we don't affect public
+            DB::connection('temp_pgsql')->unprepared("SET search_path TO \"{$schemaId}\", public");
+
+            // 3. Run the SQL
+            // We use unprepared because it might contain multiple statements
+            DB::connection('temp_pgsql')->unprepared($sql);
+
+            // 4. If we reached here, success!
+            DB::connection('temp_pgsql')->rollBack(); // Always rollback sandbox runs
+            
+            // Cleanup schema (since rollback doesn't drop schema if it was committed? actually DDL is transactional in PG)
+            // But just in case:
+            DB::connection('temp_pgsql')->unprepared("DROP SCHEMA IF EXISTS \"{$schemaId}\" CASCADE");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sandbox validation successful. Your SQL is structurally sound.',
+                'schema' => $schemaId
+            ]);
+
+        } catch (\Throwable $e) {
+            DB::connection('temp_pgsql')->rollBack();
+            DB::connection('temp_pgsql')->unprepared("DROP SCHEMA IF EXISTS \"{$schemaId}\" CASCADE");
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Sandbox validation failed: '.$e->getMessage(),
+                'code' => 'SANDBOX_EXECUTION_ERROR',
+                'line' => $e->getLine(),
+            ], 422);
+        }
+    }
+
+    /**
      * Setup dynamic mysql connection
      */
     private function setupSourceConnection(array $source): void
@@ -444,6 +539,7 @@ class ConversionController extends Controller
         $tables = [];
         $currentTable = null;
         $inCreateTable = false;
+        $inAlterTable = false;
         $tableStructure = [];
         $rawDump = '';
         $hasValidSqlKeywords = false;
@@ -483,27 +579,59 @@ class ConversionController extends Controller
                 }
             }
 
-            // Handle ALTER TABLE for foreign keys
-            if (preg_match('/^\s*ALTER\s+TABLE\s+`?([^`\s\(]+)`?\s+ADD\s+(?:CONSTRAINT\s+`?[^`\s\(]+`?\s+)?FOREIGN\s+KEY\s*\(`?([^`\s\)]+)`?\)\s+REFERENCES\s+`?([^`\s\(]+)`?\s*\(`?([^`\s\)]+)`?\)/i', $trimmedLine, $matches)) {
-                $tableName = $matches[1];
-                $column = $matches[2];
-                $refTable = $matches[3];
-                $refColumn = $matches[4];
-                
-                if (isset($tables[$tableName])) {
-                    $tables[$tableName]['foreign_keys'][] = [
-                        'column' => $column,
-                        'references_table' => $refTable,
-                        'references_column' => $refColumn
-                    ];
+            // Track multi-line ALTER TABLE blocks to extract keys and omit from raw dump
+            if (!$inCreateTable && preg_match('/^\s*ALTER\s+TABLE\s+`?([^`\s\(]+)`?/i', $trimmedLine, $matches)) {
+                $inAlterTable = true;
+                $currentTable = $matches[1]; // temporarily reuse currentTable
+            }
+
+            if ($inAlterTable) {
+                // Extract constraints if the table exists
+                if ($currentTable && isset($tables[$currentTable])) {
+                    if (preg_match('/^\s*(?:ADD\s+)?PRIMARY\s+KEY\s*\((.+)\)/i', $trimmedLine, $matches)) {
+                        $tables[$currentTable]['primary_key'] = trim($matches[1], ' ()`');
+                    } elseif (preg_match('/^\s*ADD\s+UNIQUE\s+(?:KEY|INDEX)?\s*`?([^\s\(]+)`?\s*\((.+)\)/i', $trimmedLine, $matches) || 
+                              preg_match('/^\s*ADD\s+CONSTRAINT\s+`?([^\s\(]+)`?\s+UNIQUE\s+(?:KEY|INDEX)?\s*\((.+)\)/i', $trimmedLine, $matches)) {
+                        $tables[$currentTable]['indexes'][] = [
+                            'type' => 'UNIQUE',
+                            'name' => trim($matches[1], '`'),
+                            'columns' => trim($matches[2], ' ()`')
+                        ];
+                    } elseif (preg_match('/^\s*ADD\s+(?:KEY|INDEX)\s*`?([^\s\(]+)`?\s*\((.+)\)/i', $trimmedLine, $matches)) {
+                        $tables[$currentTable]['indexes'][] = [
+                            'type' => 'INDEX',
+                            'name' => trim($matches[1], '`'),
+                            'columns' => trim($matches[2], ' ()`')
+                        ];
+                    } elseif (preg_match('/^\s*ADD\s+(?:CONSTRAINT\s+`?[^`\s]+`?\s+)?FOREIGN\s+KEY\s*\(`?([^`\s\)]+)`?\)\s+REFERENCES\s+`?([^`\s\(]+)`?\s*\(`?([^`\s\)]+)`?\)/i', $trimmedLine, $matches)) {
+                        $tables[$currentTable]['foreign_keys'][] = [
+                            'column' => trim($matches[1], ' ()`'),
+                            'references_table' => trim($matches[2], ' ()`'),
+                            'references_column' => trim($matches[3], ' ()`')
+                        ];
+                    } elseif (preg_match('/^\s*MODIFY\s+`?([^`\s]+)`?\s+(.+)/i', $trimmedLine, $matches)) {
+                        $colName = trim($matches[1], '`');
+                        $colDef = trim($matches[2], ' ,;');
+                        if (str_contains(strtoupper($colDef), 'AUTO_INCREMENT')) {
+                            foreach ($tables[$currentTable]['columns'] as &$col) {
+                                if ($col['name'] === $colName && !str_contains(strtoupper($col['definition']), 'AUTO_INCREMENT')) {
+                                    $col['definition'] .= ' AUTO_INCREMENT';
+                                }
+                            }
+                        }
+                    }
                 }
-                continue;
+
+                if (str_ends_with($trimmedLine, ';')) {
+                    $inAlterTable = false;
+                    $currentTable = null;
+                }
+                continue; // Highly important: skip writing ALTER TABLE lines to rawDump
             }
 
             // Capture INSERT or REPLACE statements or other standalone statements to raw_dump
             if (!$inCreateTable && 
-                !preg_match('/^\s*CREATE\s+TABLE/i', $trimmedLine) && 
-                !preg_match('/^\s*ALTER\s+TABLE/i', $trimmedLine)) {
+                !preg_match('/^\s*CREATE\s+TABLE/i', $trimmedLine)) {
                 $rawDump .= $line . "\n";
                 // If it's just a regular line (like an INSERT), we might still want to continue to avoid parsing it as a table
                 if (preg_match('/^\s*(INSERT|REPLACE|DELETE|UPDATE|TRUNCATE|CALL|DROP|DO|GRANT|REVOKE|COMMIT|ROLLBACK|BEGIN|START|SET)/i', $trimmedLine)) {
@@ -812,6 +940,31 @@ class ConversionController extends Controller
                 ];
             }
 
+            // Predictive Refactoring: Call AI for Schema Suggestions
+            if ($options['predictiveRefactoring'] ?? $options['predictive_refactoring'] ?? false) {
+                $aiSuggestions = $this->gemini->suggestOptimizations($tableName, $table['columns']);
+                if ($aiSuggestions) {
+                    if (isset($aiSuggestions['suggestions'])) {
+                        foreach ($aiSuggestions['suggestions'] as $suggestion) {
+                            $report[] = [
+                                'type' => 'info',
+                                'message' => "AI Insight: For '{$tableName}.{$suggestion['column']}', {$suggestion['reason']}",
+                                'sql' => $suggestion['sql'] ?? null
+                            ];
+                        }
+                    }
+                    if (isset($aiSuggestions['indexing_suggestions'])) {
+                        foreach ($aiSuggestions['indexing_suggestions'] as $idxSuggestion) {
+                            $report[] = [
+                                'type' => 'info',
+                                'message' => "AI Index Suggestion: {$idxSuggestion['reason']}",
+                                'sql' => $idxSuggestion['sql'] ?? null
+                            ];
+                        }
+                    }
+                }
+            }
+
             $schemaMeta[] = [
                 'name' => $tableName,
                 'columns' => $columnsMeta,
@@ -953,9 +1106,12 @@ class ConversionController extends Controller
                     switch ($options['replace_handling'] ?? 'upsert') {
                         case 'upsert':
                             $converted = preg_replace('/^\s*REPLACE\s+INTO/i', 'INSERT INTO', $converted);
-                            $converted .= ' ON CONFLICT DO UPDATE SET /* Add conflict resolution */';
-                            $report[] = ['type' => 'warning', 'message' => 'REPLACE converted to INSERT...ON CONFLICT - manual review needed'];
+                            // We can't automatically know the conflict target here without schema introspection,
+                            // but we can at least avoid a syntax error by defaulting to DO NOTHING and providing a comment.
+                            $converted .= ' ON CONFLICT DO NOTHING /* CAUTION: REPLACE converted to DO NOTHING as conflict target is unknown */';
+                            $report[] = ['type' => 'warning', 'message' => 'REPLACE converted to INSERT...ON CONFLICT DO NOTHING (conflict target unknown)'];
                             break;
+
                         case 'insert_ignore':
                             $converted = preg_replace('/^\s*REPLACE\s+INTO/i', 'INSERT INTO', $converted);
                             $converted .= ' ON CONFLICT DO NOTHING';
@@ -992,19 +1148,29 @@ class ConversionController extends Controller
                     $handled = true;
                 }
 
-                // Handle triggers based on options
-                if (!$handled && preg_match('/^\s*(CREATE\s+TRIGGER|DROP\s+TRIGGER)/i', $trimmed)) {
-                    switch ($options['trigger_handling'] ?? 'convert') {
-                        case 'comment':
-                            $converted = '-- '.$converted;
-                            $report[] = ['type' => 'warning', 'message' => 'Trigger commented out - manual review needed'];
-                            break;
-                        case 'skip':
-                            continue 2; // Skip this line entirely
-                        case 'convert':
-                        default:
+                if (!$handled && preg_match('/^\s*(CREATE\s+(?:DEFINER\s*=\s*[^\s]+\s+)?(?:TRIGGER|PROCEDURE|FUNCTION)|DROP\s+(?:TRIGGER|PROCEDURE|FUNCTION))/i', $trimmed)) {
+                    $triggerOption = $options['trigger_handling'] ?? 'convert';
+                    
+                    if ($triggerOption === 'comment') {
+                        $converted = '-- '.$converted;
+                        $report[] = ['type' => 'warning', 'message' => 'Procedural object commented out - manual review needed'];
+                    } elseif ($triggerOption === 'skip') {
+                        continue;
+                    } elseif ($triggerOption === 'convert' && ($options['predictiveRefactoring'] ?? $options['predictive_refactoring'] ?? false)) {
+                        // Gather the whole procedural block if it's multiple lines (simplified for now to current line)
+                        // In a more robust version, we'd need to buffer the full PROCEDURE block until the DELIMITER change
+                        $aiTranspile = $this->gemini->transpileProcedural($line);
+                        if ($aiTranspile && isset($aiTranspile['sql'])) {
+                            $converted = $aiTranspile['sql'];
+                            $report[] = [
+                                'type' => 'info', 
+                                'message' => 'AI Transpiled Object: ' . ($aiTranspile['explanation'] ?? 'MySQL to PL/pgSQL conversion successful')
+                            ];
+                        } else {
                             $report[] = ['type' => 'warning', 'message' => 'Trigger syntax may need manual adjustment for PostgreSQL'];
-                            break;
+                        }
+                    } else {
+                        $report[] = ['type' => 'warning', 'message' => 'Trigger syntax may need manual adjustment for PostgreSQL'];
                     }
                     $postgresql[] = $converted;
                     $handled = true;
@@ -1033,6 +1199,23 @@ class ConversionController extends Controller
                 }
             }
             fclose($fp);
+        }
+
+        // Add FOREIGN KEYS AFTER all tables are created and data is imported
+        foreach ($data['tables'] as $tableName => $table) {
+            if (!empty($table['foreign_keys'])) {
+                $quotedTableName = $this->quotePostgreSQLIdentifier($tableName);
+                foreach ($table['foreign_keys'] as $fk) {
+                    $localCol = $this->quotePostgreSQLIdentifier($fk['column']);
+                    $refTable = $this->quotePostgreSQLIdentifier($fk['references_table']);
+                    $refCol = $this->quotePostgreSQLIdentifier($fk['references_column']);
+                    
+                    // Add some safe unique prefix to constraint name to avoid collision
+                    $constraintName = $this->quotePostgreSQLIdentifier("fk_{$tableName}_{$fk['column']}");
+                    
+                    $postgresql[] = "ALTER TABLE {$quotedTableName} ADD CONSTRAINT {$constraintName} FOREIGN KEY ({$localCol}) REFERENCES {$refTable}({$refCol}) ON DELETE CASCADE;";
+                }
+            }
         }
 
         $psqlScript = implode("\n\n", $postgresql);
@@ -1307,7 +1490,7 @@ class ConversionController extends Controller
         if ($isPredictive && (stripos($definition, 'TIMESTAMP') !== false || stripos($definition, 'DATETIME') !== false)) {
             $report[] = [
                 'type' => 'info',
-                'message' => "AI Suggestion: Column '{$columnName}' converted to TIMESTAMPTZ (TIMESTAMP WITH TIME ZONE) for better timezone handling."
+                'message' => "AI Insight: Column '{$columnName}' converted to TIMESTAMPTZ (TIMESTAMP WITH TIME ZONE) for better timezone handling."
             ];
         }
 
@@ -1317,10 +1500,23 @@ class ConversionController extends Controller
             if ($timezoneHandling === 'preserve') {
                 $definition = str_ireplace('DATETIME', 'TIMESTAMP', $definition);
             } else {
-                $definition = str_ireplace('DATETIME', 'TIMESTAMP WITH TIME ZONE', $definition);
+                // To keep precision correctly, we can replace DATETIME with TIMESTAMPTZ
+                $definition = str_ireplace('DATETIME', 'TIMESTAMPTZ', $definition);
             }
-            return $definition;
+            return trim($definition);
         }
+
+        // Handle TIMESTAMP conversion similarly
+        if (stripos($definition, 'TIMESTAMP') !== false && !str_contains(strtoupper($definition), 'WITH TIME ZONE')) {
+            $timezoneHandling = $options['timezoneHandling'] ?? $options['timezone_handling'] ?? 'with_timezone';
+            if ($timezoneHandling !== 'preserve') {
+                $definition = str_ireplace('TIMESTAMP', 'TIMESTAMPTZ', $definition);
+                // Correctly restore CURRENT_TIMESTAMP after indiscriminate replacement
+                $definition = str_ireplace('CURRENT_TIMESTAMPTZ', 'CURRENT_TIMESTAMP', $definition);
+            }
+            return trim($definition);
+        }
+
 
         // Handle BIT(1) as BOOLEAN
         if (stripos($definition, 'BIT(1)') !== false) {
@@ -1402,13 +1598,13 @@ class ConversionController extends Controller
             return trim($converted);
         }
         
-        // Predictive Refactoring: UUID for CHAR(36) or VARCHAR(36) named 'id' or ending in '_id'
+        // Predictive Refactoring: UUID for CHAR(36) or VARCHAR(36) named exactly 'id' or 'uuid'
         if ($isPredictive && 
             preg_match('/\b(CHAR|VARCHAR)\b\s*\(36\)/i', $definition) && 
-            (strtolower($columnName) === 'id' || str_ends_with(strtolower($columnName), '_id'))) {
+            (strtolower($columnName) === 'id' || strtolower($columnName) === 'uuid')) {
             $report[] = [
                 'type' => 'info', 
-                'message' => "AI Suggestion: Column '{$columnName}' looks like a UUID. Converted to UUID type for better performance and validation."
+                'message' => "AI Insight: Column '{$columnName}' looks like a primary UUID. Converted to UUID type for better performance and validation."
             ];
             return 'UUID';
         }
@@ -1422,7 +1618,7 @@ class ConversionController extends Controller
                 if ($isPredictive && (stripos($mysql, 'VARCHAR') !== false || stripos($mysql, 'CHAR') !== false) && $postgres === 'TEXT') {
                     $report[] = [
                         'type' => 'info',
-                        'message' => "AI Suggestion: PostgreSQL handles TEXT as efficiently as VARCHAR(n). Converted '{$columnName}' to TEXT to avoid 'value too long' errors."
+                        'message' => "AI Insight: PostgreSQL handles TEXT as efficiently as VARCHAR(n). Converted '{$columnName}' to TEXT to avoid 'value too long' errors."
                     ];
                 }
 

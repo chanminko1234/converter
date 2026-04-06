@@ -15,7 +15,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   Copy, Download, Upload, Settings,
   Github, Rocket, Eraser, Activity, Zap, Terminal, Search,
-  Database, Server, Maximize2, Check, ShieldCheck, AlertOctagon, X
+  Database, Server, Maximize2, Check
 } from 'lucide-react';
 import { ConversionReport } from '@/lib/sqlConverter';
 import { CodeHighlighter } from '@/components/ui/syntax-highlighter';
@@ -24,8 +24,6 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ERDVisualizer } from '@/components/ERDVisualizer';
 import { DiffExplorer } from '@/components/DiffExplorer';
-import { MigrationMapper } from '@/components/MigrationMapper';
-import { LiveMigrationDashboard } from '@/components/LiveMigrationDashboard';
 
 type TargetFormat = 'postgresql' | 'csv' | 'xlsx' | 'xls' | 'sqlite' | 'psql';
 
@@ -60,13 +58,11 @@ const Welcome: React.FC = () => {
   const [targetFormat, setTargetFormat] = useState<TargetFormat>('postgresql');
   const [activeTab, setActiveTab] = useState('output');
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [conversionData, setConversionData] = useState<any>(null);
   const [rollbackScript, setRollbackScript] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [schemaData, setSchemaData] = useState<any[] | null>(null);
   const [isFullScreenERD, setIsFullScreenERD] = useState(false);
-  const [isFullScreenMapper, setIsFullScreenMapper] = useState(false);
-  const [isSandboxRunning, setIsSandboxRunning] = useState(false);
-  const [sandboxResult, setSandboxResult] = useState<{ success: boolean; message?: string; error?: string } | null>(null);
   const [options, setOptions] = useState<ConversionOptions>({
     preserveIdentity: true,
     handleEnums: 'check_constraint',
@@ -162,47 +158,9 @@ const Welcome: React.FC = () => {
     }
   };
 
-  const runSandbox = async () => {
-    if (!output) {
-      toast.error('Generate SQL first before running sandbox validation');
-      return;
-    }
-
-    setIsSandboxRunning(true);
-    setSandboxResult(null);
-
-    try {
-      const response = await axios.post('/convert/sandbox', { sql: output });
-      setSandboxResult({ success: true, message: response.data.message });
-      toast.success('Sandbox validation successful!');
-    } catch (err: any) {
-      const errMsg = err.response?.data?.error || 'Execution failed in the sandbox';
-      setSandboxResult({ success: false, error: errMsg });
-      toast.error('Sandbox execution error');
-    } finally {
-      setIsSandboxRunning(false);
-    }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard');
-  };
-
-  const downloadSql = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'text/sql' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const processResult = (result: any) => {
     const data = result.data;
+    setConversionData(data);
     if (data.schema_meta) {
       setSchemaData(data.schema_meta);
     }
@@ -315,6 +273,56 @@ const Welcome: React.FC = () => {
     } finally {
       setIsTranslating(false);
     }
+  };
+
+  const handleDownload = () => {
+    if (!conversionData) return toast.error('Nothing to download');
+
+    // Case 1: Excel format
+    if (targetFormat === 'xlsx' || targetFormat === 'xls') {
+      window.location.href = `/storage/conversions/${conversionData.filename}`;
+      return;
+    }
+
+    // Case 2: Full SQL/CSV result
+    let content = '';
+    if (targetFormat === 'csv') {
+      content = Object.entries(conversionData.files || {}).map(([p, c]) => `-- Table: ${p}\n${c}`).join('\n\n');
+    } else {
+      content = conversionData.sql || conversionData.script || '';
+    }
+
+    if (!content) return toast.error('No content to download');
+
+    const blob = new Blob([content], { type: 'text/sql' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `migration_${targetFormat}_${new Date().getTime()}.sql`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Download started');
+  };
+
+  const handleDownloadRollback = () => {
+    if (!rollbackScript) return toast.error('No rollback script available');
+    const blob = new Blob([rollbackScript], { type: 'text/sql' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rollback_${new Date().getTime()}.sql`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.warning('Rollback script downloaded. Use with caution.');
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(output);
+    toast.success('Copied to clipboard');
   };
 
   const clearInput = () => {
@@ -469,8 +477,8 @@ const Welcome: React.FC = () => {
                     <div
                       onClick={() => setOptions(p => ({ ...p, predictiveRefactoring: !p.predictiveRefactoring }))}
                       className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.predictiveRefactoring
-                        ? 'bg-primary/10 border-primary/40 shadow-[0_0_40px_rgba(var(--primary),0.1)]'
-                        : 'bg-white/5 border-white/10 hover:border-primary/30 hover:bg-white/[0.07]'
+                          ? 'bg-primary/10 border-primary/40 shadow-[0_0_40px_rgba(var(--primary),0.1)]'
+                          : 'bg-white/5 border-white/10 hover:border-primary/30 hover:bg-white/[0.07]'
                         }`}
                     >
                       <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -496,8 +504,8 @@ const Welcome: React.FC = () => {
                     <div
                       onClick={() => setOptions(p => ({ ...p, autoCleaning: !p.autoCleaning }))}
                       className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.autoCleaning
-                        ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_40px_rgba(245,158,11,0.1)]'
-                        : 'bg-white/5 border-white/10 hover:border-amber-500/30 hover:bg-white/[0.07]'
+                          ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_40px_rgba(245,158,11,0.1)]'
+                          : 'bg-white/5 border-white/10 hover:border-amber-500/30 hover:bg-white/[0.07]'
                         }`}
                     >
                       <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -523,8 +531,8 @@ const Welcome: React.FC = () => {
                     <div
                       onClick={() => setOptions(p => ({ ...p, incrementalSync: !p.incrementalSync }))}
                       className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.incrementalSync
-                        ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_40px_rgba(16,185,129,0.1)]'
-                        : 'bg-white/5 border-white/10 hover:border-emerald-500/30 hover:bg-white/[0.07]'
+                          ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_40px_rgba(16,185,129,0.1)]'
+                          : 'bg-white/5 border-white/10 hover:border-emerald-500/30 hover:bg-white/[0.07]'
                         }`}
                     >
                       <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -550,8 +558,8 @@ const Welcome: React.FC = () => {
                     <div
                       onClick={() => setOptions(p => ({ ...p, dataMasking: !p.dataMasking }))}
                       className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.dataMasking
-                        ? 'bg-blue-500/10 border-blue-500/40 shadow-[0_0_40px_rgba(59,130,246,0.1)]'
-                        : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/[0.07]'
+                          ? 'bg-blue-500/10 border-blue-500/40 shadow-[0_0_40px_rgba(59,130,246,0.1)]'
+                          : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/[0.07]'
                         }`}
                     >
                       <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -600,24 +608,6 @@ const Welcome: React.FC = () => {
               {isConverting ? 'Processing...' : mode === 'stream' ? 'Start Live Stream' : 'Run Transformation'}
             </Button>
           </div>
-
-          <AnimatePresence>
-            {mode === 'stream' && isConverting && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-12 w-full"
-              >
-                <LiveMigrationDashboard
-                  sourceDb={sourceConn.db}
-                  targetDb={targetConn.db}
-                  isSyncing={isConverting}
-                  onCompleted={() => setIsConverting(false)}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
 
         {/* Editor */}
@@ -751,6 +741,7 @@ const Welcome: React.FC = () => {
                             placeholder="••••••••"
                             className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
                             value={sourceConn.pass}
+                            password-autofill="false"
                             onChange={e => setSourceConn(p => ({ ...p, pass: e.target.value }))}
                           />
                         </div>
@@ -811,6 +802,7 @@ const Welcome: React.FC = () => {
                             placeholder="••••••••"
                             className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
                             value={sourceConn.pass}
+                            password-autofill="false"
                             onChange={e => setSourceConn(p => ({ ...p, pass: e.target.value }))}
                           />
                         </div>
@@ -868,6 +860,7 @@ const Welcome: React.FC = () => {
                             type="password"
                             className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none"
                             value={targetConn.pass}
+                            password-autofill="false"
                             onChange={e => setTargetConn(p => ({ ...p, pass: e.target.value }))}
                           />
                         </div>
@@ -910,11 +903,6 @@ const Welcome: React.FC = () => {
                       <TabsTrigger value="visualization" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-indigo-500 flex items-center gap-2">
                         <Database className="h-3 w-3" /> ERD
                       </TabsTrigger>
-                      {schemaData && (
-                        <TabsTrigger value="mapper" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-violet-600 flex items-center gap-2">
-                          <Zap className="h-3 w-3" /> Mapper
-                        </TabsTrigger>
-                      )}
                       <TabsTrigger value="diff" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-primary flex items-center gap-2">
                         <Activity className="h-3 w-3" /> Diff
                       </TabsTrigger>
@@ -923,84 +911,36 @@ const Welcome: React.FC = () => {
                       </TabsTrigger>
                     </TabsList>
                   </div>
+                  <div className="flex gap-2 items-center flex-shrink-0 w-full sm:w-auto justify-end border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0">
+                    {rollbackScript && (
+                      <Button variant="ghost" size="sm" onClick={handleDownloadRollback} title="Download Rollback (Safety Script)" className="h-9 rounded-xl hover:bg-red-500/10 text-red-400 font-bold text-[9px] uppercase tracking-wider px-3">
+                        <Eraser className="h-3 w-3 mr-2" /> Rollback
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={handleCopy} disabled={!output} className="h-9 rounded-xl hover:bg-white/5 font-bold text-[9px] uppercase tracking-wider px-3 border border-white/5">
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                    <Button variant="default" size="sm" onClick={handleDownload} disabled={!output} className="h-9 rounded-xl font-bold text-[9px] uppercase tracking-wider px-4 shadow-lg shadow-primary/20">
+                      <Download className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="flex-1 min-h-[440px]">
                   <AnimatePresence mode="wait">
                     <TabsContent key={activeTab} value={activeTab} className="m-0 p-0 h-full">
                       {activeTab === 'output' && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full p-6">
-                          <div className="space-y-6">
-                            <AnimatePresence>
-                              {sandboxResult && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: 20 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: -20 }}
-                                  className={`p-6 rounded-[2rem] border backdrop-blur-xl ${sandboxResult.success ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'
-                                    }`}
-                                >
-                                  <div className="flex items-start gap-5">
-                                    <div className={`p-4 rounded-2xl shadow-2xl ${sandboxResult.success ? 'bg-emerald-600 shadow-emerald-500/40' : 'bg-red-600 shadow-red-500/40'
-                                      }`}>
-                                      {sandboxResult.success ? <ShieldCheck className="h-5 w-5 text-white" /> : <AlertOctagon className="h-5 w-5 text-white" />}
-                                    </div>
-                                    <div className="space-y-1 flex-1">
-                                      <div className="flex items-center justify-between">
-                                        <h3 className="text-sm font-black uppercase tracking-widest text-white italic">
-                                          {sandboxResult.success ? 'Integrity Verified' : 'Execution Failed'}
-                                        </h3>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() => setSandboxResult(null)}
-                                          className="h-6 w-6 rounded-lg hover:bg-white/10"
-                                        >
-                                          <X className="h-3 w-3 text-white/40" />
-                                        </Button>
-                                      </div>
-                                      <p className="text-[11px] font-bold text-white/50 leading-relaxed uppercase tracking-tighter">
-                                        {sandboxResult.success ? sandboxResult.message : sandboxResult.error}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-
-                            <div className="relative group/code rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl">
-                              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50 opacity-20" />
-                              <div className="max-h-[400px] overflow-auto custom-scrollbar bg-slate-950/40 backdrop-blur-md">
-                                <CodeHighlighter code={output || '-- Awaiting Execution Data...'} language={targetFormat === 'csv' ? 'text' : 'sql'} />
-                              </div>
-
-                              {output && (
-                                <div className="absolute bottom-6 right-6 flex items-center gap-3 pointer-events-auto">
-                                  <Button
-                                    onClick={runSandbox}
-                                    disabled={isSandboxRunning}
-                                    variant="outline"
-                                    className={`rounded-2xl flex border-white/5 bg-white/5 hover:bg-primary/20 hover:border-primary/40 transition-all font-black text-[10px] uppercase tracking-widest px-6 ${isSandboxRunning ? 'animate-pulse' : ''}`}
-                                  >
-                                    {isSandboxRunning ? (
-                                      <Activity className="w-3 h-4 mr-2 animate-spin text-primary" />
-                                    ) : (
-                                      <ShieldCheck className="w-3 h-4 mr-2 text-primary" />
-                                    )}
-                                    {isSandboxRunning ? 'Validating...' : 'Dry Run Sandbox'}
-                                  </Button>
-
-                                  <Button
-                                    onClick={() => downloadSql(output, 'migration.sql')}
-                                    className="rounded-2xl flex shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 transition-all font-black text-[10px] uppercase tracking-widest px-8 group/btn"
-                                  >
-                                    <Download className="w-3 h-4 mr-2 group-hover/btn:-translate-y-0.5 transition-transform" />
-                                    Download SQL
-                                  </Button>
-                                </div>
-                              )}
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full">
+                          {output ? (
+                            <div className="h-[500px] overflow-auto">
+                              <CodeHighlighter code={output} language={targetFormat === 'csv' ? 'text' : 'sql'} />
                             </div>
-                          </div>
+                          ) : (
+                            <div className="h-full flex flex-col items-center justify-center opacity-20 p-20 text-center">
+                              <Terminal className="h-16 w-16 mb-4" />
+                              <p className="font-bold text-sm uppercase tracking-[0.2em]">Awaiting Execution</p>
+                            </div>
+                          )}
                         </motion.div>
                       )}
 
@@ -1018,9 +958,9 @@ const Welcome: React.FC = () => {
                               <Button
                                 onClick={handleTranslateQuery}
                                 disabled={isTranslating || !queryInput.trim()}
-                                className="absolute bottom-6 right-6 rounded-xl flex bg-amber-500 hover:bg-amber-600 font-bold px-6 shadow-xl shadow-amber-500/20 active:scale-95 transition-all"
+                                className="absolute bottom-6 right-6 rounded-xl bg-amber-500 hover:bg-amber-600 font-bold px-6 shadow-xl shadow-amber-500/20 active:scale-95 transition-all"
                               >
-                                {isTranslating ? <Activity className="w-4 animate-spin mr-2" /> : <Zap className="w-4 mr-2" />}
+                                {isTranslating ? <Activity className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
                                 Transpile SQL
                               </Button>
                             </div>
@@ -1040,7 +980,10 @@ const Welcome: React.FC = () => {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => copyToClipboard(queryOutput)}
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(queryOutput);
+                                    toast.success('Translated query copied');
+                                  }}
                                   className="absolute bottom-6 right-6 rounded-xl bg-white/5 hover:bg-white/10"
                                 >
                                   <Copy className="h-4 w-4" />
@@ -1056,11 +999,14 @@ const Welcome: React.FC = () => {
                           {rollbackScript ? (
                             <div className="h-[500px] overflow-auto relative group">
                               <div className="absolute top-4 right-4 z-10 flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => copyToClipboard(rollbackScript)} className="rounded-xl flex font-bold text-[10px] uppercase tracking-widest bg-slate-900/40 backdrop-blur-md border-white/10">
-                                  <Copy className="h-4 w-3 mr-2" /> Copy
+                                <Button variant="outline" size="sm" onClick={() => {
+                                  navigator.clipboard.writeText(rollbackScript);
+                                  toast.success('Rollback script copied');
+                                }} className="rounded-xl font-bold text-[10px] uppercase tracking-widest bg-slate-900/40 backdrop-blur-md border-white/10">
+                                  <Copy className="h-3 w-3 mr-2" /> Copy
                                 </Button>
-                                <Button variant="outline" size="sm" onClick={() => downloadSql(rollbackScript, 'rollback.sql')} className="rounded-xl flex font-bold text-[10px] uppercase tracking-widest bg-red-500/20 text-red-400 border-red-500/20 hover:bg-red-500/30">
-                                  <Download className="h-4 w-3 mr-2" /> Download
+                                <Button variant="outline" size="sm" onClick={handleDownloadRollback} className="rounded-xl font-bold text-[10px] uppercase tracking-widest bg-red-500/20 text-red-400 border-red-500/20 hover:bg-red-500/30">
+                                  <Download className="h-3 w-3 mr-2" /> Download
                                 </Button>
                               </div>
                               <CodeHighlighter code={rollbackScript} language="sql" />
@@ -1097,20 +1043,6 @@ const Welcome: React.FC = () => {
                         </div>
                       )}
 
-                      {activeTab === 'mapper' && schemaData && (
-                        <div className="h-[500px] p-2 relative group/mapper">
-                          <MigrationMapper schema={schemaData} />
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => setIsFullScreenMapper(true)}
-                            className="absolute top-6 right-6 opacity-0 group-hover/mapper:opacity-100 transition-all bg-slate-900/40 backdrop-blur-md border-white/10 rounded-xl hover:bg-primary/20 hover:scale-110 z-50"
-                          >
-                            <Maximize2 className="h-4 w-4 text-primary" />
-                          </Button>
-                        </div>
-                      )}
-
                       {activeTab === 'diff' && (
                         <div className="h-[500px] p-2">
                           <DiffExplorer oldCode={mysqlInput} newCode={output} />
@@ -1118,62 +1050,33 @@ const Welcome: React.FC = () => {
                       )}
 
                       {activeTab === 'report' && (
-                        <div className="p-8 space-y-4 max-h-[500px] overflow-auto custom-scrollbar">
+                        <div className="p-8 space-y-3">
                           {conversionReport.length > 0 ? conversionReport.map((r, i) => {
-                            const isAi = r.message.includes('AI Insight:') || r.message.includes('AI Transpiled') || r.message.includes('AI Suggestion');
+                            const isAi = r.message.includes('AI Suggestion:');
                             const isCleaning = r.message.includes('Auto-Cleaning:');
                             return (
-                              <div key={i} className={`group relative p-5 rounded-3xl glass border-l-4 font-bold text-xs ${r.type === 'error' ? 'border-red-500 bg-red-500/5' :
-                                isAi ? 'border-primary bg-primary/5 shadow-[0_0_20px_rgba(var(--primary),0.05)]' :
+                              <div key={i} className={`p-4 rounded-2xl glass border-l-4 font-bold text-xs ${r.type === 'error' ? 'border-red-500 bg-red-500/5' :
+                                isAi ? 'border-primary bg-primary/5' :
                                   isCleaning ? 'border-amber-500 bg-amber-500/5' :
-                                    'border-white/10 bg-white/[0.02]'
-                                } transition-all hover:scale-[1.01] duration-300`}>
-                                <div className="flex flex-col gap-3">
-                                  <div className="flex items-start gap-4">
-                                    {isAi && (
-                                      <div className="bg-primary p-2 rounded-xl shadow-lg shadow-primary/20">
-                                        <Zap className="h-3 w-3 text-white fill-white" />
-                                      </div>
-                                    )}
-                                    {isCleaning && (
-                                      <div className="bg-amber-500/20 p-2 rounded-xl">
-                                        <Eraser className="h-3 w-3 text-amber-500 fill-amber-500" />
-                                      </div>
-                                    )}
-                                    <div className="flex-1 pt-0.5">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isAi ? 'text-primary' : isCleaning ? 'text-amber-500' : 'opacity-40'}`}>
-                                          {isAi ? 'Gemini AI Agent' : isCleaning ? 'Heuristic Cleaner' : r.type}
-                                        </span>
-                                      </div>
-                                      <p className={isAi || isCleaning ? 'text-foreground font-black text-sm' : 'opacity-80'}>
-                                        {r.message.replace('AI Insight: ', '').replace('AI Suggestion: ', '').replace('Auto-Cleaning: ', '')}
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  {/* Render SQL Suggestion if present */}
-                                  {(r as any).sql && (
-                                    <div className="mt-2 rounded-2xl bg-black/40 border border-white/5 overflow-hidden">
-                                      <div className="px-4 py-2 bg-white/5 flex items-center justify-between">
-                                        <span className="text-[8px] font-black uppercase tracking-widest text-white/30">Suggested Optimization</span>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-6 w-6 rounded-md hover:bg-white/10"
-                                          onClick={() => {
-                                            navigator.clipboard.writeText((r as any).sql);
-                                            toast.success('Optimization SQL copied');
-                                          }}
-                                        >
-                                          <Copy className="h-3 w-3 opacity-40 hover:opacity-100" />
-                                        </Button>
-                                      </div>
-                                      <div className="p-4 font-mono text-[10px] text-primary/80 whitespace-pre scrollbar-none overflow-x-auto">
-                                        {(r as any).sql}
-                                      </div>
+                                    'border-primary/40 bg-white/5'
+                                } transition-all hover:scale-[1.02] duration-300`}>
+                                <div className="flex items-start gap-3">
+                                  {isAi && (
+                                    <div className="bg-primary/20 p-1.5 rounded-lg">
+                                      <Zap className="h-3 w-3 text-primary fill-primary" />
                                     </div>
                                   )}
+                                  {isCleaning && (
+                                    <div className="bg-amber-500/20 p-1.5 rounded-lg">
+                                      <Eraser className="h-3 w-3 text-amber-500 fill-amber-500" />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <span className={`opacity-40 mr-2 ${isAi ? 'text-primary' : isCleaning ? 'text-amber-500' : ''}`}>[{isAi ? 'GEMINI' : isCleaning ? 'CLEANUP' : r.type.toUpperCase()}]</span>
+                                    <span className={isAi || isCleaning ? 'text-foreground/90' : 'opacity-80'}>
+                                      {r.message.replace('AI Suggestion: ', '').replace('Auto-Cleaning: ', '')}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -1226,29 +1129,6 @@ const Welcome: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                       <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Live Schema Mapping Active</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-      <Dialog open={isFullScreenMapper} onOpenChange={setIsFullScreenMapper}>
-        <DialogContent className="max-w-[98vw] w-[98vw] h-[95vh] p-0 border-none bg-slate-950/90 backdrop-blur-3xl overflow-hidden rounded-[3rem] shadow-[0_0_100px_rgba(var(--primary),0.1)] focus:outline-none">
-          {schemaData && (
-            <div className="h-full w-full relative group">
-              <MigrationMapper schema={schemaData} />
-              <div className="absolute top-12 left-12 pointer-events-none space-y-4">
-                <div className="flex items-center gap-6">
-                  <div className="bg-violet-600 p-4 rounded-[2rem] shadow-2xl shadow-violet-600/40">
-                    <Zap className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="space-y-1">
-                    <h2 className="text-2xl font-black tracking-tighter text-white uppercase drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">Architectural Bridge</h2>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Live Transformation Mapping</span>
                     </div>
                   </div>
                 </div>

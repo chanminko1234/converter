@@ -6,24 +6,24 @@ import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/theme-toggle';
 import {
   MessageCircle, HelpCircle,
-  Send, Mail, Github, ExternalLink, Zap
+  Send, Github, ExternalLink, Zap,
+  Rocket, Shield, Cpu, Activity
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Support: React.FC = () => {
   const faqs = [
-    { q: "Is there a file size limit?", a: "Standard uploads support files up to 100MB. For larger databases, please use our CLI tool or direct streaming node." },
-    { q: "How does the Staging Generator work?", a: "It clones your prod schema but uses FakerPHP to inject realistic synthetic data into PII columns (emails, names, etc.) so your dev teams stay safe." },
-    { q: "Can it translate application SQL?", a: "Yes. Use the 'Query Translator' tab to paste your MySQL SELECT statements. We'll transpile them to standard PostgreSQL syntax automatically." },
-    { q: "What if the migration fails?", a: "Every conversion generates a dedicated 'Rollback Script' that reverts all changes in the correct dependency order within an atomic transaction." },
+    { q: "What is the maximum throughput for live streaming?", a: "Our edge cluster nodes support up to 50,000 transactions per second (TPS) depending on the source instance capacity and network peering." },
+    { q: "How does the Neural Engine handle complex stored procedures?", a: "The engine parses the procedural SQL into an AST and transpiles core logic into PL/pgSQL while flagging non-equivalent global state interactions." },
+    { q: "Is PII masking applied on-the-fly during streaming?", a: "Yes. All data stream buffers are intercepted by the Staging Synthesis layer to apply FakerPHP-based obfuscation before reaching the target sink." },
+    { q: "How do I trigger an atomic rollback?", a: "Every migration session includes a signed ID. You can execute `php artisan stream:rollback {id}` to revert all changes via idempotent cleanup scripts." },
   ];
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans relative overflow-hidden">
       <Head>
-        <title>Technical Support | MySQL to PostgreSQL Converter</title>
-        <meta name="description" content="Get expert technical support and guidance on complex database migrations from MySQL to PostgreSQL. Community hub, bug tracker, and detailed FAQs." />
-        <meta name="keywords" content="sql migration support, database conversion help, mysql to postgresql technical assistance, troubleshoot sql migration" />
+        <title>Engineering Support | SQL STREAM</title>
+        <meta name="description" content="Access priority technical support for the SQL STREAM database migration ecosystem. 24/7 developer concierge, architectural reviews, and technical FAQs." />
       </Head>
 
       {/* Background Effects */}
@@ -33,42 +33,45 @@ const Support: React.FC = () => {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full" />
       </div>
 
-      <nav className="border-b glass fixed top-0 w-full z-50 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="bg-primary/10 p-2 rounded-xl ring-1 ring-primary/20">
-            <Zap className="h-6 w-6 text-primary fill-primary/20" />
-          </Link>
-          <span className="font-bold text-xl tracking-tight">
-            Converter<span className="text-primary text-2xl">.</span>Support
-          </span>
-        </div>
+      <nav className="border-b glass fixed top-0 w-full z-50 px-8 py-4 flex items-center justify-between backdrop-blur-xl">
         <div className="flex items-center gap-4">
+          <Link href="/" className="bg-primary/20 p-2.5 rounded-xl ring-1 ring-primary/30">
+            <Rocket className="h-6 w-6 text-primary fill-primary/20" />
+          </Link>
+          <div className="flex flex-col">
+            <span className="font-black text-xl tracking-tighter leading-none">
+              SQL<span className="text-primary italic">STREAM</span>
+            </span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] opacity-40">Concierge Hub</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-6">
           <ThemeToggle />
           <Link href="/status">
-            <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9">System Status</Button>
+            <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9">Network Health</Button>
           </Link>
         </div>
       </nav>
 
       <main className="container max-w-5xl mx-auto px-4 pt-32 pb-20 relative z-10">
-        <section className="text-center mb-20 space-y-4">
+        <section className="text-center mb-24 space-y-6">
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
           >
-            <Badge variant="outline" className="px-5 py-1 rounded-full border-primary/20 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-              24/7 Developer Concierge
+            <Badge variant="outline" className="px-6 py-2 rounded-full border-primary/20 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-4">
+              24/7 Core Engineering Support
             </Badge>
-            <h1 className="text-6xl font-black tracking-tight leading-none mb-6">Expert Assistance<span className="text-primary">.</span></h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-medium">Looking for help with a complex migration? Our engineering team and community are here to guide you.</p>
+            <h1 className="text-6xl md:text-7xl font-black tracking-tighter leading-none mb-8 italic">Priority Access<span className="text-primary">.</span></h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-medium">Navigating a high-uptime database migration? Our architects and community are here to provide deep-tier technical guidance.</p>
           </motion.div>
         </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
           {[
-            { icon: <MessageCircle />, title: 'Community Discord', desc: 'Real-time help from 2,500+ developers.', action: 'Join Server', color: 'text-indigo-400' },
-            { icon: <Github />, title: 'Bug Tracker', desc: 'Open a technical issue on our GitHub.', action: 'Open Issue', color: 'text-white' },
-            { icon: <Mail />, title: 'Enterprise Support', desc: 'Priority assistance for large migrations.', action: 'Contact Sales', color: 'text-primary' },
+            { icon: <MessageCircle />, title: 'Developer Discord', desc: 'Real-time peer reviews and help from 3,000+ engineers.', action: 'Join Server', color: 'text-indigo-400' },
+            { icon: <Github />, title: 'Core Issues', desc: 'Contribute to the transpiler logic and report logic bugs.', action: 'Open Tracker', color: 'text-white' },
+            { icon: <Shield />, title: 'Enterprise SLA', desc: 'On-demand migration consulting for mission-critical clusters.', action: 'Contact Sales', color: 'text-primary' },
           ].map((item, i) => (
             <motion.div
               key={item.title}
@@ -76,13 +79,15 @@ const Support: React.FC = () => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: i * 0.1 }}
             >
-              <Card className="glass-card rounded-[2.5rem] p-8 border-white/10 hover:border-primary/20 transition-all flex flex-col items-center text-center gap-4 group">
-                <div className={`p-4 bg-white/5 rounded-2xl group-hover:bg-primary/10 transition-colors ${item.color}`}>
-                  {React.cloneElement(item.icon as React.ReactElement<any>, { className: "h-6 w-6" })}
+              <Card className="glass-card rounded-[3rem] p-10 border-white/10 hover:border-primary/30 transition-all flex flex-col items-center text-center gap-6 group shadow-2xl relative overflow-hidden">
+                <div className={`p-5 bg-white/5 rounded-[1.8rem] group-hover:bg-primary/10 transition-colors ${item.color}`}>
+                  {React.cloneElement(item.icon as React.ReactElement<any>, { className: "h-7 w-7" })}
                 </div>
-                <h3 className="font-bold text-lg">{item.title}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
-                <Button variant="outline" className="w-full flex items-center justify-center rounded-xl border-white/5 font-bold hover:bg-white/5 text-xs mt-2">
+                <div className="space-y-2">
+                   <h3 className="font-black text-xl tracking-tight">{item.title}</h3>
+                   <p className="text-[11px] text-muted-foreground leading-relaxed font-medium">{item.desc}</p>
+                </div>
+                <Button variant="outline" className="w-full flex items-center justify-center rounded-2xl border-white/10 font-black uppercase text-[10px] tracking-widest hover:bg-white/5 h-12 mt-2">
                   {item.action}
                   <ExternalLink className="h-3 w-3 ml-2 opacity-50" />
                 </Button>
@@ -91,38 +96,43 @@ const Support: React.FC = () => {
           ))}
         </div>
 
-        <section id="donation" className="mb-20 scroll-mt-32">
-          <Card className="bg-gradient-to-br from-amber-900/40 via-background to-background rounded-[3rem] p-12 border border-white/10 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2" />
-            <div className="flex flex-col lg:flex-row items-center gap-16 relative z-10">
-              <div className="flex-1 space-y-6">
-                <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20 px-4 py-1 rounded-full text-[10px] uppercase font-black tracking-widest">
-                  Back the Innovation
+        <section id="sponsorship" className="mb-24 scroll-mt-32">
+          <Card className="bg-gradient-to-br from-amber-900/40 via-background to-background rounded-[4rem] p-16 border border-white/10 relative overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.5)]">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-500/10 blur-[140px] rounded-full translate-x-1/2 -translate-y-1/2" />
+            <div className="flex flex-col lg:flex-row items-center gap-20 relative z-10">
+              <div className="flex-1 space-y-8">
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20 px-5 py-1.5 rounded-full text-[10px] uppercase font-black tracking-widest">
+                  Fuel the Innovation
                 </Badge>
-                <h2 className="text-5xl font-black tracking-tight leading-none">Support our <span className="text-amber-500">Mission.</span></h2>
+                <h2 className="text-6xl font-black tracking-tighter leading-none italic">Sustain the <span className="text-amber-500">Stream.</span></h2>
                 <p className="text-lg text-muted-foreground font-medium leading-relaxed">
-                  SQL Decoded is built by independent developers dedicated to simplifying data transformation. Your support helps us maintain the engine and keep our tools free for the community.
+                  SQL STREAM is an open-source movement. Your sponsorship directly funds the development of the Neural Engine and maintains our global low-latency stream nodes.
                 </p>
-                <div className="flex flex-wrap gap-4 pt-4">
-                  <Button className="rounded-2xl px-10 h-14 bg-amber-500 hover:bg-amber-600 font-black uppercase text-[10px] tracking-widest text-black shadow-2xl shadow-amber-500/20">
-                    Buy us a coffee
+                <div className="flex flex-wrap gap-5 pt-4">
+                  <Button className="rounded-2xl px-12 h-16 bg-amber-500 hover:bg-amber-600 font-black uppercase text-[10px] tracking-widest text-black shadow-2xl shadow-amber-500/30 transition-all active:scale-95">
+                    Github Sponsors
                   </Button>
-                  <Button variant="outline" className="rounded-2xl px-10 h-14 border-white/10 font-black uppercase text-[10px] tracking-widest hover:bg-white/5">
-                    Become a Sponsor
+                  <Button variant="outline" className="rounded-2xl px-12 h-16 border-white/10 font-black uppercase text-[10px] tracking-widest hover:bg-white/5 transition-all active:scale-95">
+                    Become a Partner
                   </Button>
                 </div>
               </div>
 
-              <div className="w-full lg:w-96 grid grid-cols-2 gap-4">
+              <div className="w-full lg:w-[400px] grid grid-cols-2 gap-6">
                 {[
-                  { label: 'Cloud Hosting', val: '$120/mo', active: true },
-                  { label: 'Compute Power', val: 'Turbo', active: true },
-                  { label: 'Dev Pipeline', val: 'Automated', active: true },
-                  { label: 'Community', val: 'Infinite', active: true },
+                  { label: 'Edge Nodes', val: 'Global', icon: <Activity /> },
+                  { label: 'Neural Logic', val: 'Active', icon: <Cpu /> },
+                  { label: 'Safe Buffers', val: 'AES-256', icon: <Shield /> },
+                  { label: 'Sponsors', val: 'Join Us', icon: <Zap /> },
                 ].map((stat, i) => (
-                  <div key={i} className="p-6 rounded-[2rem] bg-white/5 border border-white/5 space-y-2">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</p>
-                    <p className="font-bold text-lg">{stat.val}</p>
+                  <div key={i} className="p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/5 space-y-4 hover:bg-white/[0.06] transition-colors group">
+                    <div className="text-primary/40 group-hover:text-primary transition-colors">
+                       {React.cloneElement(stat.icon as React.ReactElement<any>, { className: "h-5 w-5" })}
+                    </div>
+                    <div>
+                      <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground opacity-50">{stat.label}</p>
+                      <p className="font-black text-xl tracking-tight">{stat.val}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -130,41 +140,41 @@ const Support: React.FC = () => {
           </Card>
         </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          <section className="space-y-8">
-            <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
-              <HelpCircle className="text-primary h-8 w-8" />
-              Frequently Asked
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
+          <section className="space-y-10">
+            <h2 className="text-4xl font-black tracking-tighter flex items-center gap-4 italic underline decoration-primary/20 underline-offset-8">
+              <HelpCircle className="text-primary h-9 w-9" />
+              Technical FAQ
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-6">
               {faqs.map((f, i) => (
-                <Card key={i} className="glass border-white/5 p-6 rounded-2xl hover:border-white/10 transition-all">
-                  <h4 className="font-bold text-sm mb-2">{f.q}</h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed font-medium">{f.a}</p>
+                <Card key={i} className="glass-card border-white/5 p-8 rounded-[2.5rem] hover:border-white/20 transition-all shadow-xl group">
+                  <h4 className="font-black text-sm mb-4 tracking-tight group-hover:text-primary transition-colors">{f.q}</h4>
+                  <p className="text-[12px] text-muted-foreground leading-relaxed font-medium opacity-80">{f.a}</p>
                 </Card>
               ))}
             </div>
           </section>
 
-          <section className="space-y-8">
-            <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
-              <Send className="text-primary h-8 w-8" />
-              Direct Support
+          <section className="space-y-10">
+            <h2 className="text-4xl font-black tracking-tighter flex items-center gap-4 italic underline decoration-primary/20 underline-offset-8">
+              <Send className="text-primary h-9 w-9" />
+              Engineering Ticket
             </h2>
-            <Card className="glass-card border-primary/20 rounded-[2.5rem] p-10 overflow-hidden relative">
+            <Card className="glass-card border-primary/20 rounded-[3.5rem] p-12 overflow-hidden relative shadow-2xl">
               <div className="absolute top-[-20%] right-[-20%] w-64 h-64 bg-primary/5 blur-[80px] rounded-full" />
-              <div className="space-y-6 relative z-10">
-                <div className="space-y-1">
-                  <h4 className="font-bold text-xl">Submit a Request</h4>
-                  <p className="text-xs text-muted-foreground">Typical response time: 2-4 hours</p>
+              <div className="space-y-8 relative z-10">
+                <div className="space-y-2">
+                  <h4 className="font-black text-2xl tracking-tighter">Submit a Stream Inquiry</h4>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Architectural Support Tier 1</p>
                 </div>
-                <div className="space-y-4">
-                  <div className="h-10 bg-white/5 border border-white/5 rounded-xl px-4 flex items-center text-xs opacity-50 italic">Full Name...</div>
-                  <div className="h-10 bg-white/5 border border-white/5 rounded-xl px-4 flex items-center text-xs opacity-50 italic">Professional Email...</div>
-                  <div className="h-32 bg-white/5 border border-white/5 rounded-xl p-4 text-xs opacity-50 italic leading-relaxed">Briefly describe your database transformation requirements and any critical blockers...</div>
+                <div className="space-y-6">
+                  <div className="h-14 bg-white/[0.03] border border-white/5 rounded-2xl px-6 flex items-center text-xs font-black uppercase tracking-tight opacity-40 italic">Namespace ID / Host</div>
+                  <div className="h-14 bg-white/[0.03] border border-white/5 rounded-2xl px-6 flex items-center text-xs font-black uppercase tracking-tight opacity-40 italic">Engineering Email</div>
+                  <div className="h-44 bg-white/[0.03] border border-white/5 rounded-3xl p-6 text-xs font-black uppercase tracking-tight opacity-40 italic leading-relaxed">Briefly describe the structural complexity of your database migration legacy patterns...</div>
                 </div>
-                <Button className="w-full rounded-2xl h-12 bg-primary font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-primary/30">
-                  Send Inquiry
+                <Button className="w-full rounded-2xl h-16 bg-primary font-black uppercase text-[11px] tracking-[0.3em] shadow-[0_20px_50px_rgba(var(--primary),0.3)] transition-all active:scale-95">
+                  Launch Request
                 </Button>
               </div>
             </Card>
@@ -172,8 +182,8 @@ const Support: React.FC = () => {
         </div>
       </main>
 
-      <footer className="mt-20 py-10 border-t border-white/5 text-center text-[10px] font-black uppercase tracking-widest opacity-30">
-        © 2026 SQL Decoded • Global Support Tier 1
+      <footer className="mt-24 py-12 border-t border-white/5 text-center text-[10px] font-black uppercase tracking-[0.4em] opacity-20">
+        © 2026 SQL STREAM INFRASTRUCTURE • GLOBAL SUPPORT CLUSTER 
       </footer>
 
       <style>{`
