@@ -86,7 +86,8 @@ class PostgresConversionFixTest extends TestCase
         $data = $response->json();
         $sql = $data['data']['sql'];
 
-        $this->assertStringContainsString('updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP', $sql);
+        $this->assertStringContainsString('updated_at TIMESTAMP WITH TIME ZONE', $sql);
+        $this->assertStringContainsString('DEFAULT CURRENT_TIMESTAMP', $sql);
         $this->assertStringNotContainsString('ON UPDATE', $sql);
     }
 

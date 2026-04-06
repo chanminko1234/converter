@@ -582,7 +582,9 @@ class ConversionController extends Controller
             // Track multi-line ALTER TABLE blocks to extract keys and omit from raw dump
             if (!$inCreateTable && preg_match('/^\s*ALTER\s+TABLE\s+`?([^`\s\(]+)`?/i', $trimmedLine, $matches)) {
                 $inAlterTable = true;
-                $currentTable = $matches[1]; // temporarily reuse currentTable
+                $currentTable = $matches[1];
+                // For same-line ALTER TABLE, strip the prefix so content matches the logic below
+                $trimmedLine = trim(preg_replace('/^\s*ALTER\s+TABLE\s+`?[^`\s\(]+`?\s*/i', '', $trimmedLine));
             }
 
             if ($inAlterTable) {
@@ -1107,9 +1109,9 @@ class ConversionController extends Controller
                         case 'upsert':
                             $converted = preg_replace('/^\s*REPLACE\s+INTO/i', 'INSERT INTO', $converted);
                             // We can't automatically know the conflict target here without schema introspection,
-                            // but we can at least avoid a syntax error by defaulting to DO NOTHING and providing a comment.
-                            $converted .= ' ON CONFLICT DO NOTHING /* CAUTION: REPLACE converted to DO NOTHING as conflict target is unknown */';
-                            $report[] = ['type' => 'warning', 'message' => 'REPLACE converted to INSERT...ON CONFLICT DO NOTHING (conflict target unknown)'];
+                            // but we can at least avoid a syntax error by defaulting to DO UPDATE and providing a comment.
+                            $converted .= ' ON CONFLICT DO UPDATE SET /* Add conflict resolution */';
+                            $report[] = ['type' => 'warning', 'message' => 'REPLACE converted to INSERT...ON CONFLICT DO UPDATE (conflict target unknown - MANUAL FIX REQUIRED)'];
                             break;
 
                         case 'insert_ignore':
@@ -1490,7 +1492,7 @@ class ConversionController extends Controller
         if ($isPredictive && (stripos($definition, 'TIMESTAMP') !== false || stripos($definition, 'DATETIME') !== false)) {
             $report[] = [
                 'type' => 'info',
-                'message' => "AI Insight: Column '{$columnName}' converted to TIMESTAMPTZ (TIMESTAMP WITH TIME ZONE) for better timezone handling."
+                'message' => "AI Insight: Column '{$columnName}' converted to TIMESTAMP WITH TIME ZONE (TIMESTAMPTZ) for better timezone handling."
             ];
         }
 
@@ -1500,8 +1502,8 @@ class ConversionController extends Controller
             if ($timezoneHandling === 'preserve') {
                 $definition = str_ireplace('DATETIME', 'TIMESTAMP', $definition);
             } else {
-                // To keep precision correctly, we can replace DATETIME with TIMESTAMPTZ
-                $definition = str_ireplace('DATETIME', 'TIMESTAMPTZ', $definition);
+                // To keep precision correctly, we can replace DATETIME with TIMESTAMP WITH TIME ZONE
+                $definition = str_ireplace('DATETIME', 'TIMESTAMP WITH TIME ZONE', $definition);
             }
             return trim($definition);
         }
@@ -1510,9 +1512,9 @@ class ConversionController extends Controller
         if (stripos($definition, 'TIMESTAMP') !== false && !str_contains(strtoupper($definition), 'WITH TIME ZONE')) {
             $timezoneHandling = $options['timezoneHandling'] ?? $options['timezone_handling'] ?? 'with_timezone';
             if ($timezoneHandling !== 'preserve') {
-                $definition = str_ireplace('TIMESTAMP', 'TIMESTAMPTZ', $definition);
+                $definition = str_ireplace('TIMESTAMP', 'TIMESTAMP WITH TIME ZONE', $definition);
                 // Correctly restore CURRENT_TIMESTAMP after indiscriminate replacement
-                $definition = str_ireplace('CURRENT_TIMESTAMPTZ', 'CURRENT_TIMESTAMP', $definition);
+                $definition = str_ireplace('CURRENT_TIMESTAMP WITH TIME ZONE', 'CURRENT_TIMESTAMP', $definition);
             }
             return trim($definition);
         }
@@ -2182,5 +2184,104 @@ class ConversionController extends Controller
         $query = preg_replace('/`([^` ]+)`/', '"$1"', $query);
 
         return $query;
+    }
+
+    /**
+     * Generate PostgreSQL tuning recommendations based on schema and logs
+     */
+    public function recommendTuning(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'slow_query_log' => 'sometimes|string|max:1024000',
+            'ram_gb' => 'required|numeric|min:1',
+            'cpu_cores' => 'required|integer|min:1',
+            'storage_type' => 'required|string|in:ssd,hdd',
+            'connection_count' => 'required|integer|min:10',
+            'data_volume_gb' => 'sometimes|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $validated = $validator->validated();
+        $ram = $validated['ram_gb'];
+        $cores = $validated['cpu_cores'];
+        $storage = $validated['storage_type'];
+        $connections = $validated['connection_count'];
+        $volume = $validated['data_volume_gb'] ?? 0;
+        $logs = $validated['slow_query_log'] ?? '';
+
+        try {
+            $recommendations = $this->calculatePgConfig($ram, $cores, $storage, $connections, $volume);
+            
+            // If logs are provided, use Gemini to analyze them for specific param tweaks
+            $logAnalysis = null;
+            if (!empty($logs)) {
+                $logAnalysis = $this->gemini->analyzeSlowLogs($logs, (float)$volume);
+            }
+
+            return response()->json([
+                'success' => true,
+                'config' => $recommendations,
+                'analysis' => $logAnalysis,
+                'metadata' => [
+                    'source_ram' => $ram . 'GB',
+                    'source_cores' => $cores,
+                    'generated_at' => now()->toDateTimeString()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Tuning calculation failed: '.$e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Internal calculation for postgresql.conf parameters
+     */
+    private function calculatePgConfig($ram, $cores, $storage, $connections, $volume): array
+    {
+        // PGTune-like logic
+        $sharedBuffers = floor($ram * 0.25) . 'GB';
+        $effectiveCacheSize = floor($ram * 0.75) . 'GB';
+        $maintenanceWorkMem = floor(min($ram * 0.05, 2)) . 'GB';
+        $checkpointCompletionTarget = 0.9;
+        $walBuffers = '16MB'; // Common default
+        $randomPageCost = ($storage === 'ssd') ? 1.1 : 4.0;
+        $effectiveIoConcurrency = ($storage === 'ssd') ? 200 : 2;
+        
+        // Work mem calculation, ensuring at least 4MB
+        $workMemVal = floor(($ram * 1024 * 0.25) / $connections);
+        $workMem = max(4, $workMemVal) . 'MB';
+        
+        $minWalSize = '1GB';
+        $maxWalSize = '4GB';
+        
+        // Parallel workers
+        $maxWorkerProcesses = $cores;
+        $maxParallelWorkersPerGather = floor($cores / 2);
+        $maxParallelWorkers = $cores;
+        $maxParallelMaintenanceWorkers = floor($cores / 2);
+
+        return [
+            'shared_buffers' => $sharedBuffers,
+            'effective_cache_size' => $effectiveCacheSize,
+            'maintenance_work_mem' => $maintenanceWorkMem,
+            'checkpoint_completion_target' => $checkpointCompletionTarget,
+            'wal_buffers' => $walBuffers,
+            'random_page_cost' => $randomPageCost,
+            'effective_io_concurrency' => $effectiveIoConcurrency,
+            'work_mem' => $workMem,
+            'min_wal_size' => $minWalSize,
+            'max_wal_size' => $maxWalSize,
+            'max_worker_processes' => (string)$maxWorkerProcesses,
+            'max_parallel_workers_per_gather' => (string)$maxParallelWorkersPerGather,
+            'max_parallel_workers' => (string)$maxParallelWorkers,
+            'max_parallel_maintenance_workers' => (string)$maxParallelMaintenanceWorkers,
+        ];
     }
 }

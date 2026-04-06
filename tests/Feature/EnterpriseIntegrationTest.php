@@ -159,4 +159,90 @@ class EnterpriseIntegrationTest extends TestCase
         $this->assertEquals('PASSWORD', $sensitive['pii_tag']);
         $this->assertEquals('VARCHAR(100)', $sensitive['original_type']);
     }
+
+    /**
+     * Test PG tuning advisor with resource calculation and AI log analysis.
+     */
+    public function test_postgresql_tuning_with_mocked_gemini(): void
+    {
+        // 1. Setup Mock for GeminiService
+        $this->mock(\App\Services\GeminiService::class, function ($mock) {
+            $mock->shouldReceive('analyzeSlowLogs')
+                ->once()
+                ->with(
+                    "# Example slow log entry...",
+                    100.0
+                )
+                ->andReturn([
+                    'parameter_tweaks' => [
+                        ['parameter' => 'work_mem', 'suggested_value' => '64MB', 'reason' => 'Multiple hash joins detected']
+                    ],
+                    'indexing_insights' => [
+                        ['table' => 'large_table', 'sql' => 'CREATE INDEX ids_idx ON large_table(ids)', 'reason' => 'Sequential scan found']
+                    ],
+                    'structural_warnings' => ['Too many cross-joins found']
+                ]);
+        });
+
+        // 2. Perform Request
+        $response = $this->postJson('/convert/tune', [
+            'ram_gb' => 32,
+            'cpu_cores' => 8,
+            'storage_type' => 'ssd',
+            'connection_count' => 200,
+            'data_volume_gb' => 100,
+            'slow_query_log' => "# Example slow log entry..."
+        ]);
+
+        // 3. Assert Response Structure & Content
+        $response->assertStatus(200)
+                 ->assertJsonStructure([
+                     'success',
+                     'config' => [
+                         'shared_buffers',
+                         'effective_cache_size',
+                         'work_mem',
+                         'max_worker_processes'
+                     ],
+                     'analysis',
+                     'metadata'
+                 ]);
+
+        $json = $response->json();
+        
+        $this->assertTrue($json['success']);
+        
+        // Calculations for 32GB RAM:
+        // shared_buffers: 32 * 0.25 = 8GB
+        $this->assertEquals('8GB', $json['config']['shared_buffers']);
+        
+        // effective_cache_size: 32 * 0.75 = 24GB
+        $this->assertEquals('24GB', $json['config']['effective_cache_size']);
+        
+        // random_page_cost for SSD = 1.1
+        $this->assertEquals(1.1, $json['config']['random_page_cost']);
+        
+        // Verify AI analysis is present from mock
+        $this->assertNotNull($json['analysis']);
+        $this->assertEquals('64MB', $json['analysis']['parameter_tweaks'][0]['suggested_value']);
+        $this->assertStringContainsString('Sequential scan', $json['analysis']['indexing_insights'][0]['reason']);
+        
+        // Metadata
+        $this->assertEquals('32GB', $json['metadata']['source_ram']);
+        $this->assertEquals(8, $json['metadata']['source_cores']);
+    }
+
+    /**
+     * Test validation failure for the tuning advisor.
+     */
+    public function test_postgresql_tuning_validation_failure(): void
+    {
+        $response = $this->postJson('/convert/tune', [
+            'ram_gb' => 0, // Invalid (min:1)
+            'storage_type' => 'nvme' // Invalid (must be ssd or hdd)
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['ram_gb', 'storage_type', 'cpu_cores', 'connection_count']);
+    }
 }

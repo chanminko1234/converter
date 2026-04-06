@@ -91,6 +91,50 @@ PROMPT;
     }
 
     /**
+     * Analyze slow query logs and recommend performance improvements for PostgreSQL
+     */
+    public function analyzeSlowLogs(string $slowLog, float $volGb): ?array
+    {
+        if (empty($this->apiKey) || empty($slowLog)) {
+            return null;
+        }
+        
+        $prompt = <<<PROMPT
+You are a PostgreSQL tuning specialist. Analyze the following MySQL slow query log snippet and suggest PostgreSQL-specific improvements (e.g., config parameter adjustments, indexing changes, query refactoring for PG compatibility).
+
+Slow Query Log:
+```text
+{\$slowLog}
+```
+
+Target Context:
+- Data Volume: {\$volGb}GB
+- Migration: MySQL to PostgreSQL
+
+Return ONLY a JSON object with the following structure:
+{
+  "parameter_tweaks": [
+    {
+      "parameter": "shared_buffers|work_mem|etc",
+      "suggested_value": "new_value",
+      "reason": "why this is recommended based on the log"
+    }
+  ],
+  "indexing_insights": [
+    {
+      "table": "table_name",
+      "sql": "CREATE INDEX ...",
+      "reason": "why this avoids the sequential scans detected in the log"
+    }
+  ],
+  "structural_warnings": ["any major performance blockers for PG found in the query patterns"]
+}
+PROMPT;
+
+        return $this->callGemini($prompt);
+    }
+
+    /**
      * Base call to Gemini API
      */
     protected function callGemini(string $prompt): ?array

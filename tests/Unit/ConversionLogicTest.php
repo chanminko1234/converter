@@ -15,7 +15,9 @@ class ConversionLogicTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->controller = new ConversionController;
+        // Mock GeminiService to satisfy constructor
+        $gemini = $this->createMock(\App\Services\GeminiService::class);
+        $this->controller = new ConversionController($gemini);
         $this->reflection = new ReflectionClass($this->controller);
     }
 
@@ -272,5 +274,40 @@ class ConversionLogicTest extends TestCase
         $this->assertStringNotContainsString('ALGORITHM', $result['sql']);
         $this->assertStringNotContainsString('DEFINER', $result['sql']);
         $this->assertStringNotContainsString('SQL SECURITY', $result['sql']);
+    }
+
+    public function test_postgresql_config_calculation_logic(): void
+    {
+        $testCases = [
+            // 8GB RAM, 2 Cores, SSD
+            [
+                ['ram_gb' => 8, 'cpu_cores' => 2, 'storage_type' => 'ssd', 'connection_count' => 100, 'volume' => 50],
+                ['shared_buffers' => '2GB', 'effective_cache_size' => '6GB', 'random_page_cost' => 1.1]
+            ],
+            // 32GB RAM, 8 Cores, HDD
+            [
+                ['ram_gb' => 32, 'cpu_cores' => 8, 'storage_type' => 'hdd', 'connection_count' => 200, 'volume' => 100],
+                ['shared_buffers' => '8GB', 'effective_cache_size' => '24GB', 'random_page_cost' => 4.0]
+            ],
+            // 4GB RAM, 1 Core, SSD
+            [
+                ['ram_gb' => 4, 'cpu_cores' => 1, 'storage_type' => 'ssd', 'connection_count' => 50, 'volume' => 10],
+                ['shared_buffers' => '1GB', 'effective_cache_size' => '3GB', 'random_page_cost' => 1.1]
+            ]
+        ];
+
+        foreach ($testCases as [$input, $expected]) {
+            $result = $this->callPrivateMethod('calculatePgConfig', [
+                $input['ram_gb'],
+                $input['cpu_cores'],
+                $input['storage_type'],
+                $input['connection_count'],
+                $input['volume']
+            ]);
+
+            $this->assertEquals($expected['shared_buffers'], $result['shared_buffers']);
+            $this->assertEquals($expected['effective_cache_size'], $result['effective_cache_size']);
+            $this->assertEquals($expected['random_page_cost'], $result['random_page_cost']);
+        }
     }
 }

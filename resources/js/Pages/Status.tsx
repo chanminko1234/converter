@@ -18,6 +18,7 @@ const Status: React.FC = () => {
     { name: 'Staging Synthesis Cluster', status: 'operational', uptime: '100%', latency: '54ms', icon: <Shield /> },
     { name: 'Delta Sync Worker v4', status: 'operational', uptime: '100%', latency: '08ms', icon: <RefreshCcw /> },
     { name: 'Integrity Audit Pipeline', status: 'operational', uptime: '99.99%', latency: '29ms', icon: <Activity /> },
+    { name: 'PG Architect Advisor', status: 'operational', uptime: '100%', latency: '215ms', icon: <Zap /> },
     { name: 'Global REST Edge API', status: 'operational', uptime: '99.98%', latency: '45ms', icon: <Globe /> },
   ];
 

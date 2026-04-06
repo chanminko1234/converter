@@ -89,13 +89,23 @@ const Welcome: React.FC = () => {
     dataMasking: false,
     frameworkPreset: 'none',
   });
-  const [mode, setMode] = useState<'sql' | 'stream'>('sql');
+  const [mode, setMode] = useState<'sql' | 'stream' | 'tuning'>('sql');
   const [inputMethod, setInputMethod] = useState<'manual' | 'live'>('manual');
   const [sourceConn, setSourceConn] = useState({ host: 'localhost', port: '3306', user: '', pass: '', db: '' });
   const [targetConn, setTargetConn] = useState({ host: 'localhost', port: '5432', user: '', pass: '', db: '' });
   const [queryInput, setQueryInput] = useState('');
   const [queryOutput, setQueryOutput] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
+  const [tuningInput, setTuningInput] = useState({
+    slow_query_log: '',
+    ram_gb: 16,
+    cpu_cores: 4,
+    storage_type: 'ssd',
+    connection_count: 100,
+    data_volume_gb: 10
+  });
+  const [tuningResult, setTuningResult] = useState<any>(null);
+  const [isTuning, setIsTuning] = useState(false);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -317,6 +327,28 @@ const Welcome: React.FC = () => {
     }
   };
 
+  const handleTune = async () => {
+    setIsTuning(true);
+    try {
+      const response = await axios.post('/convert/tune', tuningInput, {
+        headers: {
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        }
+      });
+      if (response.data.success) {
+        setTuningResult(response.data);
+        setActiveTab('tuning_advisor');
+        toast.success('PostgreSQL tuning recommendation generated');
+      } else {
+        throw new Error(response.data.error);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Tuning analysis failed');
+    } finally {
+      setIsTuning(false);
+    }
+  };
+
   const clearInput = () => {
     setMysqlInput('');
     toast.info('Input cleared');
@@ -407,199 +439,210 @@ const Welcome: React.FC = () => {
                 <Server className="w-3 h-3 mr-2" />
                 Live Stream
               </Button>
+              <Button
+                variant={mode === 'tuning' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setMode('tuning')}
+                className="rounded-xl flex px-6 font-bold text-[10px] uppercase tracking-widest"
+              >
+                <Activity className="w-3 h-3 mr-2" />
+                Tuning Advisor
+              </Button>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-            <div className="flex items-center glass border px-4 py-1.5 rounded-2xl shadow-2xl">
-              <Label className="text-xs font-bold uppercase opacity-40 mr-4 tracking-tighter">Target Format</Label>
-              <Select value={targetFormat} onValueChange={(v: any) => setTargetFormat(v)}>
-                <SelectTrigger className="w-[160px] bg-transparent border-none text-base font-bold focus:ring-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="glass">
-                  <SelectItem value="postgresql" className="font-bold">PostgreSQL</SelectItem>
-                  <SelectItem value="sqlite" className="font-bold">SQLite</SelectItem>
-                  <SelectItem value="csv" className="font-bold">CSV Dump</SelectItem>
-                  <SelectItem value="xlsx" className="font-bold">Excel (.xlsx)</SelectItem>
-                </SelectContent>
-              </Select>
+          {mode !== 'tuning' && (
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+              <div className="flex items-center glass border px-4 py-1.5 rounded-2xl shadow-2xl">
+                <Label className="text-xs font-bold uppercase opacity-40 mr-4 tracking-tighter">Target Format</Label>
+                <Select value={targetFormat} onValueChange={(v: any) => setTargetFormat(v)}>
+                  <SelectTrigger className="w-[160px] bg-transparent border-none text-base font-bold focus:ring-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="glass">
+                    <SelectItem value="postgresql" className="font-bold">PostgreSQL</SelectItem>
+                    <SelectItem value="sqlite" className="font-bold">SQLite</SelectItem>
+                    <SelectItem value="csv" className="font-bold">CSV Dump</SelectItem>
+                    <SelectItem value="xlsx" className="font-bold">Excel (.xlsx)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="rounded-2xl px-6 flex border-white/10 hover:bg-white/5 transition-all">
+                    <Settings className="w-4 mr-2" />
+                    Options
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="glass border-l-white/10 shadow-2xl overflow-y-auto custom-scrollbar">
+                  <SheetHeader className="pb-6 border-b border-white/5">
+                    <SheetTitle className="text-2xl font-bold">Conversion Rules</SheetTitle>
+                  </SheetHeader>
+                  <div className="space-y-6 py-6 overflow-x-hidden">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Framework Optimization</Label>
+                      <Select
+                        value={options.frameworkPreset}
+                        onValueChange={(v: any) => setOptions(p => ({ ...p, frameworkPreset: v }))}
+                      >
+                        <SelectTrigger className="w-full bg-white/5 border-white/10 rounded-xl focus:ring-primary h-12">
+                          <SelectValue placeholder="Select Framework" />
+                        </SelectTrigger>
+                        <SelectContent className="glass border-white/10 text-white rounded-xl overflow-hidden shadow-2xl">
+                          <SelectItem value="none" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3">General (Standard SQL)</SelectItem>
+                          <SelectItem value="wordpress" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium">WordPress Presets</SelectItem>
+                          <SelectItem value="laravel" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium text-amber-500">Laravel Optimization</SelectItem>
+                          <SelectItem value="magento" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium text-orange-500">Magento Ecosystem</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 glass-card rounded-2xl">
+                      <Label className="font-bold">Preserve Identity</Label>
+                      <Checkbox checked={options.preserveIdentity} onCheckedChange={(c) => setOptions(p => ({ ...p, preserveIdentity: !!c }))} />
+                    </div>
+                    <div className="flex items-center justify-between p-4 glass-card rounded-2xl">
+                      <Label className="font-bold">Schema Only</Label>
+                      <Checkbox checked={options.schemaOnly} onCheckedChange={(c) => setOptions(p => ({ ...p, schemaOnly: !!c }))} />
+                    </div>
+
+                    <div className="space-y-4">
+                      <div
+                        onClick={() => setOptions(p => ({ ...p, predictiveRefactoring: !p.predictiveRefactoring }))}
+                        className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.predictiveRefactoring
+                          ? 'bg-primary/10 border-primary/40 shadow-[0_0_40px_rgba(var(--primary),0.1)]'
+                          : 'bg-white/5 border-white/10 hover:border-primary/30 hover:bg-white/[0.07]'
+                          }`}
+                      >
+                        <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                          <Zap className={`w-16 h-16 ${options.predictiveRefactoring ? 'text-primary' : 'text-white'}`} />
+                        </div>
+                        <div className="flex items-start gap-5 relative z-10">
+                          <div className={`p-4 rounded-2xl transition-all duration-500 ${options.predictiveRefactoring ? 'bg-primary shadow-lg shadow-primary/40' : 'bg-white/10'}`}>
+                            <Zap className={`h-5 w-5 ${options.predictiveRefactoring ? 'text-white fill-white' : 'text-white/40'}`} />
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-black text-xs uppercase tracking-widest text-white">Predictive Refactoring</h3>
+                              <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.predictiveRefactoring ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-white/5 border-white/10 text-white/30'}`}>AI Enabled</Badge>
+                            </div>
+                            <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Uses advanced heuristics to suggest modern PostgreSQL types and optimizations.</p>
+                          </div>
+                        </div>
+                        <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.predictiveRefactoring ? 'bg-primary scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
+                          <Check className="h-3 w-3 text-white" />
+                        </div>
+                      </div>
+
+                      <div
+                        onClick={() => setOptions(p => ({ ...p, autoCleaning: !p.autoCleaning }))}
+                        className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.autoCleaning
+                          ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_40px_rgba(245,158,11,0.1)]'
+                          : 'bg-white/5 border-white/10 hover:border-amber-500/30 hover:bg-white/[0.07]'
+                          }`}
+                      >
+                        <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                          <Eraser className={`w-16 h-16 ${options.autoCleaning ? 'text-amber-500' : 'text-white'}`} />
+                        </div>
+                        <div className="flex items-start gap-5 relative z-10">
+                          <div className={`p-4 rounded-2xl transition-all duration-500 ${options.autoCleaning ? 'bg-amber-500 shadow-lg shadow-amber-500/40' : 'bg-white/10'}`}>
+                            <Eraser className={`h-5 w-5 ${options.autoCleaning ? 'text-white fill-white' : 'text-white/40'}`} />
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-black text-xs uppercase tracking-widest text-white">Auto-Cleaning</h3>
+                              <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.autoCleaning ? 'bg-amber-500/20 border-amber-500/40 text-amber-500' : 'bg-white/5 border-white/10 text-white/30'}`}>Optimization</Badge>
+                            </div>
+                            <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Detects inconsistent naming conventions and redundant structural patterns.</p>
+                          </div>
+                        </div>
+                        <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.autoCleaning ? 'bg-amber-500 scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
+                          <Check className="h-3 w-3 text-white" />
+                        </div>
+                      </div>
+
+                      <div
+                        onClick={() => setOptions(p => ({ ...p, incrementalSync: !p.incrementalSync }))}
+                        className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.incrementalSync
+                          ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_40px_rgba(16,185,129,0.1)]'
+                          : 'bg-white/5 border-white/10 hover:border-emerald-500/30 hover:bg-white/[0.07]'
+                          }`}
+                      >
+                        <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                          <Activity className={`w-16 h-16 ${options.incrementalSync ? 'text-emerald-500' : 'text-white'}`} />
+                        </div>
+                        <div className="flex items-start gap-5 relative z-10">
+                          <div className={`p-4 rounded-2xl transition-all duration-500 ${options.incrementalSync ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40' : 'bg-white/10'}`}>
+                            <Activity className={`h-5 w-5 ${options.incrementalSync ? 'text-white' : 'text-white/40'}`} />
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-black text-xs uppercase tracking-widest text-white">Incremental Sync</h3>
+                              <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.incrementalSync ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-500' : 'bg-white/5 border-white/10 text-white/30'}`}>Zero Downtime</Badge>
+                            </div>
+                            <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Tracks the high-water mark of your data to migrate only delta records.</p>
+                          </div>
+                        </div>
+                        <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.incrementalSync ? 'bg-emerald-500 scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
+                          <Check className="h-3 w-3 text-white" />
+                        </div>
+                      </div>
+
+                      <div
+                        onClick={() => setOptions(p => ({ ...p, dataMasking: !p.dataMasking }))}
+                        className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.dataMasking
+                          ? 'bg-blue-500/10 border-blue-500/40 shadow-[0_0_40px_rgba(59,130,246,0.1)]'
+                          : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/[0.07]'
+                          }`}
+                      >
+                        <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                          <Search className={`w-16 h-16 ${options.dataMasking ? 'text-blue-500' : 'text-white'}`} />
+                        </div>
+                        <div className="flex items-start gap-5 relative z-10">
+                          <div className={`p-4 rounded-2xl transition-all duration-500 ${options.dataMasking ? 'bg-blue-500 shadow-lg shadow-blue-500/40' : 'bg-white/10'}`}>
+                            <Maximize2 className={`h-5 w-5 ${options.dataMasking ? 'text-white' : 'text-white/40'}`} />
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-black text-xs uppercase tracking-widest text-white">Staging Masking</h3>
+                              <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.dataMasking ? 'bg-blue-500/20 border-blue-500/40 text-blue-500' : 'bg-white/5 border-white/10 text-white/30'}`}>Privacy Mode</Badge>
+                            </div>
+                            <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Automatically obfuscates PII data like emails and phones using FakerPHP.</p>
+                          </div>
+                        </div>
+                        <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.dataMasking ? 'bg-blue-500 scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
+                          <Check className="h-3 w-3 text-white" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={handleAnalyze}
+                disabled={isAnalyzing || isConverting || (mode === 'sql' && !mysqlInput.trim()) || (mode === 'stream' && !sourceConn.db)}
+                className="rounded-2xl flex px-8 border-primary/20 hover:bg-primary/5 text-primary font-bold shadow-xl transition-all active:scale-95"
+              >
+                {isAnalyzing ? <Activity className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 w-4" />}
+                Analyze Schema
+              </Button>
+
+              <Button
+                size="lg"
+                onClick={handleConvert}
+                disabled={isConverting || (mode === 'sql' && !mysqlInput.trim()) || (mode === 'stream' && (!sourceConn.db || !targetConn.db))}
+                className={`rounded-2xl px-10 flex shadow-2xl font-bold transition-all active:scale-95 ${mode === 'stream' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/40' : 'bg-primary hover:bg-primary/90 shadow-primary/40'
+                  }`}
+              >
+                {isConverting ? <Activity className="animate-spin h-5 w-5 mr-2" /> : mode === 'stream' ? <Server className="w-5 mr-2" /> : <Rocket className="w-5 mr-2" />}
+                {isConverting ? 'Processing...' : mode === 'stream' ? 'Start Live Stream' : 'Run Transformation'}
+              </Button>
             </div>
-
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" className="rounded-2xl px-6 flex border-white/10 hover:bg-white/5 transition-all">
-                  <Settings className="w-4 mr-2" />
-                  Options
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="glass border-l-white/10 shadow-2xl overflow-y-auto custom-scrollbar">
-                <SheetHeader className="pb-6 border-b border-white/5">
-                  <SheetTitle className="text-2xl font-bold">Conversion Rules</SheetTitle>
-                </SheetHeader>
-                <div className="space-y-6 py-6 overflow-x-hidden">
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Framework Optimization</Label>
-                    <Select
-                      value={options.frameworkPreset}
-                      onValueChange={(v: any) => setOptions(p => ({ ...p, frameworkPreset: v }))}
-                    >
-                      <SelectTrigger className="w-full bg-white/5 border-white/10 rounded-xl focus:ring-primary h-12">
-                        <SelectValue placeholder="Select Framework" />
-                      </SelectTrigger>
-                      <SelectContent className="glass border-white/10 text-white rounded-xl overflow-hidden shadow-2xl">
-                        <SelectItem value="none" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3">General (Standard SQL)</SelectItem>
-                        <SelectItem value="wordpress" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium">WordPress Presets</SelectItem>
-                        <SelectItem value="laravel" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium text-amber-500">Laravel Optimization</SelectItem>
-                        <SelectItem value="magento" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium text-orange-500">Magento Ecosystem</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 glass-card rounded-2xl">
-                    <Label className="font-bold">Preserve Identity</Label>
-                    <Checkbox checked={options.preserveIdentity} onCheckedChange={(c) => setOptions(p => ({ ...p, preserveIdentity: !!c }))} />
-                  </div>
-                  <div className="flex items-center justify-between p-4 glass-card rounded-2xl">
-                    <Label className="font-bold">Schema Only</Label>
-                    <Checkbox checked={options.schemaOnly} onCheckedChange={(c) => setOptions(p => ({ ...p, schemaOnly: !!c }))} />
-                  </div>
-
-                  <div className="space-y-4">
-                    <div
-                      onClick={() => setOptions(p => ({ ...p, predictiveRefactoring: !p.predictiveRefactoring }))}
-                      className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.predictiveRefactoring
-                        ? 'bg-primary/10 border-primary/40 shadow-[0_0_40px_rgba(var(--primary),0.1)]'
-                        : 'bg-white/5 border-white/10 hover:border-primary/30 hover:bg-white/[0.07]'
-                        }`}
-                    >
-                      <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Zap className={`w-16 h-16 ${options.predictiveRefactoring ? 'text-primary' : 'text-white'}`} />
-                      </div>
-                      <div className="flex items-start gap-5 relative z-10">
-                        <div className={`p-4 rounded-2xl transition-all duration-500 ${options.predictiveRefactoring ? 'bg-primary shadow-lg shadow-primary/40' : 'bg-white/10'}`}>
-                          <Zap className={`h-5 w-5 ${options.predictiveRefactoring ? 'text-white fill-white' : 'text-white/40'}`} />
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-black text-xs uppercase tracking-widest text-white">Predictive Refactoring</h3>
-                            <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.predictiveRefactoring ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-white/5 border-white/10 text-white/30'}`}>AI Enabled</Badge>
-                          </div>
-                          <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Uses advanced heuristics to suggest modern PostgreSQL types and optimizations.</p>
-                        </div>
-                      </div>
-                      <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.predictiveRefactoring ? 'bg-primary scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
-                        <Check className="h-3 w-3 text-white" />
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setOptions(p => ({ ...p, autoCleaning: !p.autoCleaning }))}
-                      className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.autoCleaning
-                        ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_40px_rgba(245,158,11,0.1)]'
-                        : 'bg-white/5 border-white/10 hover:border-amber-500/30 hover:bg-white/[0.07]'
-                        }`}
-                    >
-                      <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Eraser className={`w-16 h-16 ${options.autoCleaning ? 'text-amber-500' : 'text-white'}`} />
-                      </div>
-                      <div className="flex items-start gap-5 relative z-10">
-                        <div className={`p-4 rounded-2xl transition-all duration-500 ${options.autoCleaning ? 'bg-amber-500 shadow-lg shadow-amber-500/40' : 'bg-white/10'}`}>
-                          <Eraser className={`h-5 w-5 ${options.autoCleaning ? 'text-white fill-white' : 'text-white/40'}`} />
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-black text-xs uppercase tracking-widest text-white">Auto-Cleaning</h3>
-                            <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.autoCleaning ? 'bg-amber-500/20 border-amber-500/40 text-amber-500' : 'bg-white/5 border-white/10 text-white/30'}`}>Optimization</Badge>
-                          </div>
-                          <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Detects inconsistent naming conventions and redundant structural patterns.</p>
-                        </div>
-                      </div>
-                      <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.autoCleaning ? 'bg-amber-500 scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
-                        <Check className="h-3 w-3 text-white" />
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setOptions(p => ({ ...p, incrementalSync: !p.incrementalSync }))}
-                      className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.incrementalSync
-                        ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_40px_rgba(16,185,129,0.1)]'
-                        : 'bg-white/5 border-white/10 hover:border-emerald-500/30 hover:bg-white/[0.07]'
-                        }`}
-                    >
-                      <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Activity className={`w-16 h-16 ${options.incrementalSync ? 'text-emerald-500' : 'text-white'}`} />
-                      </div>
-                      <div className="flex items-start gap-5 relative z-10">
-                        <div className={`p-4 rounded-2xl transition-all duration-500 ${options.incrementalSync ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40' : 'bg-white/10'}`}>
-                          <Activity className={`h-5 w-5 ${options.incrementalSync ? 'text-white' : 'text-white/40'}`} />
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-black text-xs uppercase tracking-widest text-white">Incremental Sync</h3>
-                            <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.incrementalSync ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-500' : 'bg-white/5 border-white/10 text-white/30'}`}>Zero Downtime</Badge>
-                          </div>
-                          <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Tracks the high-water mark of your data to migrate only delta records.</p>
-                        </div>
-                      </div>
-                      <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.incrementalSync ? 'bg-emerald-500 scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
-                        <Check className="h-3 w-3 text-white" />
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setOptions(p => ({ ...p, dataMasking: !p.dataMasking }))}
-                      className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.dataMasking
-                        ? 'bg-blue-500/10 border-blue-500/40 shadow-[0_0_40px_rgba(59,130,246,0.1)]'
-                        : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/[0.07]'
-                        }`}
-                    >
-                      <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Search className={`w-16 h-16 ${options.dataMasking ? 'text-blue-500' : 'text-white'}`} />
-                      </div>
-                      <div className="flex items-start gap-5 relative z-10">
-                        <div className={`p-4 rounded-2xl transition-all duration-500 ${options.dataMasking ? 'bg-blue-500 shadow-lg shadow-blue-500/40' : 'bg-white/10'}`}>
-                          <Maximize2 className={`h-5 w-5 ${options.dataMasking ? 'text-white' : 'text-white/40'}`} />
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-black text-xs uppercase tracking-widest text-white">Staging Masking</h3>
-                            <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.dataMasking ? 'bg-blue-500/20 border-blue-500/40 text-blue-500' : 'bg-white/5 border-white/10 text-white/30'}`}>Privacy Mode</Badge>
-                          </div>
-                          <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Automatically obfuscates PII data like emails and phones using FakerPHP.</p>
-                        </div>
-                      </div>
-                      <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.dataMasking ? 'bg-blue-500 scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
-                        <Check className="h-3 w-3 text-white" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={handleAnalyze}
-              disabled={isAnalyzing || isConverting || (mode === 'sql' && !mysqlInput.trim()) || (mode === 'stream' && !sourceConn.db)}
-              className="rounded-2xl flex px-8 border-primary/20 hover:bg-primary/5 text-primary font-bold shadow-xl transition-all active:scale-95"
-            >
-              {isAnalyzing ? <Activity className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 w-4" />}
-              Analyze Schema
-            </Button>
-
-            <Button
-              size="lg"
-              onClick={handleConvert}
-              disabled={isConverting || (mode === 'sql' && !mysqlInput.trim()) || (mode === 'stream' && (!sourceConn.db || !targetConn.db))}
-              className={`rounded-2xl px-10 flex shadow-2xl font-bold transition-all active:scale-95 ${mode === 'stream' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/40' : 'bg-primary hover:bg-primary/90 shadow-primary/40'
-                }`}
-            >
-              {isConverting ? <Activity className="animate-spin h-5 w-5 mr-2" /> : mode === 'stream' ? <Server className="w-5 mr-2" /> : <Rocket className="w-5 mr-2" />}
-              {isConverting ? 'Processing...' : mode === 'stream' ? 'Start Live Stream' : 'Run Transformation'}
-            </Button>
-          </div>
+          )}
 
           <AnimatePresence>
             {mode === 'stream' && isConverting && (
@@ -766,6 +809,92 @@ const Welcome: React.FC = () => {
                       </div>
                     </div>
                   </div>
+                ) : mode === 'tuning' ? (
+                  <div className="p-10 space-y-12">
+                    <div className="flex items-center gap-6 mb-2">
+                      <Badge variant="outline" className="px-6 py-1.5 rounded-full border-amber-500/40 bg-amber-500/10 text-amber-500 font-black uppercase text-[10px] tracking-widest shadow-2xl">Architecture Optimizer</Badge>
+                    </div>
+                    <p className="text-[11px] font-black uppercase tracking-widest text-white/30 italic">Provide your target server specifications and MySQL slow logs to generate a high-performance PostgreSQL configuration.</p>
+
+                    <div className="space-y-8">
+                      <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Total System RAM (GB)</Label>
+                          <input
+                            type="number"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-amber-500/40 outline-none transition-all shadow-inner"
+                            value={tuningInput.ram_gb}
+                            onChange={e => setTuningInput(p => ({ ...p, ram_gb: parseInt(e.target.value) }))}
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">CPU Cores</Label>
+                          <input
+                            type="number"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-amber-500/40 outline-none transition-all shadow-inner"
+                            value={tuningInput.cpu_cores}
+                            onChange={e => setTuningInput(p => ({ ...p, cpu_cores: parseInt(e.target.value) }))}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Max Connections</Label>
+                          <input
+                            type="number"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-amber-500/40 outline-none transition-all shadow-inner"
+                            value={tuningInput.connection_count}
+                            onChange={e => setTuningInput(p => ({ ...p, connection_count: parseInt(e.target.value) }))}
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Estimated Data Volume (GB)</Label>
+                          <input
+                            type="number"
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-amber-500/40 outline-none transition-all shadow-inner"
+                            value={tuningInput.data_volume_gb}
+                            onChange={e => setTuningInput(p => ({ ...p, data_volume_gb: parseInt(e.target.value) }))}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Storage Substrate</Label>
+                        <Select
+                          value={tuningInput.storage_type}
+                          onValueChange={(v: any) => setTuningInput(p => ({ ...p, storage_type: v }))}
+                        >
+                          <SelectTrigger className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] h-16 px-8 font-black text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="glass">
+                            <SelectItem value="ssd" className="font-bold">Solid State Drive (SSD / NVMe)</SelectItem>
+                            <SelectItem value="hdd" className="font-bold">Hard Disk Drive (HDD / SAN)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">MySQL Slow Query Log (optional)</Label>
+                        <Textarea
+                          className="min-h-[160px] bg-white/[0.04] border border-white/10 rounded-[2rem] p-8 text-xs font-mono placeholder:opacity-20"
+                          placeholder="# Time: 2026-04-06T12:00:00.000000Z... Query_time: 10.5..."
+                          value={tuningInput.slow_query_log}
+                          onChange={e => setTuningInput(p => ({ ...p, slow_query_log: e.target.value }))}
+                        />
+                      </div>
+
+                      <Button
+                        className="w-full justify-center flex py-4 rounded-[2rem] bg-amber-500 hover:bg-amber-600 font-black uppercase text-[11px] tracking-[0.3em] shadow-2xl shadow-amber-500/40 active:scale-95 transition-all mt-4"
+                        onClick={handleTune}
+                        disabled={isTuning}
+                      >
+                        {isTuning ? <Activity className="w-5 h-5 animate-spin mr-2" /> : <Zap className="w-5 h-5 mr-2" />}
+                        Generate Architecture Report
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
                   <div className="p-10 space-y-12">
                     <div className="flex items-center gap-6 mb-2">
@@ -921,6 +1050,9 @@ const Welcome: React.FC = () => {
                       <TabsTrigger value="report" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-primary flex items-center gap-2">
                         <Terminal className="h-3 w-3" /> Log
                       </TabsTrigger>
+                      <TabsTrigger value="tuning_advisor" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-amber-500 flex items-center gap-2">
+                        <Zap className="h-3 w-3" /> PG Architect
+                      </TabsTrigger>
                     </TabsList>
                   </div>
                 </div>
@@ -928,6 +1060,72 @@ const Welcome: React.FC = () => {
                 <div className="flex-1 min-h-[440px]">
                   <AnimatePresence mode="wait">
                     <TabsContent key={activeTab} value={activeTab} className="m-0 p-0 h-full">
+                      {activeTab === 'tuning_advisor' && (
+                        <div className="p-8 space-y-8 max-h-[600px] overflow-auto custom-scrollbar">
+                          {!tuningResult ? (
+                            <div className="flex flex-col items-center justify-center opacity-20 p-20 text-center h-80 gap-4">
+                              <Activity className="h-16 w-16 mb-4 animate-pulse" />
+                              <p className="font-bold text-sm uppercase tracking-[0.2em]">Run Tuning Analysis to see recommendations</p>
+                            </div>
+                          ) : (
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-6">
+                                  <h3 className="text-xl font-black tracking-tighter flex items-center gap-3 italic">
+                                    <Settings className="text-primary w-6 h-6" />
+                                    Recommended postgresql.conf
+                                  </h3>
+                                  <Card className="glass border-white/5 p-6 rounded-[2rem] bg-black/40 overflow-hidden relative">
+                                    <div className="absolute top-0 right-0 p-6 opacity-5"><Database className="w-20 h-20" /></div>
+                                    <div className="font-mono text-[11px] text-white/80 space-y-2 relative z-10">
+                                      {Object.entries(tuningResult.config).map(([key, value]) => (
+                                        <div key={key} className="flex justify-between border-b border-white/5 py-2">
+                                          <span className="opacity-50">{key}</span>
+                                          <span className="text-primary font-bold">{value as string}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      className="w-full mt-6 rounded-xl border-white/5 bg-white/5 font-black uppercase text-[10px] tracking-widest"
+                                      onClick={() => {
+                                        const cfg = Object.entries(tuningResult.config).map(([k, v]) => `${k} = ${v}`).join('\n');
+                                        copyToClipboard(cfg);
+                                      }}
+                                    >
+                                      Copy config block
+                                    </Button>
+                                  </Card>
+                                </div>
+
+                                {tuningResult.analysis && (
+                                  <div className="space-y-6">
+                                    <h3 className="text-xl font-black tracking-tighter flex items-center gap-3 italic">
+                                      <Zap className="text-amber-500 w-6 h-6" />
+                                      AI Efficiency Insights
+                                    </h3>
+                                    <div className="space-y-4">
+                                      {tuningResult.analysis.parameter_tweaks?.map((t: any, i: number) => (
+                                        <div key={i} className="p-5 rounded-2xl glass border-l-4 border-amber-500 bg-amber-500/5">
+                                          <p className="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-1">{t.parameter}: {t.suggested_value}</p>
+                                          <p className="text-xs font-medium opacity-70">{t.reason}</p>
+                                        </div>
+                                      ))}
+                                      {tuningResult.analysis.indexing_insights?.map((idx: any, i: number) => (
+                                        <div key={i} className="p-5 rounded-2xl glass border-l-4 border-emerald-500 bg-emerald-500/5 space-y-2">
+                                          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">{idx.table} Optimization</p>
+                                          <p className="text-xs font-medium opacity-70">{idx.reason}</p>
+                                          <div className="p-3 bg-black/40 rounded-xl font-mono text-[10px] text-emerald-400/80 break-all">{idx.sql}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </div>
+                      )}
                       {activeTab === 'output' && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full p-6">
                           <div className="space-y-6">
