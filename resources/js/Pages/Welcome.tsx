@@ -419,8 +419,14 @@ const Welcome: React.FC = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Engine Online</span>
           </div>
           <ThemeToggle />
+          <Link href="/validation" className="hidden md:block">
+            <Button variant="ghost" className="rounded-full font-bold text-xs uppercase tracking-widest px-6 border border-white/5 h-9 text-white">Validation</Button>
+          </Link>
+          <Link href="/index-advisor" className="hidden md:block">
+            <Button variant="ghost" className="rounded-full font-bold text-xs uppercase tracking-widest px-6 border border-white/5 h-9 text-white">Index Advisor</Button>
+          </Link>
           <Link href="/support" className="hidden md:block">
-            <Button variant="ghost" className="rounded-full font-bold text-xs uppercase tracking-widest px-6 border border-white/5 h-9">Support</Button>
+            <Button variant="ghost" className="rounded-full font-bold text-xs uppercase tracking-widest px-6 border border-white/5 h-9 text-white hover:bg-white/5 hover:text-white">Support</Button>
           </Link>
           <Button variant="ghost" size="icon" className="rounded-full">
             <a href="https://github.com/chanminko1234/converter" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">

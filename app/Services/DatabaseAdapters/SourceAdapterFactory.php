@@ -4,7 +4,7 @@ namespace App\Services\DatabaseAdapters;
 
 class SourceAdapterFactory
 {
-    public static function create(string $sourceType): SourceAdapterInterface
+    public function create(string $sourceType): SourceAdapterInterface
     {
         return match (strtolower($sourceType)) {
             'mysql' => new MysqlSourceAdapter(),

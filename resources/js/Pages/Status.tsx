@@ -50,8 +50,14 @@ const Status: React.FC = () => {
         </div>
         <div className="flex items-center gap-6">
           <ThemeToggle />
+          <Link href="/validation">
+            <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9 text-white hover:bg-white/5 hover:text-white">Validation</Button>
+          </Link>
+          <Link href="/index-advisor">
+            <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9 text-white hover:bg-white/5 hover:text-white">Index Advisor</Button>
+          </Link>
           <Link href="/support">
-            <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9">Concierge</Button>
+            <Button variant="ghost" className="rounded-full font-black text-[10px] uppercase tracking-widest px-6 border border-white/5 h-9 text-white hover:bg-white/5 hover:text-white">Concierge</Button>
           </Link>
         </div>
       </nav>

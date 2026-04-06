@@ -83,7 +83,7 @@ class ConversionController extends Controller
 
         try {
             $sourceType = $request->input('source_type', 'mysql');
-            $adapter = SourceAdapterFactory::create($sourceType);
+            $adapter = app(SourceAdapterFactory::class)->create($sourceType);
 
             // Fetch schema either from dump or live source
             if ($mysqlDump) {
@@ -166,7 +166,7 @@ class ConversionController extends Controller
 
         try {
             $sourceType = $request->input('source_type', 'mysql');
-            $adapter = SourceAdapterFactory::create($sourceType);
+            $adapter = app(SourceAdapterFactory::class)->create($sourceType);
             
             $parsedData = $adapter->parseDump($file);
             
@@ -236,7 +236,7 @@ class ConversionController extends Controller
 
         try {
             $sourceType = $request->input('source_type', 'mysql');
-            $adapter = SourceAdapterFactory::create($sourceType);
+            $adapter = app(SourceAdapterFactory::class)->create($sourceType);
             
             // Configure dynamic connections
             $adapter->setupConnection($source);
@@ -826,7 +826,7 @@ class ConversionController extends Controller
         $options = $request->input('options', []);
         
         $sourceType = $request->input('source_type', 'mysql');
-        $adapter = SourceAdapterFactory::create($sourceType);
+        $adapter = app(SourceAdapterFactory::class)->create($sourceType);
 
         if ($mysqlDump) {
             $data = $adapter->parseDump($mysqlDump);

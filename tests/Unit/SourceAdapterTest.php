@@ -15,10 +15,11 @@ class SourceAdapterTest extends TestCase
      */
     public function test_factory_creates_correct_adapters(): void
     {
-        $this->assertInstanceOf(MysqlSourceAdapter::class, SourceAdapterFactory::create('mysql'));
-        $this->assertInstanceOf(OracleSourceAdapter::class, SourceAdapterFactory::create('oracle'));
-        $this->assertInstanceOf(SqlServerSourceAdapter::class, SourceAdapterFactory::create('sqlserver'));
-        $this->assertInstanceOf(SqlServerSourceAdapter::class, SourceAdapterFactory::create('sqlsrv'));
+        $factory = app(SourceAdapterFactory::class);
+        $this->assertInstanceOf(MysqlSourceAdapter::class, $factory->create('mysql'));
+        $this->assertInstanceOf(OracleSourceAdapter::class, $factory->create('oracle'));
+        $this->assertInstanceOf(SqlServerSourceAdapter::class, $factory->create('sqlserver'));
+        $this->assertInstanceOf(SqlServerSourceAdapter::class, $factory->create('sqlsrv'));
     }
 
     /**
@@ -27,7 +28,7 @@ class SourceAdapterTest extends TestCase
     public function test_factory_throws_exception_for_unsupported_type(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        SourceAdapterFactory::create('postgresql');
+        app(SourceAdapterFactory::class)->create('postgresql');
     }
 
     /**
@@ -35,7 +36,7 @@ class SourceAdapterTest extends TestCase
      */
     public function test_mysql_adapter_metadata(): void
     {
-        $adapter = SourceAdapterFactory::create('mysql');
+        $adapter = app(SourceAdapterFactory::class)->create('mysql');
         $ddl = "CREATE TABLE users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255));";
         
         $parsed = $adapter->parseDump($ddl);
@@ -50,7 +51,7 @@ class SourceAdapterTest extends TestCase
      */
     public function test_oracle_adapter_metadata(): void
     {
-        $adapter = SourceAdapterFactory::create('oracle');
+        $adapter = app(SourceAdapterFactory::class)->create('oracle');
         $ddl = "CREATE TABLE employees (id NUMBER PRIMARY KEY, first_name VARCHAR2(50));";
         
         $parsed = $adapter->parseDump($ddl);
@@ -66,7 +67,7 @@ class SourceAdapterTest extends TestCase
      */
     public function test_sql_server_adapter_metadata(): void
     {
-        $adapter = SourceAdapterFactory::create('sqlserver');
+        $adapter = app(SourceAdapterFactory::class)->create('sqlserver');
         $ddl = "CREATE TABLE products (pid INT PRIMARY KEY, title NVARCHAR(100));";
         
         $parsed = $adapter->parseDump($ddl);

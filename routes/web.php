@@ -24,6 +24,14 @@ Route::get('/overview', function () {
     return Inertia::render('Overview');
 });
 
+Route::get('/validation', function () {
+    return Inertia::render('Validation');
+});
+
+Route::get('/index-advisor', function () {
+    return Inertia::render('IndexAdvisor');
+});
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
@@ -45,6 +53,8 @@ Route::middleware(['throttle:60,1'])->group(function () {
     Route::post('/translate-query', [ConversionController::class, 'translateQuery'])->name('translate.query');
     Route::post('/cdc/capture', [ConversionController::class, 'captureCdcChange'])->name('cdc.capture');
     Route::post('/cdc/replay', [ConversionController::class, 'replayCdcChanges'])->name('cdc.replay');
+    Route::post('/convert/validate', [\App\Http\Controllers\ValidationController::class, 'validateData'])->name('convert.validate');
+    Route::post('/convert/advise-indexes', [\App\Http\Controllers\IndexAdvisorController::class, 'advise'])->name('convert.advise');
 });
 
 require __DIR__.'/auth.php';
