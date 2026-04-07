@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/Components/ui/button';
-import { ThemeToggle } from '@/Components/theme-toggle';
+import { ThemeToggle } from '@/Components/ThemeToggle';
 
 export default function Authenticated({
     header,

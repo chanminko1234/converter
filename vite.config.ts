@@ -12,7 +12,6 @@ export default defineConfig({
         }),
         react({
             jsxRuntime: 'automatic',
-            exclude: [/\/components\//],
         }),
         tailwindcss(),
     ],

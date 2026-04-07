@@ -22,7 +22,7 @@ import {
 import Dropdown from '@/Components/Dropdown';
 import { ConversionReport } from '@/lib/sqlConverter';
 import { CodeHighlighter } from '@/Components/ui/syntax-highlighter';
-import { ThemeToggle } from '@/Components/theme-toggle';
+import { ThemeToggle } from '@/Components/ThemeToggle';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ERDVisualizer } from '@/Components/ERDVisualizer';
