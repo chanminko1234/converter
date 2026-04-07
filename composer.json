@@ -10,6 +10,8 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "ext-gd": "*",
+        "ext-zip": "*",
         "fakerphp/faker": "^1.24",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/breeze": "^2.4",
