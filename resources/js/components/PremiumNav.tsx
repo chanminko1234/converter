@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
-import { Button } from '@/Components/ui/button';
-import { ThemeToggle } from '@/Components/ThemeToggle';
+import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Rocket } from 'lucide-react';
 
 interface PremiumNavProps {

@@ -1,8 +1,8 @@
-import Modal from '@/Components/Modal';
+import Modal from '@/components/Modal';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler, useRef, useState } from 'react';
 import { Trash2, AlertTriangle, XCircle, ShieldX } from 'lucide-react';
-import { Button } from '@/Components/ui/button';
+import { Button } from '@/components/ui/button';
 
 export default function DeleteUserForm({
     className = '',

@@ -1,6 +1,6 @@
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow, prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { useTheme } from '@/Components/ThemeProvider';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface CodeHighlighterProps {
   code: string;

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-import { Button } from '@/Components/ui/button';
-import { Card } from '@/Components/ui/card';
-import { Badge } from '@/Components/ui/badge';
-import { Progress } from '@/Components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import {
     Activity, Zap, ArrowRight, ShieldCheck, TrendingUp,
     Table, RefreshCcw, AlertTriangle, PlayCircle, Clock,

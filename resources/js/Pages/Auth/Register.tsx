@@ -1,8 +1,8 @@
 import { FormEventHandler } from 'react';
-import { PremiumNav } from '@/Components/PremiumNav';
+import { PremiumNav } from '@/components/PremiumNav';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, ShieldCheck, ArrowRight } from 'lucide-react';
-import { Button } from '@/Components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function Register() {

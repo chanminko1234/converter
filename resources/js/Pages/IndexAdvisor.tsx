@@ -7,13 +7,13 @@ import {
     Cpu, Activity, Shield, Rocket, Copy, Code2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card } from '@/Components/ui/card';
-import { Badge } from '@/Components/ui/badge';
-import { Button } from '@/Components/ui/button';
-import { Label } from '@/Components/ui/label';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { CodeHighlighter } from '@/Components/ui/syntax-highlighter';
+import { CodeHighlighter } from '@/components/ui/syntax-highlighter';
 
 export default function IndexAdvisor() {
     const [sourceConn, setSourceConn] = useState({ host: 'localhost', port: '3306', user: '', pass: '', db: '' });

@@ -1,4 +1,4 @@
-import Dropdown from '@/Components/Dropdown';
+import Dropdown from '@/components/Dropdown';
 import { Link, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode, useState } from 'react';
 import {
@@ -6,8 +6,8 @@ import {
     Menu as MenuIcon, X, BrainCircuit, LifeBuoy, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/Components/ui/button';
-import { ThemeToggle } from '@/Components/ThemeToggle';
+import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Authenticated({
     header,

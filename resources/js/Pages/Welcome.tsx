@@ -2,33 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { Link, Head, usePage } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import axios from 'axios';
-import { Button } from '@/Components/ui/button';
-import { Textarea } from '@/Components/ui/textarea';
-import { Card } from '@/Components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
-import { Badge } from '@/Components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/Components/ui/sheet';
-import { Checkbox } from '@/Components/ui/checkbox';
-import { Label } from '@/Components/ui/label';
-import { Progress } from '@/Components/ui/progress';
-import { Dialog, DialogContent } from '@/Components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   Copy, Download, Upload, Settings,
   Github, Rocket, Eraser, Activity, Zap, Terminal, Search,
   Database, Server, Maximize2, Check, ShieldCheck, AlertOctagon, X,
   Menu, User, LogOut, ChevronDown
 } from 'lucide-react';
-import Dropdown from '@/Components/Dropdown';
+import Dropdown from '@/components/Dropdown';
 import { ConversionReport } from '@/lib/sqlConverter';
-import { CodeHighlighter } from '@/Components/ui/syntax-highlighter';
-import { ThemeToggle } from '@/Components/ThemeToggle';
+import { CodeHighlighter } from '@/components/ui/syntax-highlighter';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ERDVisualizer } from '@/Components/ERDVisualizer';
-import { DiffExplorer } from '@/Components/DiffExplorer';
-import { MigrationMapper } from '@/Components/MigrationMapper';
-import { LiveMigrationDashboard } from '@/Components/LiveMigrationDashboard';
+import { ERDVisualizer } from '@/components/ERDVisualizer';
+import { DiffExplorer } from '@/components/DiffExplorer';
+import { MigrationMapper } from '@/components/MigrationMapper';
+import { LiveMigrationDashboard } from '@/components/LiveMigrationDashboard';
 
 type TargetFormat = 'postgresql' | 'csv' | 'xlsx' | 'xls' | 'sqlite' | 'psql';
 

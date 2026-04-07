@@ -2,7 +2,7 @@ import { Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler, useRef } from 'react';
 import { Shield, Key, RefreshCw, CheckCircle2, Save } from 'lucide-react';
-import { Button } from '@/Components/ui/button';
+import { Button } from '@/components/ui/button';
 
 export default function UpdatePasswordForm({
     className = '',

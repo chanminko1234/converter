@@ -6,9 +6,9 @@ import {
     ChevronRight, Github, Terminal, Layers, Info
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Card } from '@/Components/ui/card';
-import { Badge } from '@/Components/ui/badge';
-import { Button } from '@/Components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 export default function Docs() {
     const sections = [

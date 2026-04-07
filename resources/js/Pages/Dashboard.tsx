@@ -7,9 +7,9 @@ import {
     TrendingUp, AlertCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Card } from '@/Components/ui/card';
-import { Button } from '@/Components/ui/button';
-import { Badge } from '@/Components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default function Dashboard() {
     const stats = [
