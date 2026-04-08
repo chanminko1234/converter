@@ -17,7 +17,7 @@ class RollbackScriptTest extends TestCase
         $mysqlSql = "CREATE TABLE authors (id INT PRIMARY KEY);\n" .
                     "CREATE TABLE books (id INT PRIMARY KEY, author_id INT, FOREIGN KEY (author_id) REFERENCES authors(id));";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
         ]);
@@ -54,7 +54,7 @@ class RollbackScriptTest extends TestCase
                     "CREATE TABLE profiles (id INT PRIMARY KEY, user_id INT, FOREIGN KEY (user_id) REFERENCES users(id));\n" .
                     "CREATE TABLE audit_logs (id INT PRIMARY KEY, profile_id INT, FOREIGN KEY (profile_id) REFERENCES profiles(id));";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
         ]);

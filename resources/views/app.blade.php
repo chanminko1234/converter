@@ -6,7 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title inertia>{{ config('app.name', 'Converter.io') }}</title>
+    <title inertia>{{ config('app.name', 'SQL-STREAM') }}</title>
+
+    <!-- SEO & Social Sharing Hub -->
+    <meta name="description" content="Premium MySQL to PostgreSQL Transpiler & Migration Orchestrator. Engineering speed, Predictive AI, and real-time streaming built for high-availability systems.">
+    <meta name="keywords" content="SQL, MySQL, PostgreSQL, Transpiler, Database Migration, Zero Downtime, Laravel">
+    <meta name="author" content="Chan Min Ko">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url('/') }}">
+    <meta property="og:title" content="SQL-STREAM | Premium MySQL to PostgreSQL Converter">
+    <meta property="og:description" content="The ultimate bridge from MySQL to PostgreSQL. Engineering speed, Predictive AI, and real-time streaming built for high-availability systems.">
+    <meta property="og:image" content="{{ asset('images/share-card.png') }}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ url('/') }}">
+    <meta property="twitter:title" content="SQL-STREAM | Premium MySQL to PostgreSQL Converter">
+    <meta property="twitter:description" content="The ultimate bridge from MySQL to PostgreSQL. Engineering speed, Predictive AI, and real-time streaming built for high-availability systems.">
+    <meta property="twitter:image" content="{{ asset('images/share-card.png') }}">
 
     <!-- Inter Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

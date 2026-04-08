@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Services\DatabaseAdapters\SourceAdapterFactory;
-use App\Services\GeminiService;
+use App\Services\AI\GeminiService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 

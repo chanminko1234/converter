@@ -64,9 +64,10 @@ npm run dev
 ```
 
 ### Accessing the Hub
-1.  **Register Identity**: Navigate to [`/register`](/register) to create your node clearance.
-2.  **Authenticate**: Use the [`/login`](/login) protocol to gain security clearance.
-3.  **Command Center**: Access your node's overview and telemetry at [`/dashboard`](/dashboard).
+1.  **Live Node**: Access the production hub directly at [sql-stream.up.railway.app](https://sql-stream.up.railway.app/).
+2.  **Register Identity**: Navigate to [`/register`](https://sql-stream.up.railway.app/register) to create your node clearance.
+3.  **Authenticate**: Use the [`/login`](https://sql-stream.up.railway.app/login) protocol to gain security clearance.
+4.  **Command Center**: Access your node's overview and telemetry at [`/dashboard`](https://sql-stream.up.railway.app/dashboard).
 
 ---
 
@@ -76,4 +77,18 @@ SQL STREAM maintains a 100% verified test suite covering every phase of the migr
 php artisan test
 ```
 
-*Engineered with precision by Antigravity.*
+---
+
+## 💬 Support & Community
+
+- **Engineering Cluster**: [Join our Discord](https://discord.gg/qwsG7jYw) for real-time peer reviews and technical guidance.
+- **Bug Tracker**: Report structural anomalies and logic issues on [GitHub Issues](https://github.com/chanminko1234/converter/issues).
+- **Documentation**: Access full mission protocols in the [Live Docs Hub](https://sql-stream.up.railway.app/docs).
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+*Engineered with precision by Chan Min Ko.*

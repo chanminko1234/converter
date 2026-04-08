@@ -11,10 +11,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use App\Services\DatabaseAdapters\SourceAdapterFactory;
 use Illuminate\Support\Facades\Log;
+use App\Traits\ValidatesDatabaseHost;
 
 class SyncDatabaseJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, ValidatesDatabaseHost;
 
     protected $source;
     protected $target;
@@ -37,9 +38,12 @@ class SyncDatabaseJob implements ShouldQueue
             
             $targetConnName = $this->target['connection'] ?? 'job_target_pgsql';
             if ($targetConnName === 'job_target_pgsql') {
+                $targetHost = $this->target['host'] ?? 'localhost';
+                $this->validateHost($targetHost);
+
                 Config::set('database.connections.job_target_pgsql', [
                     'driver' => 'pgsql',
-                    'host' => $this->target['host'] ?? 'localhost',
+                    'host' => $targetHost,
                     'port' => $this->target['port'] ?? '5432',
                     'database' => $this->target['db'] ?? '',
                     'username' => $this->target['user'] ?? '',

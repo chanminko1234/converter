@@ -31,7 +31,8 @@ class LargeFileSandboxTest extends TestCase
             'options' => [
                 'handleEnums' => 'check_constraint',
                 'handleSets' => 'array',
-                'timezoneHandling' => 'utc'
+                'timezoneHandling' => 'utc',
+                'suppress_header' => true
             ]
         ]);
 

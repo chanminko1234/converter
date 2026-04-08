@@ -7,9 +7,9 @@ class SourceAdapterFactory
     public function create(string $sourceType): SourceAdapterInterface
     {
         return match (strtolower($sourceType)) {
-            'mysql' => new MysqlSourceAdapter(),
-            'oracle' => new OracleSourceAdapter(),
-            'sqlserver', 'sqlsrv', 'sql_server' => new SqlServerSourceAdapter(),
+            'mysql' => app(MysqlSourceAdapter::class),
+            'oracle' => app(OracleSourceAdapter::class),
+            'sqlserver', 'sqlsrv', 'sql_server' => app(SqlServerSourceAdapter::class),
             default => throw new \InvalidArgumentException("Unsupported source type: {$sourceType}"),
         };
     }

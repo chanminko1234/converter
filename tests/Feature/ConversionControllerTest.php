@@ -15,7 +15,7 @@ class ConversionControllerTest extends TestCase
     {
         $mysqlSql = 'CREATE TABLE users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE);';
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -47,7 +47,7 @@ class ConversionControllerTest extends TestCase
 
     public function test_convert_endpoint_handles_invalid_sql(): void
     {
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => 'INVALID SQL SYNTAX',
             'target_format' => 'postgresql',
             'options' => [],
@@ -63,7 +63,7 @@ class ConversionControllerTest extends TestCase
         $formats = ['postgresql', 'csv', 'xlsx', 'sqlite', 'psql'];
 
         foreach ($formats as $format) {
-            $response = $this->post('/convert', [
+            $response = $this->postJson('/convert', [
                 'mysql_dump' => $mysqlSql,
                 'target_format' => $format,
                 'options' => [],
@@ -82,7 +82,7 @@ class ConversionControllerTest extends TestCase
             'CREATE TABLE products (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255));'
         );
 
-        $response = $this->post('/convert/upload', [
+        $response = $this->postJson('/convert/upload', [
             'file' => $file,
             'target_format' => 'postgresql',
             'options' => [],
@@ -110,7 +110,7 @@ class ConversionControllerTest extends TestCase
 
         $file = UploadedFile::fake()->create('test.txt', 100);
 
-        $response = $this->post('/convert/upload', [
+        $response = $this->postJson('/convert/upload', [
             'file' => $file,
             'target_format' => 'postgresql',
             'options' => [],
@@ -126,7 +126,7 @@ class ConversionControllerTest extends TestCase
         $enumOptions = ['varchar', 'check_constraint', 'enum_table'];
 
         foreach ($enumOptions as $option) {
-            $response = $this->post('/convert', [
+            $response = $this->postJson('/convert', [
                 'mysql_dump' => $mysqlSql,
                 'target_format' => 'postgresql',
                 'options' => [
@@ -147,7 +147,7 @@ class ConversionControllerTest extends TestCase
         $setOptions = ['varchar', 'array', 'separate_table'];
 
         foreach ($setOptions as $option) {
-            $response = $this->post('/convert', [
+            $response = $this->postJson('/convert', [
                 'mysql_dump' => $mysqlSql,
                 'target_format' => 'postgresql',
                 'options' => [
@@ -165,7 +165,7 @@ class ConversionControllerTest extends TestCase
     {
         $mysqlSql = "REPLACE INTO users (id, name) VALUES (1, 'John Doe');";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -182,7 +182,7 @@ class ConversionControllerTest extends TestCase
     {
         $mysqlSql = "INSERT IGNORE INTO users (name, email) VALUES ('Jane', 'jane@example.com');";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -199,11 +199,12 @@ class ConversionControllerTest extends TestCase
     {
         $mysqlSql = 'CREATE TABLE users (id CHAR(36) PRIMARY KEY, login VARCHAR(255), created_at TIMESTAMP);';
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
                 'predictiveRefactoring' => true,
+                'applyAiRefactoring' => true,
             ],
         ]);
 
@@ -230,7 +231,7 @@ class ConversionControllerTest extends TestCase
         $mysqlSql = "CREATE TABLE orders (id INT, orderDate DATETIME, customer_id INT);\n" . 
                     "CREATE TABLE orders_backup (id INT, orderDate DATETIME, customer_id INT);";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -348,7 +349,7 @@ class ConversionControllerTest extends TestCase
         $mysqlSql = "CREATE TABLE users (id INT PRIMARY KEY, name VARCHAR(255));\n" .
                     "CREATE TABLE members (id INT PRIMARY KEY, name VARCHAR(255));";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -375,7 +376,7 @@ class ConversionControllerTest extends TestCase
     {
         $mysqlSql = "INSERT INTO users (name, email, phone) VALUES ('John Doe', 'john.doe@example.com', '+1-555-0199');";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -414,7 +415,7 @@ class ConversionControllerTest extends TestCase
 
         $this->assertEquals('EMAIL', $emailCol['pii_tag']);
         $this->assertEquals('PHONE', $phoneCol['pii_tag']);
-        $this->assertEquals('PASSWORD', $passCol['pii_tag']);
+        $this->assertEquals('SENSITIVE', $passCol['pii_tag']);
         $this->assertEquals('SSN', $ssnCol['pii_tag']);
     }
 
@@ -422,7 +423,7 @@ class ConversionControllerTest extends TestCase
     {
         $mysqlSql = "CREATE TABLE products (id INT, name VARCHAR(255));";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'csv',
             'options' => [
@@ -447,7 +448,7 @@ class ConversionControllerTest extends TestCase
     {
         $mysqlSql = "CREATE TABLE tasks (id INT AUTO_INCREMENT PRIMARY KEY, description TEXT, created_at DATETIME);";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'sqlite',
         ]);
@@ -464,7 +465,7 @@ class ConversionControllerTest extends TestCase
     {
         $mysqlSql = "CREATE TABLE users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), created_at DATETIME, email_verified_at TIMESTAMP);";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -487,7 +488,7 @@ class ConversionControllerTest extends TestCase
     {
         $mysqlSql = "CREATE TABLE wp_posts (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, post_content LONGTEXT, post_title TEXT);";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -508,7 +509,7 @@ class ConversionControllerTest extends TestCase
     {
         $mysqlSql = "CREATE TABLE legacy_data (snake_case_col INT, camelCaseCol INT);";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -527,7 +528,7 @@ class ConversionControllerTest extends TestCase
         $mysqlSql = "CREATE TABLE orders (id INT PRIMARY KEY, amount DECIMAL(10,2), customer_id INT, FOREIGN KEY (customer_id) REFERENCES customers(id));\n" .
                     "CREATE TABLE customers (id INT PRIMARY KEY, name VARCHAR(255));";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
         ]);
@@ -554,7 +555,7 @@ class ConversionControllerTest extends TestCase
         $mysqlSql = "CREATE TABLE catalog_product_entity_decimal (value_id INT PRIMARY KEY, value DECIMAL(12,4));\n" .
                     "CREATE TABLE catalog_product_entity_int (value_id INT PRIMARY KEY, value INT(11));";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -575,7 +576,7 @@ class ConversionControllerTest extends TestCase
     {
         $mysqlSql = "CREATE TABLE users (id INT PRIMARY KEY);\nINSERT INTO users (id) VALUES (1);";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -595,7 +596,7 @@ class ConversionControllerTest extends TestCase
         $mysqlSql = "CREATE TABLE test_table (id INT PRIMARY KEY);\n" . 
                     "CREATE TRIGGER test_trigger BEFORE INSERT ON test_table FOR EACH ROW SET NEW.id = 1;";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [

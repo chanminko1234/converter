@@ -5,16 +5,30 @@ namespace App\Services\DatabaseAdapters;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use App\Http\Controllers\ConversionController;
+use App\Traits\ValidatesDatabaseHost;
 
 class MysqlSourceAdapter implements SourceAdapterInterface
 {
+    use ValidatesDatabaseHost;
+
+    protected \App\Services\SQL\SQLParserService $sqlParser;
     protected string $connectionName = 'temp_mysql_adapter';
+
+    public function __construct(\App\Services\SQL\SQLParserService $sqlParser)
+    {
+        $this->sqlParser = $sqlParser;
+    }
 
     public function setupConnection(array $config): void
     {
+        $host = $config['host'];
+
+        // SSRF Protection: Block private IP ranges, local addresses, and cloud metadata IPs
+        $this->validateHost($host);
+
         Config::set("database.connections.{$this->connectionName}", [
             'driver' => 'mysql',
-            'host' => $config['host'],
+            'host' => $host,
             'port' => $config['port'],
             'database' => $config['db'],
             'username' => $config['user'],
@@ -35,10 +49,6 @@ class MysqlSourceAdapter implements SourceAdapterInterface
         $allTablesData = [];
         $rawDump = "";
         
-        // We'll reuse the parsing logic from the controller for now, 
-        // but eventually it should be moved here.
-        $controller = app(ConversionController::class);
-        
         foreach ($tablesRes as $tableRow) {
             if (!isset($tableRow->$tablesField)) continue;
             $tableName = $tableRow->$tablesField;
@@ -46,7 +56,6 @@ class MysqlSourceAdapter implements SourceAdapterInterface
             $createRes = DB::connection($this->connectionName)->select("SHOW CREATE TABLE `{$tableName}`");
             if (!empty($createRes)) {
                 $createSql = $createRes[0]->{'Create Table'};
-                // In a real refactor, move parseMysqlDump to this class.
                 $parsed = $this->parseDump($createSql);
                 if (isset($parsed['tables'][$tableName])) {
                     $allTablesData[$tableName] = $parsed['tables'][$tableName];
@@ -64,10 +73,7 @@ class MysqlSourceAdapter implements SourceAdapterInterface
 
     public function parseDump(string|\Illuminate\Http\UploadedFile $dump): array
     {
-        $controller = app(ConversionController::class);
-        $reflection = new \ReflectionMethod($controller, 'parseMysqlDump');
-        $reflection->setAccessible(true);
-        $result = $reflection->invoke($controller, $dump);
+        $result = $this->sqlParser->parseMysqlDump($dump);
         $result['source_type'] = 'mysql';
         return $result;
     }

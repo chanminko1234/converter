@@ -7,13 +7,18 @@ use Illuminate\Support\Facades\Config;
 
 class SqlServerSourceAdapter implements SourceAdapterInterface
 {
+    use \App\Traits\ValidatesDatabaseHost;
+
     protected string $connectionName = 'temp_sql_server_adapter';
 
     public function setupConnection(array $config): void
     {
+        $host = $config['host'];
+        $this->validateHost($host);
+
         Config::set("database.connections.{$this->connectionName}", [
             'driver' => 'sqlsrv',
-            'host' => $config['host'],
+            'host' => $host,
             'port' => $config['port'],
             'database' => $config['db'],
             'username' => $config['user'],

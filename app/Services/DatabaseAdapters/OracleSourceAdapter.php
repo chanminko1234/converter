@@ -7,13 +7,18 @@ use Illuminate\Support\Facades\Config;
 
 class OracleSourceAdapter implements SourceAdapterInterface
 {
+    use \App\Traits\ValidatesDatabaseHost;
+
     protected string $connectionName = 'temp_oracle_adapter';
 
     public function setupConnection(array $config): void
     {
+        $host = $config['host'];
+        $this->validateHost($host);
+
         Config::set("database.connections.{$this->connectionName}", [
             'driver' => 'oracle', // Requires laravel-oci8 or similar
-            'host' => $config['host'],
+            'host' => $host,
             'port' => $config['port'],
             'database' => $config['db'], // Often SID or Service Name
             'username' => $config['user'],

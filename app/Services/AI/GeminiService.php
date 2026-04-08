@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\AI;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -104,11 +104,11 @@ You are a PostgreSQL tuning specialist. Analyze the following MySQL slow query l
 
 Slow Query Log:
 ```text
-{\$slowLog}
+{$slowLog}
 ```
 
 Target Context:
-- Data Volume: {\$volGb}GB
+- Data Volume: {$volGb}GB
 - Migration: MySQL to PostgreSQL
 
 Return ONLY a JSON object with the following structure:

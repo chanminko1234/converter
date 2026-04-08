@@ -49,7 +49,7 @@ class EnterpriseIntegrationTest extends TestCase
         $mysqlDump = "CREATE TABLE employees (social_security VARCHAR(20), salary DECIMAL(10,2));\n" .
                      "INSERT INTO employees VALUES ('123-456-789', 50000.00);";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlDump,
             'target_format' => 'postgresql',
             'options' => [
@@ -175,7 +175,7 @@ class EnterpriseIntegrationTest extends TestCase
         
         // Find sensitive column
         $sensitive = collect($columns)->where('name', 'sensitive_key')->first();
-        $this->assertEquals('PASSWORD', $sensitive['pii_tag']);
+        $this->assertEquals('SENSITIVE', $sensitive['pii_tag']);
         $this->assertEquals('VARCHAR(100)', $sensitive['original_type']);
     }
 
@@ -185,7 +185,7 @@ class EnterpriseIntegrationTest extends TestCase
     public function test_postgresql_tuning_with_mocked_gemini(): void
     {
         // 1. Setup Mock for GeminiService
-        $this->mock(\App\Services\GeminiService::class, function ($mock) {
+        $this->mock(\App\Services\AI\GeminiService::class, function ($mock) {
             $mock->shouldReceive('analyzeSlowLogs')
                 ->once()
                 ->with(

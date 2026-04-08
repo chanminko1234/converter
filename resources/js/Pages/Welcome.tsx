@@ -49,6 +49,7 @@ interface ConversionOptions {
   sqliteForeignKeys: boolean;
   sqliteWalMode: boolean;
   predictiveRefactoring: boolean;
+  applyAiRefactoring: boolean;
   autoCleaning: boolean;
   incrementalSync: boolean;
   dataMasking: boolean;
@@ -89,6 +90,7 @@ const Welcome: React.FC = () => {
     sqliteForeignKeys: true,
     sqliteWalMode: true,
     predictiveRefactoring: true,
+    applyAiRefactoring: false,
     autoCleaning: true,
     incrementalSync: false,
     dataMasking: false,
@@ -719,6 +721,29 @@ const Welcome: React.FC = () => {
                           <Check className="h-3 w-3 text-white" />
                         </div>
                       </div>
+                      
+                      {options.predictiveRefactoring && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          onClick={() => setOptions(p => ({ ...p, applyAiRefactoring: !p.applyAiRefactoring }))}
+                          className={`cursor-pointer group relative p-5 rounded-[2rem] border transition-all duration-300 ml-4 mb-2 ${options.applyAiRefactoring
+                            ? 'bg-primary/20 border-primary/40 shadow-lg shadow-primary/10'
+                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                            }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                               <div className={`p-2 rounded-lg ${options.applyAiRefactoring ? 'bg-primary text-white' : 'bg-white/10 text-white/40'}`}>
+                                 <ShieldCheck className="h-4 w-4" />
+                               </div>
+                               <span className="text-[10px] font-black uppercase tracking-widest text-white">Apply Modernization</span>
+                            </div>
+                            <Checkbox checked={options.applyAiRefactoring} />
+                          </div>
+                          <p className="text-[9px] mt-3 font-medium leading-relaxed opacity-40 ml-1">Automatically commit AI-driven structural improvements. If disabled, changes will be provided for manual review in the report.</p>
+                        </motion.div>
+                      )}
 
                       <div
                         onClick={() => setOptions(p => ({ ...p, autoCleaning: !p.autoCleaning }))}
@@ -1375,7 +1400,6 @@ const Welcome: React.FC = () => {
                                     )}
                                     {isSandboxRunning ? 'Validating...' : 'Dry Run Sandbox'}
                                   </Button>
-
                                   <Button
                                     onClick={() => copyToClipboard(fullOutput)}
                                     variant="outline"

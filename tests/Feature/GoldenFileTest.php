@@ -51,10 +51,12 @@ class GoldenFileTest extends TestCase
         $input = $this->extractInputFromComment($goldenContent);
         $expected = $this->extractExpectedOutput($goldenContent);
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $input,
             'target_format' => 'postgresql',
-            'options' => [],
+            'options' => [
+                'suppress_header' => true,
+            ],
         ]);
 
         $response->assertStatus(200);
@@ -73,11 +75,12 @@ class GoldenFileTest extends TestCase
         $input = $this->extractInputFromComment($goldenContent);
         $expected = $this->extractExpectedOutput($goldenContent);
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $input,
             'target_format' => 'postgresql',
             'options' => [
                 'enumHandling' => 'check_constraint',
+                'suppress_header' => true,
             ],
         ]);
 
@@ -97,11 +100,12 @@ class GoldenFileTest extends TestCase
         $input = $this->extractInputFromComment($goldenContent);
         $expected = $this->extractExpectedOutput($goldenContent);
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $input,
             'target_format' => 'postgresql',
             'options' => [
                 'setHandling' => 'array',
+                'suppress_header' => true,
             ],
         ]);
 
@@ -121,10 +125,12 @@ class GoldenFileTest extends TestCase
         $expectedSql = $this->extractExpectedOutput($goldenContent);
         $inputSql = $this->extractInputFromComment($goldenContent);
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $inputSql,
             'target_format' => 'sqlite',
-            'options' => [],
+            'options' => [
+                'suppress_header' => true,
+            ],
         ]);
 
         $response->assertStatus(200);
@@ -143,11 +149,12 @@ class GoldenFileTest extends TestCase
         $expectedSql = $this->extractExpectedOutput($goldenContent);
         $inputSql = $this->extractInputFromComment($goldenContent);
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $inputSql,
             'target_format' => 'postgresql',
             'options' => [
                 'replaceHandling' => 'upsert',
+                'suppress_header' => true,
             ],
         ]);
 
@@ -178,7 +185,7 @@ class GoldenFileTest extends TestCase
         ];
 
         foreach ($testCases as $case) {
-            $response = $this->post('/convert', [
+            $response = $this->postJson('/convert', [
                 'mysql_sql' => $case['input'],
                 'target_format' => $case['target'],
                 'options' => $case['options']

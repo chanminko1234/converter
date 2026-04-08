@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
-use App\Services\GeminiService;
+use App\Services\AI\GeminiService;
 use App\Services\DatabaseAdapters\SourceAdapterFactory;
 use App\Services\DatabaseAdapters\SourceAdapterInterface;
 use Mockery;

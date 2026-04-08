@@ -79,7 +79,9 @@ class PostgresConversionFixTest extends TestCase
         $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
-            'options' => [],
+            'options' => [
+                'suppress_header' => true
+            ],
         ]);
 
         $response->assertStatus(200);

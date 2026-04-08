@@ -18,7 +18,7 @@ class StagingDatabaseGeneratorTest extends TestCase
                     "INSERT INTO users (id, first_name, last_name, email, phone, address) VALUES " .
                     "(1, 'John', 'Doe', 'john.doe@example.com', '+1-555-0101', '123 Real St, Springfield');";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -51,7 +51,7 @@ class StagingDatabaseGeneratorTest extends TestCase
     {
         $mysqlSql = "INSERT INTO users (first_name, email) VALUES ('Alice', 'alice@test.com'), ('Bob', 'bob@test.com');";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -79,7 +79,7 @@ class StagingDatabaseGeneratorTest extends TestCase
     {
         $mysqlSql = "INSERT INTO users (id, status, email) VALUES (999, 'active', 'secret@hidden.com');";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -106,7 +106,7 @@ class StagingDatabaseGeneratorTest extends TestCase
         // Many MySQL dumps omit the column list if all columns are provided
         $mysqlSql = "INSERT INTO users VALUES (1, 'John', 'Doe', 'fallback@test.com', '555-9999');";
 
-        $response = $this->post('/convert', [
+        $response = $this->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [

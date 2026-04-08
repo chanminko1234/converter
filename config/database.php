@@ -103,13 +103,21 @@ return [
             'host' => env('PG_HOST', env('DB_HOST', '127.0.0.1')),
             'port' => env('PG_PORT', env('DB_PORT', '5432')),
             'database' => env('PG_DATABASE', env('DB_DATABASE', 'postgres')),
-            'username' => env('PG_USERNAME', env('DB_USERNAME', 'postgres')),
-            'password' => env('PG_PASSWORD', env('DB_PASSWORD', '')),
+            'username' => env('PG_SANDBOX_USERNAME', env('PG_USERNAME', env('DB_USERNAME', 'postgres'))),
+            'password' => env('PG_SANDBOX_PASSWORD', env('PG_PASSWORD', env('DB_PASSWORD', ''))),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            'options' => [
+                'PDO::ATTR_TIMEOUT' => 5, // Connection timeout
+            ],
+            // Applied immediately after connection
+            'after_connect' => [
+                "SET statement_timeout = '10s'",
+                "SET lock_timeout = '5s'",
+            ],
         ],
 
         'sqlsrv' => [
