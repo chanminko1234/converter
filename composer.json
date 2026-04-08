@@ -84,7 +84,9 @@
     },
     "config": {
         "platform": {
-            "ext-gd": "8.2.0"
+            "ext-gd": "8.2.0",
+            "ext-pcntl": "8.2.0",
+            "ext-posix": "8.2.0"
         },
         "optimize-autoloader": true,
         "preferred-install": "dist",
