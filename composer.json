@@ -16,6 +16,8 @@
         "php": "^8.2",
         "ext-gd": "*",
         "ext-zip": "*",
+        "ext-pcntl": "*",
+        "ext-posix": "*",
         "fakerphp/faker": "^1.24",
         "greenlion/php-sql-parser": "^4.7",
         "inertiajs/inertia-laravel": "^2.0",
