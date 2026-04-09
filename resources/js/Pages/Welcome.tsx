@@ -577,7 +577,7 @@ const Welcome: React.FC = () => {
             </Sheet>
 
             <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex items-center justify-center">
-              <a href="https://github.com/chanminko1234/converter" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
+              <a href="https://github.com/chanminko1234/SQLSTREAM_REPO" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
                 <Github className="h-5 w-5" />
               </a>
             </Button>
@@ -1658,11 +1658,11 @@ const Welcome: React.FC = () => {
         </div>
 
         <footer className="mt-20 pt-10 border-t border-white/5 flex items-center justify-between opacity-30 text-xs font-bold uppercase tracking-widest">
-          <div>© 2026 Converter Tooling System</div>
+          <div>© 2026 SQL-STREAM Core Ecosystem</div>
           <div className="flex gap-8">
             <Link href="/overview" className="hover:text-primary transition-colors">Overview</Link>
             <Link href="/docs" className="hover:text-primary transition-colors">Docs</Link>
-            <a href="https://github.com/chanminko1234/converter" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">GitHub</a>
+            <a href="https://github.com/chanminko1234/SQLSTREAM_REPO" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">GitHub</a>
             <Link href="/status" className="hover:text-primary transition-colors">Status</Link>
             <Link href="/support" className="hover:text-primary transition-colors text-amber-500/80">Support</Link>
           </div>

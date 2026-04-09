@@ -1,9 +1,9 @@
 # SQL STREAM: Engineering Node Architecture v4.0
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/chanminko/sql-stream)
-[![Tests](https://img.shields.io/badge/tests-134%20passed-blue.svg)](https://github.com/chanminko/sql-stream)
-[![Technology](https://img.shields.io/badge/stack-Laravel%2011%20%7C%20React%20%7C%20Inertia-red.svg)](https://github.com/chanminko/sql-stream)
-[![Design](https://img.shields.io/badge/design-Engineering%20Node-7c3aed.svg)](https://github.com/chanminko/sql-stream)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/chanminko1234/SQLSTREAM_REPO)
+[![Tests](https://img.shields.io/badge/tests-134%20passed-blue.svg)](https://github.com/chanminko1234/SQLSTREAM_REPO)
+[![Technology](https://img.shields.io/badge/stack-Laravel%2011%20%7C%20React%20%7C%20Inertia-red.svg)](https://github.com/chanminko1234/SQLSTREAM_REPO)
+[![Design](https://img.shields.io/badge/design-Engineering%20Node-7c3aed.svg)](https://github.com/chanminko1234/SQLSTREAM_REPO)
 
 **SQL STREAM** is a premium, mission-critical migration ecosystem designed to transform complex, stateful database transitions into a seamless, high-fidelity engineering experience. From its glass-morphic "Security Clearance" gateway to its real-time "Node Control Center," every layer is engineered for absolute observability and zero-downtime performance.
 
@@ -82,7 +82,7 @@ php artisan test
 ## 💬 Support & Community
 
 - **Engineering Cluster**: [Join our Discord](https://discord.gg/qwsG7jYw) for real-time peer reviews and technical guidance.
-- **Bug Tracker**: Report structural anomalies and logic issues on [GitHub Issues](https://github.com/chanminko1234/converter/issues).
+- **Bug Tracker**: Report structural anomalies and logic issues on [GitHub Issues](https://github.com/chanminko1234/SQLSTREAM_REPO/issues).
 - **Documentation**: Access full mission protocols in the [Live Docs Hub](https://sql-stream.up.railway.app/docs).
 
 ---
