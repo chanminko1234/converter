@@ -17,9 +17,9 @@
 - **Fast Response Hub**: Instant access to the Orchestrator, Validation Suite, and AI Advisor modules from a centralized command hub.
 
 ### 🔳 Security Clearance (Auth Architecture)
-- **Engineering Node Identity**: A stateful, multi-layered authentication system with specialized "Access Key Rotation" and "Node Termination" protocols.
+- **Identity Federation (SSO)**: Integrated support for specialized provider authentication via **GitHub** and **Google SSO**, enabling instant node establishment.
+- **Engineering Node Identity**: A statefully managed authentication system with persistent session tracking and secure user entity mapping.
 - **Strict Isolation**: Mission-critical routes (Overview, Orchestrator, Validation) are strictly isolated behind a robust `Security Clearance` middleware.
-- **Identity Integrity**: Dynamic user identity gateway with real-time status indicators and secure session management.
 
 ### 🔳 Migration Orchestrator v4.0
 - **Zero-Downtime Data Fabric**: Executes direct node-to-node synchronization with millisecond latency and O(1) performance.
@@ -47,14 +47,21 @@ composer install
 npm install
 ```
 
-2. Configure your `.env` for **PostgreSQL** metadata tracking:
+2. Configure your `.env` for **PostgreSQL** and **Identity Federation**:
 ```env
+# Database Core
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
-DB_PORT=5432
 DB_DATABASE=sql_stream
-DB_USERNAME=postgres
-DB_PASSWORD=
+
+# Identity Federation (OAuth)
+GITHUB_CLIENT_ID=your_id
+GITHUB_CLIENT_SECRET=your_secret
+GITHUB_REDIRECT_URI="${APP_URL}/auth/github/callback"
+
+GOOGLE_CLIENT_ID=your_id
+GOOGLE_CLIENT_SECRET=your_secret
+GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
 ```
 
 3. Initialize the core engines:
@@ -65,9 +72,8 @@ npm run dev
 
 ### Accessing the Hub
 1.  **Live Node**: Access the production hub directly at [sql-stream.up.railway.app](https://sql-stream.up.railway.app/).
-2.  **Register Identity**: Navigate to [`/register`](https://sql-stream.up.railway.app/register) to create your node clearance.
-3.  **Authenticate**: Use the [`/login`](https://sql-stream.up.railway.app/login) protocol to gain security clearance.
-4.  **Command Center**: Access your node's overview and telemetry at [`/dashboard`](https://sql-stream.up.railway.app/dashboard).
+2.  **Establish Identity**: Navigate to [`/register`](https://sql-stream.up.railway.app/register) or use **GitHub/SSO** for instant clearance.
+3.  **Command Center**: Access your node's overview and telemetry at [`/dashboard`](https://sql-stream.up.railway.app/dashboard).
 
 ---
 

@@ -17,9 +17,12 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Faker\Factory as Faker;
 use PHPSQLParser\PHPSQLParser;
 use App\Services\SQL\SQLParserService;
+use App\Services\AuditLogger;
+use App\Traits\ValidatesDatabaseHost;
 
 class ConversionController extends Controller
 {
+    use ValidatesDatabaseHost;
     protected GeminiService $gemini;
     protected BinlogListener $binlog;
     protected SQLParserService $sqlParser;
@@ -66,6 +69,16 @@ class ConversionController extends Controller
         $sourceType = $request->input('source_type', 'mysql');
         $mysqlDump = $request->input('mysql_dump');
         $source = $request->input('source');
+        if ($source && isset($source['host'])) {
+            $this->validateHost($source['host']);
+        }
+
+        AuditLogger::log('convert', 'database', $targetFormat, [
+            'options' => $options,
+            'source_type' => $sourceType,
+            'has_dump' => !empty($mysqlDump),
+        ]);
+
         $wantsJson = $request->wantsJson() || $request->ajax() || $request->has('json');
  
         return $this->orchestrator->convertToResponse(
@@ -142,6 +155,15 @@ class ConversionController extends Controller
         $source = $request->input('source');
         $target = $request->input('target');
         $options = $request->input('options', []);
+        
+        $this->validateHost($source['host']);
+        $this->validateHost($target['host']);
+
+        AuditLogger::log('stream_migration', 'database', $source['db'], [
+            'source' => $source,
+            'target' => $target,
+            'options' => $options
+        ]);
 
         try {
             $sourceType = $request->input('source_type', 'mysql');
@@ -198,8 +220,16 @@ class ConversionController extends Controller
         try {
             $this->sqlParser->validateSQLForSandbox($sql);
         } catch (\Throwable $e) {
+            AuditLogger::log('sandbox_blocked', 'sql', null, [
+                'sql_preview' => Str::limit($sql, 200),
+                'error' => $e->getMessage()
+            ]);
             return response()->json(['success' => false, 'error' => $e->getMessage()], 403);
         }
+
+        AuditLogger::log('sandbox_run', 'sql', null, [
+            'sql_preview' => Str::limit($sql, 500)
+        ]);
 
         $schemaId = 'sandbox_'.Str::random(8);
 
@@ -383,6 +413,11 @@ class ConversionController extends Controller
             $validated['operation']
         );
 
+        AuditLogger::log('cdc_capture', 'table', $validated['table'], [
+            'operation' => $validated['operation'],
+            'source' => $validated['source_db']
+        ]);
+
         return response()->json([
             'success' => true,
             'captured_id' => $change->id,
@@ -404,6 +439,11 @@ class ConversionController extends Controller
             $validated['source_db'],
             $validated['target_db']
         );
+
+        AuditLogger::log('cdc_replay', 'database', $validated['target_db'], [
+            'replayed_count' => $result['replayed_count'],
+            'source_db' => $validated['source_db']
+        ]);
 
         return response()->json([
             'success' => true,

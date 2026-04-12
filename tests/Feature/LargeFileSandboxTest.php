@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Illuminate\Support\Facades\DB;
@@ -9,6 +10,15 @@ use Illuminate\Http\UploadedFile;
 
 class LargeFileSandboxTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
     /**
      * Test mapping of a large file with comments and validation
      */
@@ -25,7 +35,7 @@ class LargeFileSandboxTest extends TestCase
         $sql .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n";
 
         // 2. Perform the conversion
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $sql,
             'target_format' => 'postgresql',
             'options' => [
@@ -53,7 +63,7 @@ class LargeFileSandboxTest extends TestCase
             public function unprepared($sql) { return true; }
         });
 
-        $sandboxResponse = $this->postJson('/convert/sandbox', [
+        $sandboxResponse = $this->actingAs($this->user)->postJson('/convert/sandbox', [
             'sql' => $result
         ]);
 
@@ -87,7 +97,7 @@ class LargeFileSandboxTest extends TestCase
             }
         });
 
-        $response = $this->postJson('/convert/sandbox', [
+        $response = $this->actingAs($this->user)->postJson('/convert/sandbox', [
             'sql' => $sql
         ]);
 

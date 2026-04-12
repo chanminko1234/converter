@@ -131,12 +131,16 @@ export default function Login({
                     <div className="mt-10 pt-8 border-t border-foreground/10 dark:border-white/10">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 dark:text-foreground/30 text-center mb-6">Or Authorize via Internal Provider</p>
                         <div className="grid grid-cols-2 gap-4">
-                            <Button variant="outline" className="rounded-2xl flex justify-center py-6 border-foreground/10 dark:border-white/10 text-foreground hover:bg-foreground/5 dark:hover:bg-white/5 transition-all text-[10px] font-black tracking-widest uppercase">
-                                <Github className="w-4 h-4 mr-2" /> GitHub
-                            </Button>
-                            <Button variant="outline" className="rounded-2xl flex justify-center py-6 border-foreground/10 dark:border-white/10 text-foreground hover:bg-foreground/5 dark:hover:bg-white/5 transition-all text-[10px] font-black tracking-widest uppercase">
-                                <Fingerprint className="w-4 h-4 mr-2" /> SSO
-                            </Button>
+                            <a href={route('auth.redirect', { provider: 'github' })} className="w-full">
+                                <Button variant="outline" className="w-full rounded-2xl flex justify-center py-6 border-foreground/10 dark:border-white/10 text-foreground hover:bg-foreground/5 dark:hover:bg-white/5 transition-all text-[10px] font-black tracking-widest uppercase">
+                                    <Github className="w-4 h-4 mr-2" /> GitHub
+                                </Button>
+                            </a>
+                            <a href={route('auth.redirect', { provider: 'google' })} className="w-full">
+                                <Button variant="outline" className="w-full rounded-2xl flex justify-center py-6 border-foreground/10 dark:border-white/10 text-foreground hover:bg-foreground/5 dark:hover:bg-white/5 transition-all text-[10px] font-black tracking-widest uppercase">
+                                    <Fingerprint className="w-4 h-4 mr-2" /> SSO
+                                </Button>
+                            </a>
                         </div>
                     </div>
 

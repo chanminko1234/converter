@@ -2,15 +2,26 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Tests\TestCase;
 use App\Services\AI\GeminiService;
 use App\Services\DatabaseAdapters\SourceAdapterFactory;
 use App\Services\DatabaseAdapters\SourceAdapterInterface;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Illuminate\Support\Facades\Http;
 
 class IndexAdvisorControllerTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
     public function test_index_advisor_endpoint_provides_ai_recommendations()
     {
         // Mock Gemini Service
@@ -44,7 +55,7 @@ class IndexAdvisorControllerTest extends TestCase
             $mock->shouldReceive('create')->andReturn($mockAdapter);
         });
 
-        $response = $this->postJson('/convert/advise-indexes', [
+        $response = $this->actingAs($this->user)->postJson('/convert/advise-indexes', [
             'source' => [
                 'host' => 'localhost',
                 'port' => '3306',

@@ -16,6 +16,17 @@ class BinlogListener
     public function captureChange(string $sourceDb, string $targetDb, string $table, array $data, string $type): CdcChange
     {
         Log::info("CDC Captured: {$type} on {$table} for migration {$sourceDb} -> {$targetDb}");
+
+        // Security: Ensure the table is part of the migration
+        $isValidTable = DB::table('migration_checkpoints')
+            ->where('source_db', $sourceDb)
+            ->where('target_db', $targetDb)
+            ->where('table_name', $table)
+            ->exists();
+
+        if (!$isValidTable) {
+             throw new \Exception("Unauthorized CDC capture attempt: Table '{$table}' is not registered for migration.");
+        }
         
         return CdcChange::create([
             'operation_type' => $type,
@@ -75,6 +86,17 @@ class BinlogListener
      */
     private function executeChangeOnTarget(string $targetDb, CdcChange $change): void
     {
+        // Security: Ensure the table is actually part of an active migration
+        $isValidTable = DB::table('migration_checkpoints')
+            ->where('source_db', $change->source_db)
+            ->where('target_db', $change->target_db)
+            ->where('table_name', $change->table_name)
+            ->exists();
+
+        if (!$isValidTable) {
+            throw new \Exception("Unauthorized CDC replay attempt: Table '{$change->table_name}' is not registered for migration.");
+        }
+
         // Switch to the target database connection dynamically
         // Implementation assumes 'temp_pgsql' is configured in the controller
         $conn = DB::connection('temp_pgsql');

@@ -2,17 +2,27 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class TuningValidationTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
     /**
      * Test that an empty slow_query_log (converted to null) passes validation.
      */
     public function test_empty_slow_query_log_passes_validation(): void
     {
-        $response = $this->postJson('/convert/tune', [
+        $response = $this->actingAs($this->user)->postJson('/convert/tune', [
             'ram_gb' => 16,
             'cpu_cores' => 4,
             'storage_type' => 'ssd',
@@ -30,7 +40,7 @@ class TuningValidationTest extends TestCase
      */
     public function test_missing_slow_query_log_passes_validation(): void
     {
-        $response = $this->postJson('/convert/tune', [
+        $response = $this->actingAs($this->user)->postJson('/convert/tune', [
             'ram_gb' => 16,
             'cpu_cores' => 4,
             'storage_type' => 'ssd',

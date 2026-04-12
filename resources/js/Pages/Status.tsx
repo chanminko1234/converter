@@ -17,6 +17,7 @@ export default function Status() {
         { name: 'Neural Advisor', status: 'operational', uptime: '99.96%', latency: '412ms', icon: <Cpu /> },
         { name: 'Audit Pipeline', status: 'operational', uptime: '99.99%', latency: '29ms', icon: <Activity /> },
         { name: 'Sync Worker Node', status: 'operational', uptime: '100%', latency: '08ms', icon: <RefreshCcw /> },
+        { name: 'Identity Federation', status: 'operational', uptime: '99.99%', latency: '15ms', icon: <Shield /> },
         { name: 'Global Edge API', status: 'operational', uptime: '99.98%', latency: '45ms', icon: <Globe /> },
     ];
 

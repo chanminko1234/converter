@@ -129,6 +129,14 @@ const Welcome: React.FC = () => {
   }, [isConverting, mysqlInput]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!auth.user) {
+      toast.error('Mission Clearance Required', {
+        description: 'Please sign in to your engineering node to perform artifact-based migrations.'
+      });
+      window.location.href = '/login';
+      return;
+    }
+
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -182,6 +190,14 @@ const Welcome: React.FC = () => {
   };
 
   const runSandbox = async () => {
+    if (!auth.user) {
+      toast.error('Access Denied', {
+        description: 'Sanctum clearance required to execute sandbox routines.'
+      });
+      window.location.href = '/login';
+      return;
+    }
+
     if (!fullOutput) {
       toast.error('Generate SQL first before running sandbox validation');
       return;
@@ -261,6 +277,14 @@ const Welcome: React.FC = () => {
   };
 
   const handleAnalyze = async () => {
+    if (!auth.user) {
+      toast.error('Identity Verification Required', {
+        description: 'Authenticate to access the neural structural analyzer.'
+      });
+      window.location.href = '/login';
+      return;
+    }
+
     if (mode === 'sql' && inputMethod === 'manual' && !mysqlInput.trim()) return toast.error('Please enter MySQL code to analyze');
     if ((mode === 'stream' || (mode === 'sql' && inputMethod === 'live')) && !sourceConn.db) return toast.error('Please provide source database details');
 
@@ -291,6 +315,14 @@ const Welcome: React.FC = () => {
   };
 
   const handleConvert = async () => {
+    if (!auth.user) {
+      toast.error('Port Access Restricted', {
+        description: 'Signed-in clearance is required for live cluster transformations.'
+      });
+      window.location.href = '/login';
+      return;
+    }
+
     if (mode === 'sql' && !mysqlInput.trim()) return toast.error('Please enter MySQL code');
     if (mode === 'stream' && (!sourceConn.db || !targetConn.db)) return toast.error('Please provide database details');
 
@@ -324,6 +356,14 @@ const Welcome: React.FC = () => {
   };
 
   const handleTranslateQuery = async () => {
+    if (!auth.user) {
+      toast.error('Cipher Clearance Required', {
+        description: 'Please login to translate ciphered queries.'
+      });
+      window.location.href = '/login';
+      return;
+    }
+
     if (!queryInput.trim()) return toast.error('Please enter a query to translate');
     setIsTranslating(true);
     try {
@@ -348,6 +388,14 @@ const Welcome: React.FC = () => {
   };
 
   const handleTune = async () => {
+    if (!auth.user) {
+      toast.error('Architectural Access Required', {
+        description: 'Login to generate high-fidelity architecture reports.'
+      });
+      window.location.href = '/login';
+      return;
+    }
+
     setIsTuning(true);
     try {
       const response = await axios.post('/convert/tune', tuningInput, {
@@ -848,8 +896,8 @@ const Welcome: React.FC = () => {
                 className={`rounded-2xl px-10 flex shadow-2xl font-bold transition-all active:scale-95 ${mode === 'stream' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/40' : 'bg-primary hover:bg-primary/90 shadow-primary/40'
                   }`}
               >
-                {isConverting ? <Activity className="animate-spin h-5 w-5 mr-2" /> : mode === 'stream' ? <Server className="w-5 mr-2" /> : <Rocket className="w-5 mr-2" />}
-                {isConverting ? 'Processing...' : mode === 'stream' ? 'Start Live Stream' : 'Run Transformation'}
+                {isConverting ? <Activity className="animate-spin h-5 w-5 mr-2" /> : !auth.user ? <ShieldCheck className="w-5 mr-2 opacity-50" /> : mode === 'stream' ? <Server className="w-5 mr-2" /> : <Rocket className="w-5 mr-2" />}
+                {isConverting ? 'Processing...' : !auth.user ? 'Login to Migrate' : mode === 'stream' ? 'Start Live Stream' : 'Run Transformation'}
               </Button>
             </div>
           )}

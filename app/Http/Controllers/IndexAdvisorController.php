@@ -8,9 +8,13 @@ use App\Services\DatabaseAdapters\SourceAdapterFactory;
 use App\Services\AI\GeminiService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use App\Services\AuditLogger;
+
+use App\Traits\ValidatesDatabaseHost;
 
 class IndexAdvisorController extends Controller
 {
+    use ValidatesDatabaseHost;
     protected GeminiService $gemini;
 
     public function __construct(GeminiService $gemini)
@@ -39,6 +43,13 @@ class IndexAdvisorController extends Controller
 
         $source = $request->input('source');
         $sourceType = $request->input('source_type', 'mysql');
+
+        $this->validateHost($source['host']);
+
+        AuditLogger::log('index_advisor', 'database', $source['db'], [
+            'source' => $source,
+            'source_type' => $sourceType
+        ]);
 
         try {
             $adapter = app(SourceAdapterFactory::class)->create($sourceType);

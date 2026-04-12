@@ -2,12 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PostgresConversionFixTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
 
     public function test_mysql_to_postgresql_repro_case(): void
     {
@@ -18,7 +27,7 @@ class PostgresConversionFixTest extends TestCase
           UNIQUE KEY `email_unique` (`email`)
         ) ENGINE=InnoDB;";
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -51,7 +60,7 @@ class PostgresConversionFixTest extends TestCase
           `total` bigint(20) DEFAULT NULL
         );";
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [],
@@ -76,7 +85,7 @@ class PostgresConversionFixTest extends TestCase
           `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         );";
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -97,7 +106,7 @@ class PostgresConversionFixTest extends TestCase
     {
         $mysqlSql = "INSERT INTO `users` (name, email) VALUES ('John Doe', 'john@example.com');";
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [],
@@ -121,7 +130,7 @@ class PostgresConversionFixTest extends TestCase
         # Footer Comment
         ";
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [],
@@ -141,7 +150,7 @@ class PostgresConversionFixTest extends TestCase
     {
         $mysqlSql = "INSERT INTO `countries` (`name`) VALUES ('Ivory Coast / Cote d\'Ivoire');";
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [],
@@ -159,7 +168,7 @@ class PostgresConversionFixTest extends TestCase
     {
         $mysqlSql = "INSERT INTO `orders` (`from`, `to`, `quantity`) VALUES ('Japan', 'USA', 10);";
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
             'options' => [],

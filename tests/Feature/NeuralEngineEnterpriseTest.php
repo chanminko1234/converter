@@ -2,16 +2,27 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Tests\TestCase;
 use App\Services\AI\GeminiService;
 use App\Services\DatabaseAdapters\SourceAdapterFactory;
 use App\Services\DatabaseAdapters\SourceAdapterInterface;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Config;
 
 class NeuralEngineEnterpriseTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
     /**
      * Test the Index Advisor with multiple source types
      */
@@ -46,7 +57,7 @@ class NeuralEngineEnterpriseTest extends TestCase
             $mock->shouldReceive('create')->with('oracle')->andReturn($mockAdapter);
         });
 
-        $response = $this->postJson('/convert/advise-indexes', [
+        $response = $this->actingAs($this->user)->postJson('/convert/advise-indexes', [
             'source' => [
                 'host' => 'oracle.local',
                 'port' => '1521',
@@ -108,7 +119,7 @@ class NeuralEngineEnterpriseTest extends TestCase
      */
     public function test_index_advisor_validates_inputs()
     {
-        $response = $this->postJson('/convert/advise-indexes', [
+        $response = $this->actingAs($this->user)->postJson('/convert/advise-indexes', [
             'source' => [
                 'host' => 'incomplete'
                 // missing db, user, pass

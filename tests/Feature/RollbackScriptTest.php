@@ -2,12 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class RollbackScriptTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
 
     /**
      * Test that the rollback script correctly generates drop statements in reverse order.
@@ -17,7 +26,7 @@ class RollbackScriptTest extends TestCase
         $mysqlSql = "CREATE TABLE authors (id INT PRIMARY KEY);\n" .
                     "CREATE TABLE books (id INT PRIMARY KEY, author_id INT, FOREIGN KEY (author_id) REFERENCES authors(id));";
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
         ]);
@@ -54,7 +63,7 @@ class RollbackScriptTest extends TestCase
                     "CREATE TABLE profiles (id INT PRIMARY KEY, user_id INT, FOREIGN KEY (user_id) REFERENCES users(id));\n" .
                     "CREATE TABLE audit_logs (id INT PRIMARY KEY, profile_id INT, FOREIGN KEY (profile_id) REFERENCES profiles(id));";
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $mysqlSql,
             'target_format' => 'postgresql',
         ]);

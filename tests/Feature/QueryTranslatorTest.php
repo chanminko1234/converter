@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -9,12 +10,20 @@ class QueryTranslatorTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
+
     /**
      * Test basic SELECT query translation.
      */
     public function test_translates_basic_select_with_ifnull(): void
     {
-        $response = $this->post('/translate-query', [
+        $response = $this->actingAs($this->user)->post('/translate-query', [
             'query' => "SELECT id, IFNULL(name, 'N/A') as name FROM `users` WHERE status = 'active';"
         ]);
 
@@ -31,7 +40,7 @@ class QueryTranslatorTest extends TestCase
      */
     public function test_translates_date_functions(): void
     {
-        $response = $this->post('/translate-query', [
+        $response = $this->actingAs($this->user)->post('/translate-query', [
             'query' => "SELECT * FROM orders WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY) AND updated_at < DATE_ADD('2023-01-01', INTERVAL 1 MONTH);"
         ]);
 
@@ -50,7 +59,7 @@ class QueryTranslatorTest extends TestCase
      */
     public function test_translates_substring_index_and_limit(): void
     {
-        $response = $this->post('/translate-query', [
+        $response = $this->actingAs($this->user)->post('/translate-query', [
             'query' => "SELECT SUBSTRING_INDEX(email, '@', 1) as username FROM users LIMIT 10, 5;"
         ]);
 
@@ -66,7 +75,7 @@ class QueryTranslatorTest extends TestCase
      */
     public function test_translates_group_concat_and_unix_timestamp(): void
     {
-        $response = $this->post('/translate-query', [
+        $response = $this->actingAs($this->user)->post('/translate-query', [
             'query' => "SELECT GROUP_CONCAT(name SEPARATOR ';'), UNIX_TIMESTAMP() FROM users;"
         ]);
 
@@ -82,7 +91,7 @@ class QueryTranslatorTest extends TestCase
      */
     public function test_translates_datediff_and_utc_timestamp(): void
     {
-        $response = $this->post('/translate-query', [
+        $response = $this->actingAs($this->user)->post('/translate-query', [
             'query' => "SELECT DATEDIFF(end_date, start_date), UTC_TIMESTAMP() FROM `events`;"
         ]);
 
@@ -103,7 +112,7 @@ class QueryTranslatorTest extends TestCase
                  "WHERE `u`.`created_at` > DATE_SUB(NOW(), INTERVAL 7 DAY) " .
                  "LIMIT 0, 100;";
 
-        $response = $this->post('/translate-query', [
+        $response = $this->actingAs($this->user)->post('/translate-query', [
             'query' => $query
         ]);
 

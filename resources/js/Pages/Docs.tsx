@@ -79,6 +79,29 @@ export default function Docs() {
                     </div>
                 </div>
             ),
+        },
+        {
+            id: 'identity-federation',
+            title: 'Identity Hub',
+            icon: <Shield className="h-5 w-5 text-emerald-400" />,
+            content: (
+                <div className="space-y-6">
+                    <p className="text-foreground/40 font-bold leading-relaxed tracking-tight">Instant node establishment via enterprise-grade identity providers. Connect your engineering profile seamlessly.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {[
+                            { label: 'GitHub OAuth', desc: 'Quick-access authorization via established developer profiles.' },
+                            { label: 'Google SSO', desc: 'Standardized enterprise authentication for large clusters.' },
+                            { label: 'Persistent ACL', desc: 'User-to-node permissions are maintained across sessions.' },
+                            { label: 'Node Secrets', desc: 'Social tokens are encrypted and strictly managed.' }
+                        ].map(item => (
+                            <div key={item.label} className="p-5 rounded-2xl bg-foreground/[0.02] border border-foreground/5 hover:bg-primary/5 transition-all group">
+                                <h6 className="text-[10px] font-black uppercase text-emerald-400 mb-2 tracking-widest">{item.label}</h6>
+                                <p className="text-[10px] text-foreground/40 font-bold leading-relaxed">{item.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ),
         }
     ];
 

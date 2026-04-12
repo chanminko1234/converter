@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Tests\TestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -9,6 +10,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 class OrchestrationControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
 
     public function test_get_status_returns_accurate_metrics()
     {
@@ -38,7 +47,7 @@ class OrchestrationControllerTest extends TestCase
             ]
         ]);
 
-        $response = $this->postJson('/convert/migration-status', [
+        $response = $this->actingAs($this->user)->postJson('/convert/migration-status', [
             'source_db' => 'source_db',
             'target_db' => 'target_db'
         ]);
@@ -64,7 +73,7 @@ class OrchestrationControllerTest extends TestCase
             'captured_at' => now(),
         ]);
 
-        $response = $this->postJson('/convert/cutover', [
+        $response = $this->actingAs($this->user)->postJson('/convert/cutover', [
             'source_db' => 'source_db',
             'target_db' => 'target_db'
         ]);
@@ -89,7 +98,7 @@ class OrchestrationControllerTest extends TestCase
             'checkpoint_column' => 'id'
         ]);
 
-        $response = $this->postJson('/convert/cutover', [
+        $response = $this->actingAs($this->user)->postJson('/convert/cutover', [
             'source_db' => 'source_db',
             'target_db' => 'target_db'
         ]);

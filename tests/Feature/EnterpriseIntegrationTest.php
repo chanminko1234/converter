@@ -2,12 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class EnterpriseIntegrationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
 
     /**
      * Test that all global public navigation pages render successfully.
@@ -49,7 +58,7 @@ class EnterpriseIntegrationTest extends TestCase
         $mysqlDump = "CREATE TABLE employees (social_security VARCHAR(20), salary DECIMAL(10,2));\n" .
                      "INSERT INTO employees VALUES ('123-456-789', 50000.00);";
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $mysqlDump,
             'target_format' => 'postgresql',
             'options' => [
@@ -84,7 +93,7 @@ class EnterpriseIntegrationTest extends TestCase
                  "FROM `users` u WHERE u.email LIKE '%@gmail.com' " .
                  "ORDER BY u.id DESC LIMIT 10;";
 
-        $response = $this->post('/translate-query', [
+        $response = $this->actingAs($this->user)->post('/translate-query', [
             'query' => $query
         ]);
 
@@ -115,7 +124,7 @@ class EnterpriseIntegrationTest extends TestCase
             ['source_db' => 'mysql_prod', 'target_db' => 'pg_prod', 'table_name' => 'items', 'rows_synced' => 500000, 'last_throughput' => 12000.2, 'sync_status' => 'completed', 'last_synced_at' => now()],
         ]);
 
-        $response = $this->postJson('/convert/status', [
+        $response = $this->actingAs($this->user)->postJson('/convert/status', [
             'source_db' => 'mysql_prod',
             'target_db' => 'pg_prod',
         ]);
@@ -148,7 +157,7 @@ class EnterpriseIntegrationTest extends TestCase
                      "  sensitive_key VARCHAR(100)\n" .
                      ");";
 
-        $response = $this->postJson('/convert/analyze', [
+        $response = $this->actingAs($this->user)->postJson('/convert/analyze', [
             'mysql_dump' => $mysqlDump,
             'options' => ['dataMasking' => true]
         ]);
@@ -204,7 +213,7 @@ class EnterpriseIntegrationTest extends TestCase
         });
 
         // 2. Perform Request
-        $response = $this->postJson('/convert/tune', [
+        $response = $this->actingAs($this->user)->postJson('/convert/tune', [
             'ram_gb' => 32,
             'cpu_cores' => 8,
             'storage_type' => 'ssd',
@@ -256,7 +265,7 @@ class EnterpriseIntegrationTest extends TestCase
      */
     public function test_postgresql_tuning_validation_failure(): void
     {
-        $response = $this->postJson('/convert/tune', [
+        $response = $this->actingAs($this->user)->postJson('/convert/tune', [
             'ram_gb' => 0, // Invalid (min:1)
             'storage_type' => 'nvme' // Invalid (must be ssd or hdd)
         ]);

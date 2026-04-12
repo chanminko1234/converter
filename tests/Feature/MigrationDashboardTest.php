@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
@@ -10,6 +11,14 @@ use Tests\TestCase;
 class MigrationDashboardTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
 
     public function test_get_status_returns_metrics()
     {
@@ -24,7 +33,7 @@ class MigrationDashboardTest extends TestCase
             'last_synced_at' => now(),
         ]);
 
-        $response = $this->postJson('/convert/status', [
+        $response = $this->actingAs($this->user)->postJson('/convert/status', [
             'source_db' => 'source_test',
             'target_db' => 'target_test',
         ]);
@@ -51,7 +60,7 @@ class MigrationDashboardTest extends TestCase
         // We'll mock the whole stream by just ensuring the checkpoint gets updated
         // or just mock the DB connection calls
         
-        $response = $this->postJson('/convert/stream', [
+        $response = $this->actingAs($this->user)->postJson('/convert/stream', [
             'source' => ['host' => '127.0.0.1', 'port' => '3306', 'user' => 'root', 'pass' => '', 'db' => 'source_db'],
             'target' => ['host' => '127.0.0.1', 'port' => '5432', 'user' => 'postgres', 'pass' => '', 'db' => 'target_db'],
             'options' => ['incrementalSync' => false]
@@ -61,7 +70,7 @@ class MigrationDashboardTest extends TestCase
         // Actually, the controller catches the Exception.
         
         // Let's manually trigger the update logic if we want to test getStatus more thoroughly
-        $this->postJson('/convert/status', [
+        $this->actingAs($this->user)->postJson('/convert/status', [
             'source_db' => 'source_db',
             'target_db' => 'target_db',
         ])->assertStatus(200);

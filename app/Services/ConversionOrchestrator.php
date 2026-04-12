@@ -76,20 +76,30 @@ class ConversionOrchestrator
         }
 
         $generator = $converter->convert($input, $options, $sourceType);
-        $maxJsonSize = 10 * 1024 * 1024; // 10MB safety limit for JSON strings
+        $maxJsonSize = 5 * 1024 * 1024; // Lowered to 5MB for better stability in JSON responses
+        $report = [];
+        
         foreach ($generator as $chunk) {
-            $sql .= $chunk;
-            if (strlen($sql) > $maxJsonSize) {
-                $sql .= "\n\n-- [TRUNCATED] Results exceed 10MB safety limit for JSON. Please use the streaming download endpoint for the full migration script.";
+            if (strlen($sql) + strlen($chunk) > $maxJsonSize) {
+                $sql .= "\n\n-- [TRUNCATED] Results exceed 5MB safety limit for JSON. Please use the streaming download endpoint for the full migration script.";
                 $report[] = [
                     'type' => 'warning',
-                    'message' => 'The resulting SQL is very large and has been truncated in this JSON response for performance reasons. Please download the full file instead.'
+                    'message' => 'The resulting SQL is very large and has been truncated in this JSON response for performance reasons. Please use the "Download Migration File" button for the complete script.'
                 ];
                 break;
             }
+            $sql .= $chunk;
+            
+            // Periodically check memory usage to prevent hard OOM
+            if (memory_get_usage() > 128 * 1024 * 1024) { // 128MB threshold
+                 $sql .= "\n\n-- [TRUNCATED] Critical memory threshold reached. Results have been capped.";
+                 $report[] = [
+                    'type' => 'error',
+                    'message' => 'Processing reached memory limits. SQL output has been truncated. Please use the streaming export for large datasets.'
+                 ];
+                 break;
+            }
         }
-        
-        $report = [];
         $this->sqlParser->performAutoCleaning($schema, $options, $report);
 
         $preset = $options['frameworkPreset'] ?? $options['framework_preset'] ?? 'none';

@@ -9,9 +9,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use App\Services\AuditLogger;
+
+use App\Traits\ValidatesDatabaseHost;
 
 class ValidationController extends Controller
 {
+    use ValidatesDatabaseHost;
     /**
      * Validate data integrity between Source and Target databases
      */
@@ -42,6 +46,15 @@ class ValidationController extends Controller
         $sourceType = $request->input('source_type', 'mysql');
         $target = $request->input('target');
         $requestedTables = $request->input('tables', []);
+
+        $this->validateHost($source['host']);
+        $this->validateHost($target['host']);
+
+        AuditLogger::log('validate_data', 'database', $source['db'], [
+            'source' => $source,
+            'target' => $target,
+            'tables_requested' => $requestedTables
+        ]);
 
         try {
             // 1. Setup Connections

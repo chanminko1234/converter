@@ -22,6 +22,14 @@ class BinlogListenerTest extends TestCase
 
     public function test_capture_change_creates_record(): void
     {
+        // Register table for security validation
+        DB::table('migration_checkpoints')->insert([
+            'source_db' => 'source_db',
+            'target_db' => 'target_db',
+            'table_name' => 'users',
+            'checkpoint_column' => 'id',
+        ]);
+
         $change = $this->listener->captureChange(
             'source_db',
             'target_db',
@@ -55,6 +63,14 @@ class BinlogListenerTest extends TestCase
             $table->string('name');
         });
 
+        // Register table for security validation
+        DB::table('migration_checkpoints')->insert([
+            'source_db' => 's1',
+            'target_db' => 't1',
+            'table_name' => 'users',
+            'checkpoint_column' => 'id',
+        ]);
+
         // Create a pending change
         CdcChange::create([
             'operation_type' => 'INSERT',
@@ -81,10 +97,18 @@ class BinlogListenerTest extends TestCase
 
     public function test_replay_handles_errors_gracefully(): void
     {
-        // Force an error by targeting a non-existent table
+        // Note: Even if we try to force an error, it must pass the table validation first
+        DB::table('migration_checkpoints')->insert([
+            'source_db' => 's1',
+            'target_db' => 't1',
+            'table_name' => 'existing_but_not_created_in_sqlite',
+            'checkpoint_column' => 'id',
+        ]);
+
+        // Force an error by targeting a non-existent table in the destination DB
         CdcChange::create([
             'operation_type' => 'INSERT',
-            'table_name' => 'non_existent_table',
+            'table_name' => 'existing_but_not_created_in_sqlite',
             'payload' => ['id' => 1],
             'source_db' => 's1',
             'target_db' => 't1',

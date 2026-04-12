@@ -25,6 +25,7 @@
         "laravel/framework": "^12.0",
         "laravel/horizon": "^5.45",
         "laravel/sanctum": "^4.3",
+        "laravel/socialite": "^5.16",
         "laravel/tinker": "^2.10.1",
         "openspout/openspout": "^4.28",
         "phpoffice/phpspreadsheet": "^2.0",

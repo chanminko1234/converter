@@ -376,15 +376,27 @@ class SQLParserService
         }
 
         $allowedStatements = ['CREATE', 'INSERT', 'SELECT', 'SET', 'SHOW', 'USE', 'ALTER'];
-        $forbiddenKeywords = ['DROP DATABASE', 'GRANT', 'REVOKE', 'ALTER USER', 'CREATE USER', 'LOAD DATA', 'INTO OUTFILE', 'SHUTDOWN'];
+        $forbiddenRegex = [
+            '/\bDROP\s+DATABASE\b/i',
+            '/\bGRANT\b/i',
+            '/\bREVOKE\b/i',
+            '/\bALTER\s+USER\b/i',
+            '/\bCREATE\s+USER\b/i',
+            '/\bLOAD\s+DATA\b/i',
+            '/\bINTO\s+OUTFILE\b/i',
+            '/\bSHUTDOWN\b/i',
+            '/\bTRUNCATE\s+USER\b/i',
+            '/\bREPLICATION\b/i',
+            '/\bSUPER\b/i'
+        ];
 
         foreach ($statements as $stmt) {
             if (empty($stmt)) continue;
 
-            $upper = strtoupper($stmt);
-            foreach ($forbiddenKeywords as $word) {
-                if (str_contains($upper, $word)) {
-                    throw new \Exception("SQL contains forbidden keyword: " . $word);
+            $cleanStmt = $this->stripSQLComments($stmt);
+            foreach ($forbiddenRegex as $pattern) {
+                if (preg_match($pattern, $cleanStmt)) {
+                    throw new \Exception("SQL contains forbidden keyword or pattern matching " . $pattern);
                 }
             }
 
@@ -397,8 +409,7 @@ class SQLParserService
                         if (!in_array($key, $allowedStatements)) {
                             // Allow DROP TABLE / DROP FUNCTION / DROP TRIGGER if it's not DROP DATABASE
                             if ($key === 'DROP') {
-                                $stmtUpper = strtoupper($stmt);
-                                if (str_contains($stmtUpper, 'DATABASE')) {
+                                if (preg_match('/\bDATABASE\b/i', $cleanStmt)) {
                                     throw new \Exception("Forbidden DROP DATABASE operation.");
                                 }
                                 continue;
@@ -411,12 +422,26 @@ class SQLParserService
                 // If it's not a DDL/DML we recognize, and it's not a comment, be suspicious
                 if (!preg_match('/^\s*(--|#|\/\*)/', $stmt)) {
                     // Basic fallback for simple statements the parser might struggle with
-                    if (!preg_match('/^\s*(CREATE|INSERT|SET|SELECT|DROP TABLE|SHOW|ALTER|DECLARE|BEGIN|IF|RETURN|ELSIF|END)\b/i', $stmt)) {
-                        throw new \Exception("Unverifiable SQL statement detected: " . substr($stmt, 0, 50) . "...");
+                    if (!preg_match('/^\s*(CREATE|INSERT|SET|SELECT|DROP TABLE|SHOW|ALTER|DECLARE|BEGIN|IF|RETURN|ELSIF|END)\b/i', $cleanStmt)) {
+                        throw new \Exception("Unverifiable SQL statement detected: " . substr($cleanStmt, 0, 50) . "...");
                     }
                 }
             }
         }
+    }
+
+    protected function stripSQLComments(string $sql): string
+    {
+        // Remove multi-line comments
+        $sql = preg_replace('/\/\*.*?\*\//s', '', $sql);
+        // Remove single-line comments
+        $lines = explode("\n", $sql);
+        $cleanLines = [];
+        foreach ($lines as $line) {
+            $cleanLine = preg_replace('/(--|#).*$/i', '', $line);
+            $cleanLines[] = $cleanLine;
+        }
+        return trim(implode("\n", $cleanLines));
     }
 
     public function performAutoCleaning(array &$schema, array $options, array &$report): void
@@ -455,13 +480,22 @@ class SQLParserService
         if (!($options['maskSensitiveData'] ?? $options['mask_sensitive_data'] ?? $options['dataMasking'] ?? false))
             return $line;
 
+        // Fast global regex for emails/phones (standard patterns)
+        // This provides basic protection even if we skip full parsing
         $line = preg_replace('/\'[^\'@\s]+@[^\'@\s]+\.[^\'@\s]+\'/', "'" . $this->faker->safeEmail() . "'", $line);
         $line = preg_replace('/\'\b(?:\d{1,4}-)?\d{3}-\d{4}\b\'/', "'" . $this->faker->phoneNumber() . "'", $line);
-
+        
         if (stripos($line, 'INSERT INTO') === false)
             return $line;
 
+        // Performance: Skip heavy AST parsing for very large lines (multi-row inserts)
+        // In these cases, the global regex above provides the primary defense.
+        if (strlen($line) > 100000) {
+             return $line;
+        }
+
         try {
+            // Only parse if we have a reason to (e.g. name-based masking)
             $parsed = $this->sqlParser->parse((string) $line);
             if (!isset($parsed['INSERT'], $parsed['VALUES']))
                 return $line;
@@ -470,14 +504,16 @@ class SQLParserService
             $insertCols = [];
             foreach ($parsed['INSERT'] as $item) {
                 if ($item['expr_type'] === 'table') {
-                    $tableName = strtolower(trim($item['no_quotes']['parts'][0], '`" '));
+                    $tableName = strtolower(trim($item['no_quotes']['parts'][0] ?? '', '`" '));
                 }
                 if ($item['expr_type'] === 'column-list') {
                     foreach ($item['sub_tree'] as $col) {
-                        $insertCols[] = strtolower(trim($col['no_quotes']['parts'][0], '`" '));
+                        $insertCols[] = strtolower(trim($col['no_quotes']['parts'][0] ?? '', '`" '));
                     }
                 }
             }
+            
+            if (empty($tableName)) return $line;
             $tableSchema = $schema[$tableName] ?? null;
 
             foreach ($parsed['VALUES'] as &$row) {
@@ -520,6 +556,7 @@ class SQLParserService
             }
             return (new PHPSQLCreator($parsed))->create($parsed) . ";";
         } catch (\Exception $e) {
+            // Fallback to the original line if parsing fails
         }
 
         return $line;
@@ -596,10 +633,11 @@ class SQLParserService
         $depth = 0;
         $inQuote = false;
         $quoteChar = '';
-        for ($i = 0; $i < strlen($input); $i++) {
+        $len = strlen($input);
+        for ($i = 0; $i < $len; $i++) {
             $char = $input[$i];
             if ($inQuote) {
-                if ($char === $quoteChar && $input[$i - 1] !== '\\')
+                if ($char === $quoteChar && ($i === 0 || $input[$i - 1] !== '\\'))
                     $inQuote = false;
                 $current .= $char;
             } else {

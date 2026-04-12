@@ -2,12 +2,22 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class GeminiConversionTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
     /**
      * Test that enablement of predictive refactoring calls the AI service
      */
@@ -64,7 +74,7 @@ class GeminiConversionTest extends TestCase
             INSERT INTO audit_log(user_id, action) VALUES(NEW.id, 'INSERT');
         ";
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $mysqlDump,
             'target_format' => 'postgresql',
             'options' => [

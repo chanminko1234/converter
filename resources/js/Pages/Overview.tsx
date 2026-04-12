@@ -26,6 +26,11 @@ export default function Overview() {
             title: 'Mission Control',
             desc: 'Zero-downtime orchestration with real-time telemetry. Monitor throughput, parity, and perform final cutovers.',
             icon: <Activity className="h-6 w-6 text-amber-500" />
+        },
+        {
+            title: 'Identity Federation',
+            desc: 'Secure architectural access via GitHub and Google SSO. Integrated RBAC ensures only cleared nodes can access the core.',
+            icon: <Shield className="h-6 w-6 text-primary" />
         }
     ];
 
@@ -149,6 +154,7 @@ export default function Overview() {
                                         { icon: <Activity />, text: "Real-time Binary Log Replication", active: true },
                                         { icon: <CheckCircle2 />, text: "Zero-Downtime Incremental Sync", active: true },
                                         { icon: <Cpu />, text: "AI-Powered Gemini Index Advisor", active: true },
+                                        { icon: <Shield />, text: "GitHub & Google SSO Federation", active: true },
                                         { icon: <Globe />, text: "Global Edge Replication Nodes", active: true },
                                         { icon: <Shield />, text: "Enterprise SQL Server Adapters", active: true },
                                     ].map((item, i) => (

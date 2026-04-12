@@ -4,15 +4,32 @@ namespace Tests\Feature;
 
 use App\Models\CdcChange;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class CdcIntegrationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = \App\Models\User::factory()->create();
+    }
+
     public function test_cdc_capture_endpoint_stores_change(): void
     {
-        $response = $this->postJson('/cdc/capture', [
+        // Register table for security validation
+        DB::table('migration_checkpoints')->insert([
+            'source_db' => 'mysql_src',
+            'target_db' => 'pgsql_tgt',
+            'table_name' => 'users',
+            'checkpoint_column' => 'id',
+        ]);
+
+        $response = $this->actingAs($this->user)->postJson('/cdc/capture', [
             'source_db' => 'mysql_src',
             'target_db' => 'pgsql_tgt',
             'table' => 'users',
@@ -29,6 +46,14 @@ class CdcIntegrationTest extends TestCase
 
     public function test_cdc_replay_endpoint_processes_pending_changes(): void
     {
+        // Register table for security validation
+        DB::table('migration_checkpoints')->insert([
+            'source_db' => 'mysql_src',
+            'target_db' => 'pgsql_tgt',
+            'table_name' => 'posts',
+            'checkpoint_column' => 'id',
+        ]);
+
         // Mock a pending change
         CdcChange::create([
             'operation_type' => 'INSERT',
@@ -40,17 +65,13 @@ class CdcIntegrationTest extends TestCase
         ]);
 
         // We use the replay endpoint
-        $response = $this->postJson('/cdc/replay', [
+        $response = $this->actingAs($this->user)->postJson('/cdc/replay', [
             'source_db' => 'mysql_src',
             'target_db' => 'pgsql_tgt'
         ]);
 
         $response->assertStatus(200);
         
-        // In the mock/simulated environment, the actual execution on target might fail 
-        // if 'temp_pgsql' isn't really there, but we check if it tried.
-        // Actually our BinlogListener will throw exception if connection fails.
-        // But for the sake of the feature test of the API:
         $data = $response->json();
         $this->assertTrue($data['success']);
     }

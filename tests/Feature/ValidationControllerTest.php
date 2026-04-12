@@ -2,14 +2,25 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Tests\TestCase;
 use App\Services\DatabaseAdapters\SourceAdapterFactory;
 use App\Services\DatabaseAdapters\SourceAdapterInterface;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Mockery;
 
 class ValidationControllerTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
     public function test_validate_data_endpoint_processes_integrity_check()
     {
         // Mock Source Adapter
@@ -38,7 +49,7 @@ class ValidationControllerTest extends TestCase
         DB::shouldReceive('table')->andReturn($mockQuery);
         DB::shouldReceive('purge')->with('temp_target_pgsql')->once();
 
-        $response = $this->postJson('/convert/validate', [
+        $response = $this->actingAs($this->user)->postJson('/convert/validate', [
             'source' => [
                 'host' => 'localhost',
                 'port' => '3306',

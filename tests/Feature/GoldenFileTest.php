@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
@@ -9,6 +10,14 @@ use Tests\TestCase;
 class GoldenFileTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
 
     private function getGoldenFile(string $filename): string
     {
@@ -51,7 +60,7 @@ class GoldenFileTest extends TestCase
         $input = $this->extractInputFromComment($goldenContent);
         $expected = $this->extractExpectedOutput($goldenContent);
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $input,
             'target_format' => 'postgresql',
             'options' => [
@@ -75,7 +84,7 @@ class GoldenFileTest extends TestCase
         $input = $this->extractInputFromComment($goldenContent);
         $expected = $this->extractExpectedOutput($goldenContent);
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $input,
             'target_format' => 'postgresql',
             'options' => [
@@ -100,7 +109,7 @@ class GoldenFileTest extends TestCase
         $input = $this->extractInputFromComment($goldenContent);
         $expected = $this->extractExpectedOutput($goldenContent);
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $input,
             'target_format' => 'postgresql',
             'options' => [
@@ -125,7 +134,7 @@ class GoldenFileTest extends TestCase
         $expectedSql = $this->extractExpectedOutput($goldenContent);
         $inputSql = $this->extractInputFromComment($goldenContent);
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $inputSql,
             'target_format' => 'sqlite',
             'options' => [
@@ -149,7 +158,7 @@ class GoldenFileTest extends TestCase
         $expectedSql = $this->extractExpectedOutput($goldenContent);
         $inputSql = $this->extractInputFromComment($goldenContent);
 
-        $response = $this->postJson('/convert', [
+        $response = $this->actingAs($this->user)->postJson('/convert', [
             'mysql_dump' => $inputSql,
             'target_format' => 'postgresql',
             'options' => [
@@ -185,7 +194,7 @@ class GoldenFileTest extends TestCase
         ];
 
         foreach ($testCases as $case) {
-            $response = $this->postJson('/convert', [
+            $response = $this->actingAs($this->user)->postJson('/convert', [
                 'mysql_sql' => $case['input'],
                 'target_format' => $case['target'],
                 'options' => $case['options']
