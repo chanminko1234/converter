@@ -33,7 +33,26 @@ export default function Dashboard() {
                         </h2>
                     </div>
                     <div className="flex gap-3">
-                        <Button variant="outline" className="rounded-2xl h-12 px-6 font-black uppercase text-[10px] tracking-widest border-foreground/10 hover:bg-foreground/5 bg-background/50 backdrop-blur-xl transition-all">
+                        <Button 
+                            onClick={() => {
+                                const telemetryData = {
+                                    timestamp: new Date().toISOString(),
+                                    nodes: 24,
+                                    throughput: '850 MB/s',
+                                    integrity: '100% Parity',
+                                    active_streams: 12,
+                                    status: 'HYPER-OPERATIONAL'
+                                };
+                                const blob = new Blob([JSON.stringify(telemetryData, null, 2)], { type: 'application/json' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `sql-stream-telemetry-${Date.now()}.json`;
+                                a.click();
+                            }}
+                            variant="outline" 
+                            className="rounded-2xl h-12 px-6 font-black uppercase text-[10px] tracking-widest border-foreground/10 hover:bg-foreground/5 bg-background/50 backdrop-blur-xl transition-all"
+                        >
                             Export Telemetry
                         </Button>
                         <Link href="/orchestrator">

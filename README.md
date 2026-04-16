@@ -1,102 +1,133 @@
 # SQLStream 🚀
+> Real-time SQL result streaming for Laravel via SSE.
 
 [![Laravel 12](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel)](https://laravel.com)
 [![React 19](https://img.shields.io/badge/React-19.x-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
-[![Inertia.js](https://img.shields.io/badge/Inertia.js-2.0-9553E9?style=for-the-badge&logo=inertia)](https://inertiajs.com)
 [![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-**SQLStream** is a high-performance SQL result streaming platform that utilizes **Server-Sent Events (SSE)** to deliver real-time data from your database to your frontend with zero latency and minimal overhead. Built on the cutting-edge **Laravel 12** and **React 19** stack, it provides a seamless, high-fidelity experience for monitoring and analyzing live query streams.
+![SQLStream Hero](docs/images/hero.png)
+
+**SQLStream** is a high-performance SQL result streaming platform that utilizes **Server-Sent Events (SSE)** to deliver real-time data from diverse database engines directly to a premium, glass-morphic frontend. 
+
+Built on **Laravel 12** and **React 19**, it prioritizes memory efficiency and low-latency visualization for massive datasets.
+
+---
+
+## 📸 System Showcase
+
+| Landing Page | Interactive Dashboard |
+| :---: | :---: |
+| ![Landing](docs/images/landing.png) | ![Dashboard](docs/images/dashboard.png) |
+
+| Infrastructure Health | Engineering Documentation |
+| :---: | :---: |
+| ![Status](docs/images/status.png) | ![Docs](docs/images/hero.png) |
 
 ---
 
 ## ✨ Key Features
 
-- ⚡ **Real-Time SSE Streaming**: Experience instantaneous data delivery using a high-performance, cursor-based PHP generator backend.
-- 🌳 **Multi-Database Strategy**: Native support for **PostgreSQL, MySQL, SQLite, Oracle, and SQL Server** via a decoupled Strategy Pattern architecture.
-- 🎨 **SQL Syntax Highlighting**: Premium query editor experience powered by `react-syntax-highlighter`.
-- 📊 **Interactive Query Streamer**: View live telemetry with spring-based row animations, sticky glass-morphic headers, and CSV/Clipboard export.
-- 🌫️ **Engineering Node UI**: A glass-morphic, mission-critical design built with **Tailwind CSS 4** and **Framer Motion**.
-- 🛡️ **Security Fortress**: Built-in SSRF protection via host validation and strict **Read-Only** SQL enforcement for the streaming protocol.
-- 🔐 **Secure Isolation**: Robust authentication and identity federation via **GitHub/Google SSO**.
-- 🛠️ **Developer First**: Fully typed with TypeScript and tested with Pest/PHPUnit.
+- ⚡ **Real-Time SSE Streaming**: Instant data delivery using high-performance PHP Generators and DB Cursors.
+- 🌳 **Multi-Database Strategy**: Native support for **Postgres, MySQL, SQLite, Oracle, and SQL Server**.
+- 📊 **Interactive Telemetry**: High-fidelity data table with spring-animations and CSV/Clipboard export.
+- 🌫️ **Engineering Node UI**: A mission-critical, glass-morphic design built with Tailwind CSS 4.
+- 🛡️ **Hardened Security**: Built-in SSRF protection and strict Read-Only SQL enforcement.
+- 🔐 **SSO Ready**: Seamless identity federation via GitHub and Google.
 
 ---
 
-## 🏗️ Tech Stack
+## 🏗️ Project Structure
 
-- **Backend**: Laravel 12.x (PHP 8.2+)
-- **Frontend**: React 19.x with TypeScript
-- **State/Routing**: Inertia.js 2.x
-- **Architecture**: Strategy Pattern for Database Adapters
-- **Styling**: Tailwind CSS 4.0
-- **Real-time Protocol**: HTML5 Server-Sent Events (SSE)
-- **Animation**: Framer Motion 12+
-- **Database**: PostgreSQL / MySQL / SQLite / Oracle / SQL Server support
+```bash
+├── app/
+│   ├── Http/Controllers/
+│   │   └── SseController.php        # Core SSE Protocol Handler
+│   ├── Services/
+│   │   ├── DatabaseAdapters/       # Strategy Pattern Adapters (MySQL, Postgres, etc.)
+│   │   └── SQL/
+│   │       └── QueryStreamerService.php # Generator-based Streaming Logic
+│   └── Traits/
+│       └── ValidatesDatabaseHost.php # SSRF Security Layer
+├── resources/js/
+│   ├── Components/
+│   │   ├── SQLStreamer.tsx        # Live Terminal Component
+│   │   └── StreamingDataTable.tsx # High-performance Data Grid
+│   └── Pages/                      # Inertia.js Dashboard & Status Nodes
+└── routes/web.php                  # Protocol Route Definitions
+```
 
 ---
 
 ## 📥 Installation Guide
 
-Follow these steps to establish your SQLStream engineering node locally:
+Follow these steps to establish your SQLStream engineering node:
 
-### 1. Clone the Repository
+### 1. Clone & Prepare
 ```bash
 git clone https://github.com/chanminko1234/SQLSTREAM_REPO.git
 cd SQLSTREAM_REPO
 ```
 
-### 2. Install Dependencies
-```bash
-# Install PHP dependencies
-composer install
-
-# Install Node.js dependencies
-npm install
-```
-
-### 3. Environment Configuration
-Copy the environment file and update your database credentials:
+### 2. Environment Setup
 ```bash
 cp .env.example .env
 php artisan key:generate
 ```
+> **Note:** Update `DB_CONNECTION`, `DB_HOST`, and `DB_DATABASE` in your `.env` to point to your primary PostgreSQL/MySQL instance.
 
-### 4. Database Setup
-Initialize the database and seed the core identity protocols:
+### 3. Install Dependencies
+```bash
+# Backend
+composer install
+
+# Frontend
+npm install
+```
+
+### 4. Initialize Database
 ```bash
 php artisan migrate --seed
 ```
 
-### 5. Launch Protocol
-Run the integrated development server (Multi-thread):
+### 5. Launch Node
 ```bash
+# Start Vite & Laravel
 npm run dev
 ```
-The application will be accessible at `http://localhost:8000`.
+Accessible at: `http://localhost:8000`
 
 ---
 
 ## 🧠 Why SSE over WebSockets?
 
-SQLStream intentionally utilizes **Server-Sent Events (SSE)** instead of WebSockets for its data fabric. Here is the technical rationale behind this engineering decision:
-
-1. **Unidirectional Efficiency**: For streaming SQL results, the data flow is inherently server-to-client. SSE is optimized for this exact use case without the overhead of maintaining a full-duplex WebSocket connection.
-2. **HTTP/2 Compatibility**: SSE works directly over standard HTTP. When combined with HTTP/2, it shares the same TCP connection as other requests, making it more firewall-friendly and easier to load balance.
-3. **Automatic Reconnection**: Unlike WebSockets, the SSE protocol has built-in support for automatic reconnection and event ID tracking to prevent data loss.
-4. **Lightweight Implementation**: SSE consumes fewer server resources and doesn't require complex proxy configurations or specialized libraries like Socket.io.
+For unidirectional SQL result streaming, **SSE** offers significant advantages:
+1. **Efficiency**: Lower server overhead than full-duplex WebSockets.
+2. **Standardized**: Reuses existing HTTP/2 connections; firewall-friendly.
+3. **Resilient**: Built-in automatic reconnection logic in the browser.
+4. **Stateless**: Easier to scale horizontally without complex sticky-session management.
 
 ---
 
-## 🧪 Testing
-Maintain 100% verified telemetry with the integrated test suite:
-```bash
-php artisan test
-```
+## 🤝 Contributing
+Contributions are what make the open-source community an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 👨‍💻 Author
+**Chan Min Ko**
+- GitHub: [@chanminko1234](https://github.com/chanminko1234)
+- Twitter: [@chan_min_ko_24](https://x.com/chan_min_ko_24)
 
 ---
 
 ## 📜 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Distributed under the MIT License. See `LICENSE` for more information.
 
 *Engineered with precision for the next generation of data streaming.*

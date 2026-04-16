@@ -29,6 +29,16 @@ export const SQLStreamer: React.FC<SQLStreamerProps> = ({
   const eventSourceRef = useRef<EventSource | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const stopStream = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    setIsStreaming(false);
+    setStatus('idle');
+    toast.error('Protocol Terminated: Stream closed by operator.');
+  };
+
   const startStream = () => {
     if (isStreaming) return;
 
@@ -106,14 +116,6 @@ export const SQLStreamer: React.FC<SQLStreamerProps> = ({
     });
   };
 
-  const stopStream = () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      setIsStreaming(false);
-      setStatus('idle');
-      toast.warning('Stream terminated by user.');
-    }
-  };
 
   useEffect(() => {
     return () => {
@@ -151,25 +153,38 @@ export const SQLStreamer: React.FC<SQLStreamerProps> = ({
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex space-x-2">
+              <div className="flex gap-4">
                 {!isStreaming ? (
-                  <Button onClick={startStream} className="bg-primary flex hover:bg-primary/90">
-                    <Play className="mr-2 h-4 w-4" /> Start Protocol
+                  <Button
+                    onClick={startStream}
+                    className="rounded-2xl flex justify-center items-center h-14 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[11px] tracking-widest active:scale-95 transition-all shadow-[0_15px_40px_rgba(var(--primary),0.3)] group"
+                  >
+                    <Play className="w-4 h-4 mr-3 fill-current group-hover:scale-110 transition-transform" /> Start Protocol
                   </Button>
                 ) : (
-                  <Button onClick={stopStream} variant="destructive">
-                    <Square className="mr-2 h-4 w-4" /> Terminate Stream
+                  <Button
+                    onClick={stopStream}
+                    variant="destructive"
+                    className="rounded-2xl flex justify-center items-center h-14 px-8 font-black uppercase text-[11px] tracking-widest active:scale-95 transition-all shadow-[0_15px_40px_rgba(239,68,68,0.3)] animate-pulse"
+                  >
+                    <Square className="w-4 h-4 mr-3 fill-current" /> Stop Stream
                   </Button>
                 )}
-                <Button variant="outline" onClick={() => setRows([])}>Clear</Button>
-              </div>
 
-              <div className="flex items-center space-x-6 text-sm text-muted-foreground mr-4">
+                <Button
+                  onClick={() => { setRows([]); setColumns([]); }}
+                  variant="outline"
+                  className="rounded-2xl h-14 px-8 border-foreground/10 text-foreground/60 font-black uppercase text-[11px] tracking-widest hover:bg-foreground/5 transition-all"
+                >
+                  Clear Buffer
+                </Button>
+              </div>
+              <div className="flex items-center text-sm text-muted-foreground mr-4">
                 <div className="flex items-center">
                   <TableIcon className="mr-1 h-4 w-4" />
                   <span className="font-bold text-foreground mx-1">{stats.totalRows}</span> rows
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center ml-4">
                   <Activity className="mr-1 h-4 w-4" />
                   <span className="font-bold text-foreground mx-1">{stats.rowsPerSec}</span> r/s
                 </div>
@@ -179,10 +194,10 @@ export const SQLStreamer: React.FC<SQLStreamerProps> = ({
         </CardContent>
       </Card>
 
-      <StreamingDataTable 
-        rows={rows} 
-        columns={columns} 
-        isStreaming={isStreaming} 
+      <StreamingDataTable
+        rows={rows}
+        columns={columns}
+        isStreaming={isStreaming}
       />
 
       {isStreaming && (
