@@ -5,11 +5,9 @@ namespace App\Services\DatabaseAdapters;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 
-class SqlServerSourceAdapter implements SourceAdapterInterface
+class SqlServerSourceAdapter extends AbstractSourceAdapter implements SourceAdapterInterface
 {
     use \App\Traits\ValidatesDatabaseHost;
-
-    protected string $connectionName = 'temp_sql_server_adapter';
 
     public function setupConnection(array $config): void
     {
@@ -145,14 +143,6 @@ class SqlServerSourceAdapter implements SourceAdapterInterface
         return array_map(fn($r) => $r->TABLE_NAME, $res);
     }
 
-    public function getTableData(string $tableName, ?string $checkpointCol = null, mixed $lastValue = null): \Illuminate\Database\Query\Builder
-    {
-        $query = DB::connection($this->connectionName)->table($tableName);
-        if ($checkpointCol && $lastValue) {
-            $query->where($checkpointCol, '>', $lastValue);
-        }
-        return $query;
-    }
 
     public function getTableSchema(string $tableName): string
     {

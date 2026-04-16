@@ -43,8 +43,8 @@ export default function Support() {
     };
 
     const faqs = [
-        { q: "What is the maximum throughput for live streaming?", a: "Our edge cluster nodes support up to 50,000 transactions per second (TPS) with the Zero-Downtime Sync Worker." },
-        { q: "Does the mission control support Oracle and SQL Server?", a: "Yes. The Mission Control Orchestrator provides real-time telemetry and parity auditing for all supported source engines, including MySQL, Oracle, and MSSQL." },
+        { q: "What is the maximum throughput for live streaming?", a: "Our edge cluster nodes support up to 50,000 transactions per second (TPS) with the direct SSE Cursor protocol." },
+        { q: "Does the mission control support Oracle and SQL Server?", a: "Yes. The Mission Control Orchestrator provides real-time telemetry and parity auditing for all supported source engines, including PostgreSQL, MySQL, SQLite, Oracle, and MSSQL." },
         { q: "Is PII masking applied on-the-fly during streaming?", a: "Yes. All data stream buffers are intercepted by the Staging Synthesis layer to apply FakerPHP-based obfuscation before reaching the target sink." },
         { q: "Can I use GitHub or Google for enterprise access?", a: "Affirmative. Our Identity Federation layer supports both GitHub and Google SSO for streamlined architectural clearance and persistent profile management." },
         { q: "How do I perform a final cutover?", a: "Navigate to the Orchestrator cockpit. Once data parity reaches 100%, hit the 'Final Enterprise Cutover' button to atomize the transition and switch your application's primary connection." },

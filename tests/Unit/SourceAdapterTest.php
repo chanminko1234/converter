@@ -28,7 +28,7 @@ class SourceAdapterTest extends TestCase
     public function test_factory_throws_exception_for_unsupported_type(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        app(SourceAdapterFactory::class)->create('postgresql');
+        app(SourceAdapterFactory::class)->create('invalid_db');
     }
 
     /**

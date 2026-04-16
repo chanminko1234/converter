@@ -151,12 +151,12 @@ export default function Overview() {
 
                                 <div className="space-y-6">
                                     {[
-                                        { icon: <Activity />, text: "Real-time Binary Log Replication", active: true },
+                                        { icon: <Activity />, text: "Real-time SSE Result Streaming", active: true },
+                                        { icon: <Database />, text: "Unified Multi-DB Strategy Pattern", active: true },
                                         { icon: <CheckCircle2 />, text: "Zero-Downtime Incremental Sync", active: true },
                                         { icon: <Cpu />, text: "AI-Powered Gemini Index Advisor", active: true },
                                         { icon: <Shield />, text: "GitHub & Google SSO Federation", active: true },
-                                        { icon: <Globe />, text: "Global Edge Replication Nodes", active: true },
-                                        { icon: <Shield />, text: "Enterprise SQL Server Adapters", active: true },
+                                        { icon: <Layers />, text: "Postgres, MySQL, SQLite, Oracle, MSSQL", active: true },
                                     ].map((item, i) => (
                                         <div key={i} className={`flex items-center gap-5 ${item.active ? 'opacity-100' : 'opacity-20'}`}>
                                             <div className={`p-3 rounded-2xl ${item.active ? 'bg-primary/20 text-primary border border-primary/20' : 'bg-foreground/5 text-foreground'}`}>
@@ -168,9 +168,11 @@ export default function Overview() {
                                 </div>
 
                                 <div className="pt-6">
-                                    <Button className="w-fit flex items-center rounded-2xl px-12 h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[11px] tracking-widest active:scale-95 transition-all shadow-[0_20px_60px_rgba(var(--primary),0.25)] ring-1 ring-white/10">
-                                        Contribute to Core <ArrowRight className="h-4 w-4 ml-3" />
-                                    </Button>
+                                    <a href="https://github.com/chanminko1234/converter" target="_blank" rel="noopener noreferrer">
+                                        <Button className="w-fit flex items-center rounded-2xl px-12 h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[11px] tracking-widest active:scale-95 transition-all shadow-[0_20px_60px_rgba(var(--primary),0.25)] ring-1 ring-white/10">
+                                            Contribute to Core <Rocket className="h-4 w-4 ml-3 group-hover:rotate-12 transition-transform" />
+                                        </Button>
+                                    </a>
                                 </div>
                             </div>
                         </Card>

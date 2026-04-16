@@ -47,7 +47,7 @@ class ConversionController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'mysql_dump' => 'required_without:source|string|max:102400000',
-            'source_type' => 'sometimes|string|in:mysql,oracle,sqlserver,sqlsrv,sql_server',
+            'source_type' => 'sometimes|string|in:mysql,postgresql,sqlite,oracle,sqlserver,sqlsrv,sql_server',
             'source' => 'sometimes|array',
             'source.host' => 'required_with:source|string',
             'source.port' => 'required_with:source|string',
@@ -97,7 +97,7 @@ class ConversionController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'file' => 'required|file|mimes:sql,txt|max:102400',
-            'source_type' => 'sometimes|string|in:mysql,oracle,sqlserver',
+            'source_type' => 'sometimes|string|in:mysql,postgresql,sqlite,oracle,sqlserver',
             'target_format' => 'required|string|in:postgresql,csv,xlsx,sqlite,psql',
         ]);
  
@@ -131,7 +131,7 @@ class ConversionController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'source' => 'required|array',
-            'source_type' => 'sometimes|string|in:mysql,oracle,sqlserver,sqlsrv,sql_server',
+            'source_type' => 'sometimes|string|in:mysql,postgresql,sqlite,oracle,sqlserver,sqlsrv,sql_server',
             'source.host' => 'required|string',
             'source.port' => 'required|string',
             'source.user' => 'required|string',

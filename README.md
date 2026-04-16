@@ -1,100 +1,102 @@
-# SQL STREAM: Engineering Node Architecture v4.0
+# SQLStream 🚀
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/chanminko1234/SQLSTREAM_REPO)
-[![Tests](https://img.shields.io/badge/tests-134%20passed-blue.svg)](https://github.com/chanminko1234/SQLSTREAM_REPO)
-[![Technology](https://img.shields.io/badge/stack-Laravel%2011%20%7C%20React%20%7C%20Inertia-red.svg)](https://github.com/chanminko1234/SQLSTREAM_REPO)
-[![Design](https://img.shields.io/badge/design-Engineering%20Node-7c3aed.svg)](https://github.com/chanminko1234/SQLSTREAM_REPO)
+[![Laravel 12](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel)](https://laravel.com)
+[![React 19](https://img.shields.io/badge/React-19.x-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
+[![Inertia.js](https://img.shields.io/badge/Inertia.js-2.0-9553E9?style=for-the-badge&logo=inertia)](https://inertiajs.com)
+[![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-**SQL STREAM** is a premium, mission-critical migration ecosystem designed to transform complex, stateful database transitions into a seamless, high-fidelity engineering experience. From its glass-morphic "Security Clearance" gateway to its real-time "Node Control Center," every layer is engineered for absolute observability and zero-downtime performance.
-
----
-
-## 🚀 High-Fidelity Ecosystem
-
-### 🔳 Node Control Center (Dashboard)
-- **Real-Time Telemetry**: Monitor active migration streams, system throughput (MB/s), and database parity via a sophisticated, glass-morphic cockpit.
-- **Operational Feed**: Track high-precision engineering logs, including identity verification successes and schema transpilation deltas.
-- **Fast Response Hub**: Instant access to the Orchestrator, Validation Suite, and AI Advisor modules from a centralized command hub.
-
-### 🔳 Security Clearance (Auth Architecture)
-- **Identity Federation (SSO)**: Integrated support for specialized provider authentication via **GitHub** and **Google SSO**, enabling instant node establishment.
-- **Engineering Node Identity**: A statefully managed authentication system with persistent session tracking and secure user entity mapping.
-- **Strict Isolation**: Mission-critical routes (Overview, Orchestrator, Validation) are strictly isolated behind a robust `Security Clearance` middleware.
-
-### 🔳 Migration Orchestrator v4.0
-- **Zero-Downtime Data Fabric**: Executes direct node-to-node synchronization with millisecond latency and O(1) performance.
-- **Oracle/SQL/MySQL Adapters**: Comprehensive type-mapping and structural normalization for enterprise-grade source engines.
-- **AI-Powered Index Advisor**: Leverages Google Gemini to analyze source schemas and recommend high-performance PostgreSQL-native indexing strategies.
+**SQLStream** is a high-performance SQL result streaming platform that utilizes **Server-Sent Events (SSE)** to deliver real-time data from your database to your frontend with zero latency and minimal overhead. Built on the cutting-edge **Laravel 12** and **React 19** stack, it provides a seamless, high-fidelity experience for monitoring and analyzing live query streams.
 
 ---
 
-## 🛠️ Design System: "Engineering Node"
+## ✨ Key Features
 
-SQL STREAM utilizes a custom, premium design language defined by:
-- **Glass-Morphism**: Deep blur effects (`backdrop-blur-3xl`) and subtle primary-keyed borders for a mission-critical "Mission Control" feel.
-- **Dynamic Backgrounds**: Animated infrastructure grids and pulsing primary blobs representing the platform's active pulse.
-- **Modern Typography**: Specialized tracking-heavy headers and monospace telemetry fonts for high-precision technical oversight.
-- **Lucide Integration**: Seamless, icon-driven navigation for instant recognition of core operational modules.
+- ⚡ **Real-Time SSE Streaming**: Experience instantaneous data delivery using a high-performance, cursor-based PHP generator backend.
+- 🌳 **Multi-Database Strategy**: Native support for **PostgreSQL, MySQL, SQLite, Oracle, and SQL Server** via a decoupled Strategy Pattern architecture.
+- 🎨 **SQL Syntax Highlighting**: Premium query editor experience powered by `react-syntax-highlighter`.
+- 📊 **Interactive Query Streamer**: View live telemetry with spring-based row animations, sticky glass-morphic headers, and CSV/Clipboard export.
+- 🌫️ **Engineering Node UI**: A glass-morphic, mission-critical design built with **Tailwind CSS 4** and **Framer Motion**.
+- 🛡️ **Security Fortress**: Built-in SSRF protection via host validation and strict **Read-Only** SQL enforcement for the streaming protocol.
+- 🔐 **Secure Isolation**: Robust authentication and identity federation via **GitHub/Google SSO**.
+- 🛠️ **Developer First**: Fully typed with TypeScript and tested with Pest/PHPUnit.
 
 ---
 
-## 🎯 Launch Protocol
+## 🏗️ Tech Stack
 
-### Deployment
-1. Clone and initialize the engineering node:
+- **Backend**: Laravel 12.x (PHP 8.2+)
+- **Frontend**: React 19.x with TypeScript
+- **State/Routing**: Inertia.js 2.x
+- **Architecture**: Strategy Pattern for Database Adapters
+- **Styling**: Tailwind CSS 4.0
+- **Real-time Protocol**: HTML5 Server-Sent Events (SSE)
+- **Animation**: Framer Motion 12+
+- **Database**: PostgreSQL / MySQL / SQLite / Oracle / SQL Server support
+
+---
+
+## 📥 Installation Guide
+
+Follow these steps to establish your SQLStream engineering node locally:
+
+### 1. Clone the Repository
 ```bash
+git clone https://github.com/chanminko1234/SQLSTREAM_REPO.git
+cd SQLSTREAM_REPO
+```
+
+### 2. Install Dependencies
+```bash
+# Install PHP dependencies
 composer install
+
+# Install Node.js dependencies
 npm install
 ```
 
-2. Configure your `.env` for **PostgreSQL** and **Identity Federation**:
-```env
-# Database Core
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_DATABASE=sql_stream
-
-# Identity Federation (OAuth)
-GITHUB_CLIENT_ID=your_id
-GITHUB_CLIENT_SECRET=your_secret
-GITHUB_REDIRECT_URI="${APP_URL}/auth/github/callback"
-
-GOOGLE_CLIENT_ID=your_id
-GOOGLE_CLIENT_SECRET=your_secret
-GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
+### 3. Environment Configuration
+Copy the environment file and update your database credentials:
+```bash
+cp .env.example .env
+php artisan key:generate
 ```
 
-3. Initialize the core engines:
+### 4. Database Setup
+Initialize the database and seed the core identity protocols:
 ```bash
-php artisan migrate
+php artisan migrate --seed
+```
+
+### 5. Launch Protocol
+Run the integrated development server (Multi-thread):
+```bash
 npm run dev
 ```
-
-### Accessing the Hub
-1.  **Live Node**: Access the production hub directly at [sql-stream.up.railway.app](https://sql-stream.up.railway.app/).
-2.  **Establish Identity**: Navigate to [`/register`](https://sql-stream.up.railway.app/register) or use **GitHub/SSO** for instant clearance.
-3.  **Command Center**: Access your node's overview and telemetry at [`/dashboard`](https://sql-stream.up.railway.app/dashboard).
+The application will be accessible at `http://localhost:8000`.
 
 ---
 
-## 🧪 Operational Verification
-SQL STREAM maintains a 100% verified test suite covering every phase of the migration lifecycle.
+## 🧠 Why SSE over WebSockets?
+
+SQLStream intentionally utilizes **Server-Sent Events (SSE)** instead of WebSockets for its data fabric. Here is the technical rationale behind this engineering decision:
+
+1. **Unidirectional Efficiency**: For streaming SQL results, the data flow is inherently server-to-client. SSE is optimized for this exact use case without the overhead of maintaining a full-duplex WebSocket connection.
+2. **HTTP/2 Compatibility**: SSE works directly over standard HTTP. When combined with HTTP/2, it shares the same TCP connection as other requests, making it more firewall-friendly and easier to load balance.
+3. **Automatic Reconnection**: Unlike WebSockets, the SSE protocol has built-in support for automatic reconnection and event ID tracking to prevent data loss.
+4. **Lightweight Implementation**: SSE consumes fewer server resources and doesn't require complex proxy configurations or specialized libraries like Socket.io.
+
+---
+
+## 🧪 Testing
+Maintain 100% verified telemetry with the integrated test suite:
 ```bash
 php artisan test
 ```
 
 ---
 
-## 💬 Support & Community
-
-- **Engineering Cluster**: [Join our Discord](https://discord.gg/qwsG7jYw) for real-time peer reviews and technical guidance.
-- **Bug Tracker**: Report structural anomalies and logic issues on [GitHub Issues](https://github.com/chanminko1234/SQLSTREAM_REPO/issues).
-- **Documentation**: Access full mission protocols in the [Live Docs Hub](https://sql-stream.up.railway.app/docs).
-
----
-
 ## 📜 License
-
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-*Engineered with precision by Chan Min Ko.*
+*Engineered with precision for the next generation of data streaming.*

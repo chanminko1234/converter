@@ -33,4 +33,13 @@ interface SourceAdapterInterface
      * Get CREATE TABLE statement for a specific table
      */
     public function getTableSchema(string $tableName): string;
+    /**
+     * Get the name of the established connection
+     */
+    public function getConnectionName(): string;
+
+    /**
+     * Get the database engine type
+     */
+    public function getSourceType(): string;
 }

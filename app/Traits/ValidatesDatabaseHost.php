@@ -11,7 +11,7 @@ trait ValidatesDatabaseHost
     protected function validateHost(string $host): void
     {
         // Explicit check for common local names
-        if (app()->environment() !== 'testing') {
+        if (!in_array(app()->environment(), ['local', 'testing'])) {
             if (in_array(strtolower($host), ['localhost', '127.0.0.1', '::1'])) {
                 throw new \Exception("Security Violation: Access to local database hosts is restricted.");
             }
@@ -19,7 +19,7 @@ trait ValidatesDatabaseHost
 
         $ip = gethostbyname($host);
         
-        if (app()->environment() !== 'testing') {
+        if (!in_array(app()->environment(), ['local', 'testing'])) {
             // Block IPv4 private ranges (10.x.x.x, 172.16-31.x.x, 192.168.x.x)
             // Block IPv4 loopback (127.x.x.x)
             // Block IPv4 link-local (169.254.x.x)

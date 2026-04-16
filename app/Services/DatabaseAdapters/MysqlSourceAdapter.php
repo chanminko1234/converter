@@ -7,17 +7,9 @@ use Illuminate\Support\Facades\Config;
 use App\Http\Controllers\ConversionController;
 use App\Traits\ValidatesDatabaseHost;
 
-class MysqlSourceAdapter implements SourceAdapterInterface
+class MysqlSourceAdapter extends AbstractSourceAdapter implements SourceAdapterInterface
 {
     use ValidatesDatabaseHost;
-
-    protected \App\Services\SQL\SQLParserService $sqlParser;
-    protected string $connectionName = 'temp_mysql_adapter';
-
-    public function __construct(\App\Services\SQL\SQLParserService $sqlParser)
-    {
-        $this->sqlParser = $sqlParser;
-    }
 
     public function setupConnection(array $config): void
     {
@@ -71,13 +63,6 @@ class MysqlSourceAdapter implements SourceAdapterInterface
         ];
     }
 
-    public function parseDump(string|\Illuminate\Http\UploadedFile $dump): array
-    {
-        $result = $this->sqlParser->parseMysqlDump($dump);
-        $result['source_type'] = 'mysql';
-        return $result;
-    }
-
     public function getTables(): array
     {
         $dbName = Config::get("database.connections.{$this->connectionName}.database");
@@ -93,18 +78,10 @@ class MysqlSourceAdapter implements SourceAdapterInterface
         return $tables;
     }
 
-    public function getTableData(string $tableName, ?string $checkpointCol = null, mixed $lastValue = null): \Illuminate\Database\Query\Builder
-    {
-        $query = DB::connection($this->connectionName)->table($tableName);
-        if ($checkpointCol && $lastValue) {
-            $query->where($checkpointCol, '>', $lastValue);
-        }
-        return $query;
-    }
-
     public function getTableSchema(string $tableName): string
     {
         $res = DB::connection($this->connectionName)->select("SHOW CREATE TABLE `{$tableName}`");
         return $res[0]->{'Create Table'} ?? '';
     }
 }
+

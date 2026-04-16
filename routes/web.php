@@ -65,6 +65,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/convert/advise-indexes', [\App\Http\Controllers\IndexAdvisorController::class, 'advise'])->name('convert.advise');
         Route::post('/convert/migration-status', [\App\Http\Controllers\OrchestrationController::class, 'getStatus'])->name('convert.migration_status');
         Route::post('/convert/cutover', [\App\Http\Controllers\OrchestrationController::class, 'cutover'])->name('convert.cutover');
+        Route::get('/convert/stream-results', [\App\Http\Controllers\SseController::class, 'streamResults'])->name('convert.stream_results');
         Route::post('/support/inquiry', [\App\Http\Controllers\SupportController::class, 'submitInquiry'])->name('support.inquiry');
     });
 });

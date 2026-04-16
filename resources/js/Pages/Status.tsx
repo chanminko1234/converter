@@ -13,12 +13,12 @@ import { Button } from '@/components/ui/button';
 export default function Status() {
     const services = [
         { name: 'Adapter Fabric', status: 'operational', uptime: '100%', latency: '12ms', icon: <Server /> },
+        { name: 'SSE Streamer Node', status: 'operational', uptime: '100%', latency: '02ms', icon: <Zap /> },
         { name: 'Mission Orchestrator', status: 'operational', uptime: '100%', latency: '04ms', icon: <Rocket /> },
         { name: 'Neural Advisor', status: 'operational', uptime: '99.96%', latency: '412ms', icon: <Cpu /> },
         { name: 'Audit Pipeline', status: 'operational', uptime: '99.99%', latency: '29ms', icon: <Activity /> },
         { name: 'Sync Worker Node', status: 'operational', uptime: '100%', latency: '08ms', icon: <RefreshCcw /> },
         { name: 'Identity Federation', status: 'operational', uptime: '99.99%', latency: '15ms', icon: <Shield /> },
-        { name: 'Global Edge API', status: 'operational', uptime: '99.98%', latency: '45ms', icon: <Globe /> },
     ];
 
     return (

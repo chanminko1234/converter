@@ -44,9 +44,11 @@ export default function Docs() {
                     <p className="text-foreground/40 font-bold leading-relaxed tracking-tight">Our enterprise adapter fabric supports high-fidelity transpilation from diverse engines:</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {[
+                            { name: 'Postgres Node', desc: 'Atomic synchronization and real-time SSE streaming for PG targets.' },
+                            { name: 'MySQL Node', desc: 'Full support for Enums, JSONB, and complex spatial types.' },
                             { name: 'Oracle Node', desc: 'Automatic mapping of RAW, CLOB, and NUMBER(p,s) to native PG types.' },
                             { name: 'T-SQL Node', desc: 'SQL Server conversion with bracketed identifier normalization.' },
-                            { name: 'MySQL Node', desc: 'Full support for Enums, JSONB, and complex spatial types.' }
+                            { name: 'SQLite Node', desc: 'Lightweight local database migration using sqlite_master catalogs.' }
                         ].map(f => (
                             <Card key={f.name} className="p-6 rounded-3xl bg-foreground/[0.02] border-foreground/5 hover:border-primary/20 transition-all group shadow-sm">
                                 <h6 className="font-black text-[10px] uppercase tracking-widest mb-3 text-primary italic italic-not-really">{f.name}</h6>

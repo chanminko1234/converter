@@ -1,8 +1,8 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-import { 
-    Zap, Activity, ShieldCheck, 
+import {
+    Zap, Activity, ShieldCheck,
     ArrowUpRight, Clock, Server, Layers,
     TrendingUp, AlertCircle
 } from 'lucide-react';
@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SQLStreamer } from '@/Components/SQLStreamer';
 
 export default function Dashboard() {
     const stats = [
@@ -17,13 +18,6 @@ export default function Dashboard() {
         { label: 'System Throughput', value: '850 MB/s', icon: <Activity className="h-4 w-4" />, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
         { label: 'Database Integrity', value: '100% Parity', icon: <ShieldCheck className="h-4 w-4" />, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
         { label: 'Active Infrastructure', value: '24 Nodes', icon: <Server className="h-4 w-4" />, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-    ];
-
-    const logs = [
-        { id: 1, event: 'Identity Verification Success', node: 'Node-771', time: '2m ago', status: 'secure' },
-        { id: 2, event: 'Schema Transpilation Complete', node: 'Node-102', time: '15m ago', status: 'secure' },
-        { id: 3, event: 'High Memory Delta Detected', node: 'Node-095', time: '1h ago', status: 'warning' },
-        { id: 4, event: 'Binary Log Replication Active', node: 'Node-112', time: '3h ago', status: 'secure' },
     ];
 
     return (
@@ -84,45 +78,33 @@ export default function Dashboard() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Feed */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         className="lg:col-span-2 space-y-6"
                     >
                         <div className="flex items-center justify-between px-2">
                             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground/80 flex items-center gap-2">
-                                <Layers className="w-4 h-4 text-primary" />
-                                Operational Telemetry
+                                <Activity className="w-4 h-4 text-primary" />
+                                Interactive Query Streamer
                             </h3>
-                            <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary">View Full Log</Button>
+                            <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest text-primary/60 border-primary/20 bg-primary/5">Prototype Engine v1.0</Badge>
                         </div>
-                        <Card className="glass-card border-foreground/5 dark:border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                            <div className="divide-y divide-foreground/5">
-                                {logs.map((log) => (
-                                    <div key={log.id} className="p-6 flex items-center justify-between hover:bg-foreground/5 transition-colors group">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`p-2.5 rounded-xl ${log.status === 'secure' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
-                                                {log.status === 'secure' ? <ShieldCheck className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                                            </div>
-                                            <div>
-                                                <h4 className="text-[11px] font-bold text-foreground group-hover:text-primary transition-colors">{log.event}</h4>
-                                                <p className="text-[9px] font-black uppercase tracking-widest text-foreground/30">{log.node} • Primary Engine</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <Badge variant="outline" className="text-[9px] font-black opacity-40 group-hover:opacity-100 flex items-center gap-1.5 border-none bg-transparent">
-                                                <Clock className="w-3 h-3" />
-                                                {log.time}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
+
+                        <SQLStreamer
+                            initialQuery="SELECT * FROM migrations LIMIT 10"
+                            sourceType="postgresql"
+                            connectionConfig={{
+                                host: '127.0.0.1',
+                                port: '5432',
+                                user: 'postgres',
+                                db: 'sql_stream'
+                            }}
+                        />
                     </motion.div>
 
                     {/* Quick Access */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         className="space-y-6"
