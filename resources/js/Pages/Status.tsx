@@ -39,7 +39,10 @@ export default function Status() {
                 </div>
             }
         >
-            <Head title="System Status" />
+            <Head>
+                <title>Network Status | SQL STREAM Health Grid</title>
+                <meta name="description" content="Real-time observability and health monitoring for all sharded nodes within the SQL STREAM global infrastructure." />
+            </Head>
 
             <div className="py-6 space-y-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 transition-all pb-24">
                 {/* Status Hero Section */}

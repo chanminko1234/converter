@@ -20,7 +20,10 @@ export default function ConfirmPassword() {
 
     return (
         <div className="min-h-screen bg-background text-foreground font-sans relative overflow-hidden flex flex-col items-center justify-center">
-            <Head title="Confirm Password" />
+            <Head>
+                <title>Confirm Access | Security Clearance</title>
+                <meta name="description" content="Verify your protocol key to access restricted infrastructure areas." />
+            </Head>
 
             {/* Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">

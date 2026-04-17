@@ -120,7 +120,10 @@ export default function Docs() {
                 </div>
             }
         >
-            <Head title="Technical Documentation" />
+            <Head>
+                <title>Engineering Documentation | SQL STREAM Guide</title>
+                <meta name="description" content="Technical specifications and quick-start guides for the SQL STREAM high-performance migration ecosystem." />
+            </Head>
 
             <div className="py-6 flex flex-col md:flex-row gap-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 transition-all pb-24">
                 {/* Sidebar Navigation */}

@@ -18,7 +18,10 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
     return (
         <div className="min-h-screen bg-background text-foreground font-sans relative overflow-hidden flex flex-col items-center justify-center">
-            <Head title="Forgot Password" />
+            <Head>
+                <title>Access Recovery | Identity Verification</title>
+                <meta name="description" content="Initialize the access key reset flow for your engineering profile." />
+            </Head>
 
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-0 left-0 w-full h-full bg-grid opacity-[0.03] dark:opacity-[0.07]" />

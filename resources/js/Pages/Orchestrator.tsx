@@ -130,7 +130,10 @@ export default function Orchestrator() {
                 </div>
             }
         >
-            <Head title="Orchestrator Cockpit" />
+            <Head>
+                <title>Sync Orchestrator | SQL STREAM Cockpit</title>
+                <meta name="description" content="Real-time structural synchronization and global migration orchestration with zero-downtime performance metrics." />
+            </Head>
 
             <div className="py-6 space-y-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 transition-all pb-32">
                 {/* Header Controls */}

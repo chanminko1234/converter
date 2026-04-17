@@ -30,7 +30,10 @@ export default function ResetPassword({
 
     return (
         <GuestLayout>
-            <Head title="Reset Password" />
+            <Head>
+                <title>Reset Cipher | Access Restoration</title>
+                <meta name="description" content="Restore your engineering profile access by resetting your security protocol key." />
+            </Head>
 
             <form onSubmit={submit}>
                 <div>

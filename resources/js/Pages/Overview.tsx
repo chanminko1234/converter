@@ -67,7 +67,10 @@ export default function Overview() {
                 </div>
             }
         >
-            <Head title="System Overview" />
+            <Head>
+                <title>System Overview | SQL STREAM Ecosystem</title>
+                <meta name="description" content="Explore the technical specifications and engineering roadmap of the SQL STREAM data evolution platform." />
+            </Head>
 
             <div className="py-6 space-y-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 transition-all pb-24">
                 {/* Hero Section */}

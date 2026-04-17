@@ -63,7 +63,10 @@ export default function Validation() {
                 </div>
             }
         >
-            <Head title="Integrity Labs" />
+            <Head>
+                <title>Data Integrity Labs | Parity Audit System</title>
+                <meta name="description" content="Verify data parity and execute cryptographic checksum audits between sharded database nodes." />
+            </Head>
 
             <div className="py-6 space-y-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 transition-all pb-24">
                 {/* Intro Section */}

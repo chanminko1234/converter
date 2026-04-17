@@ -23,7 +23,10 @@ export default function Register() {
 
     return (
         <div className="min-h-screen bg-background text-foreground font-sans relative overflow-hidden flex flex-col items-center justify-center">
-            <Head title="Register" />
+            <Head>
+                <title>Establish Node | Join SQL STREAM</title>
+                <meta name="description" content="Initialize your enterprise identity protocol and join the high-performance migration network." />
+            </Head>
 
             {/* Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">

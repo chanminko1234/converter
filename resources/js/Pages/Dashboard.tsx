@@ -64,7 +64,10 @@ export default function Dashboard() {
                 </div>
             }
         >
-            <Head title="Control Center" />
+            <Head>
+                <title>Control Center | SQL STREAM Dashboard</title>
+                <meta name="description" content="Manage your database migration streams and monitor system throughput in real-time with the SQL STREAM control center." />
+            </Head>
 
             <div className="py-6 space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 transition-all">
                 {/* Stats Grid */}

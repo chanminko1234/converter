@@ -106,7 +106,10 @@ export default function IndexAdvisor() {
                 </div>
             }
         >
-            <Head title="Neural Advisor" />
+            <Head>
+                <title>Neural Index Advisor | SQL STREAM Optimization</title>
+                <meta name="description" content="Leverage AI to optimize your PostgreSQL architecture with intelligent GIN, BRIN, and Partial index recommendations." />
+            </Head>
 
             <div className="py-6 space-y-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 transition-all pb-24">
                 {/* Intro Section */}

@@ -453,8 +453,8 @@ const Welcome: React.FC = () => {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 selection:text-primary-foreground relative overflow-hidden">
       <Head>
-        <title>MySQL to PostgreSQL Converter | Free SQL Transpiler</title>
-        <meta name="description" content="Automate your database migration with SQL STREAM. The ultimate robust MySQL to PostgreSQL converter. Features data masking, Laravel/WordPress presets, and multi-format export." />
+        <title>SQL STREAM | Modern MySQL to PostgreSQL Migration</title>
+        <meta name="description" content="The ultimate ecosystem for high-fidelity database migration. Automated transpilation, AI tuning, and zero-downtime streaming from MySQL to PostgreSQL." />
         <meta name="keywords" content="mysql to postgresql, database converter, sql migration tool, automate mysql migration, postgres transpiler, mysql to csv export, free sql tools" />
       </Head>
       {/* Background Effects */}

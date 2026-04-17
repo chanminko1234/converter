@@ -28,7 +28,10 @@ export default function Login({
 
     return (
         <div className="min-h-screen bg-background text-foreground font-sans relative overflow-hidden flex flex-col items-center justify-center">
-            <Head title="Log in" />
+            <Head>
+                <title>Engineering Login | Port Access</title>
+                <meta name="description" content="Authenticate your node identity to gain access to the SQL STREAM infrastructure." />
+            </Head>
 
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-0 left-0 w-full h-full bg-grid opacity-[0.03] dark:opacity-[0.07]" />

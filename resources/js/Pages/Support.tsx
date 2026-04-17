@@ -63,7 +63,10 @@ export default function Support() {
                 </div>
             }
         >
-            <Head title="Engineering Support" />
+            <Head>
+                <title>Engineering Support | SQL STREAM Clearance Hub</title>
+                <meta name="description" content="Get deep-tier technical guidance and architectural oversight for your mission-critical database migrations." />
+            </Head>
 
             <div className="py-6 space-y-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 transition-all pb-24">
                 {/* Support Hero Section */}

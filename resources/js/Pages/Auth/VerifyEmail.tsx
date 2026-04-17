@@ -16,7 +16,10 @@ export default function VerifyEmail({ status }: { status?: string }) {
 
     return (
         <div className="min-h-screen bg-background text-foreground font-sans relative overflow-hidden flex flex-col items-center justify-center">
-            <Head title="Email Verification" />
+            <Head>
+                <title>Verify Identity | Node Activation</title>
+                <meta name="description" content="Complete the verification protocol to activate your node within the global control hub." />
+            </Head>
 
             {/* Background Effects */}
             <div className="fixed inset-0 z-0 pointer-events-none">
