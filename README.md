@@ -14,9 +14,15 @@
 
 ## 📸 System Showcase
 
+
+| Landing Page | Interactive Dashboard |
+| :---: | :---: |
+| ![Landing](docs/images/landing.png) | ![Dashboard](docs/images/dashboard.png) |
+
+| Infrastructure Health | Engineering Documentation |
 | Engineering Landing Ecosystem | Node Control Center |
 | :---: | :---: |
-| ![Landing Demo](docs/images/homepage_demo.webp) | ![Dashboard Demo](docs/images/dashboard_demo.webp) |
+| ![Status](docs/images/status.png) | ![Docs](docs/images/hero.png) |
 
 ---
 
