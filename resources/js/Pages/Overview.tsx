@@ -94,15 +94,15 @@ export default function Overview() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.1 }}
                         >
-                            <Card className="glass-card p-10 border-foreground/5 dark:border-white/5 rounded-[2.5rem] hover:border-primary/20 transition-all group h-full shadow-2xl relative overflow-hidden">
+                            <Card className="glass-card p-10 border-foreground/10 dark:border-white/5 rounded-[2.5rem] hover:border-primary/20 transition-all group h-full shadow-2xl relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
                                     {React.isValidElement(p.icon) && React.cloneElement(p.icon as React.ReactElement<any>, { className: "w-32 h-32" })}
                                 </div>
-                                <div className="p-4 bg-foreground/5 dark:bg-white/5 rounded-2xl w-fit mb-8 group-hover:bg-primary/10 transition-colors">
+                                <div className="p-4 bg-foreground/5 dark:bg-white/5 rounded-2xl w-fit mb-8 group-hover:bg-primary/10 transition-colors shadow-sm">
                                     {p.icon}
                                 </div>
                                 <h3 className="text-2xl font-black mb-4 tracking-tight text-foreground uppercase italic">{p.title}</h3>
-                                <p className="text-sm text-foreground/40 leading-relaxed font-bold">{p.desc}</p>
+                                <p className="text-sm text-foreground/70 dark:text-foreground/40 leading-relaxed font-bold tracking-tight">{p.desc}</p>
                             </Card>
                         </motion.div>
                     ))}
@@ -125,9 +125,9 @@ export default function Overview() {
                                 </div>
                                 <div className="space-y-3">
                                     {g.steps.map((step, idx) => (
-                                        <div key={idx} className="flex gap-6 p-6 rounded-3xl bg-foreground/[0.02] dark:bg-white/[0.02] border border-foreground/5 dark:border-white/5 hover:bg-foreground/[0.04] transition-all group shadow-sm">
-                                            <div className="text-primary font-black text-[10px] pt-1 opacity-20 group-hover:opacity-100 transition-opacity tracking-widest">0{idx + 1}</div>
-                                            <p className="text-sm font-bold text-foreground/60 group-hover:text-foreground transition-colors tracking-tight">{step}</p>
+                                        <div key={idx} className="flex gap-6 p-6 rounded-3xl bg-foreground/[0.04] dark:bg-white/[0.02] border border-foreground/10 dark:border-white/5 hover:bg-foreground/[0.06] transition-all group shadow-sm">
+                                            <div className="text-primary font-black text-[10px] pt-1 opacity-40 group-hover:opacity-100 transition-opacity tracking-widest leading-none">0{idx + 1}</div>
+                                            <p className="text-sm font-bold text-foreground/70 dark:text-foreground/60 group-hover:text-foreground transition-colors tracking-tight">{step}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -141,15 +141,15 @@ export default function Overview() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.5 }}
                     >
-                        <Card className="relative overflow-hidden bg-slate-900/40 dark:bg-slate-900/60 rounded-[3.5rem] border-foreground/5 dark:border-white/5 p-12 min-h-[600px] flex flex-col justify-center gap-10 group shadow-inner">
-                            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000 rotate-12">
+                        <Card className="relative overflow-hidden bg-foreground/[0.04] dark:bg-slate-900/60 rounded-[3.5rem] border-foreground/10 dark:border-white/5 p-12 min-h-[600px] flex flex-col justify-center gap-10 group shadow-2xl shadow-inner">
+                            <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000 rotate-12">
                                 <Database className="h-72 w-72 text-primary" />
                             </div>
                             
                             <div className="space-y-10 relative z-10">
                                 <div className="space-y-3">
                                     <h3 className="text-5xl font-black tracking-tighter uppercase italic text-primary leading-none">Engineering Roadmap</h3>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/30">Active Infrastructure Cycles</p>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/40 dark:text-foreground/20 italic">Active Infrastructure Cycles</p>
                                 </div>
 
                                 <div className="space-y-6">
@@ -162,10 +162,10 @@ export default function Overview() {
                                         { icon: <Layers />, text: "Postgres, MySQL, SQLite, Oracle, MSSQL", active: true },
                                     ].map((item, i) => (
                                         <div key={i} className={`flex items-center gap-5 ${item.active ? 'opacity-100' : 'opacity-20'}`}>
-                                            <div className={`p-3 rounded-2xl ${item.active ? 'bg-primary/20 text-primary border border-primary/20' : 'bg-foreground/5 text-foreground'}`}>
+                                            <div className={`p-3 rounded-2xl ${item.active ? 'bg-primary/10 dark:bg-primary/20 text-primary border border-primary/20 shadow-sm' : 'bg-foreground/5 text-foreground'}`}>
                                                 {React.isValidElement(item.icon) && React.cloneElement(item.icon as React.ReactElement<any>, { className: "h-4 w-4" })}
                                             </div>
-                                            <span className="font-black text-sm tracking-tight text-foreground uppercase">{item.text}</span>
+                                            <span className="font-black text-sm tracking-tight text-foreground uppercase italic">{item.text}</span>
                                         </div>
                                     ))}
                                 </div>

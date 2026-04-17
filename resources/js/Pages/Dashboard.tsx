@@ -51,7 +51,7 @@ export default function Dashboard() {
                                 a.click();
                             }}
                             variant="outline" 
-                            className="rounded-2xl h-12 px-6 font-black uppercase text-[10px] tracking-widest border-foreground/10 hover:bg-foreground/5 bg-background/50 backdrop-blur-xl transition-all"
+                            className="rounded-2xl h-12 px-6 font-black uppercase text-[10px] tracking-widest border-foreground/20 dark:border-white/10 hover:bg-foreground/5 bg-background dark:bg-background/50 backdrop-blur-xl transition-all shadow-sm text-foreground/80 hover:text-foreground"
                         >
                             Export Telemetry
                         </Button>
@@ -79,7 +79,7 @@ export default function Dashboard() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.1 }}
                         >
-                            <Card className="glass-card p-6 border-foreground/5 dark:border-white/5 rounded-[2rem] hover:border-primary/20 transition-all group shadow-2xl relative overflow-hidden">
+                            <Card className="glass-card p-6 border-foreground/10 dark:border-white/5 rounded-[2rem] hover:border-primary/20 transition-all group shadow-[0_20px_40px_rgba(0,0,0,0.05)] dark:shadow-2xl relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-10 transition-opacity">
                                     {React.isValidElement(stat.icon) && React.cloneElement(stat.icon as React.ReactElement<any>, { className: "w-24 h-24" })}
                                 </div>
@@ -91,7 +91,7 @@ export default function Dashboard() {
                                         <TrendingUp className="w-3 h-3" />
                                     </div>
                                 </div>
-                                <h3 className="text-[10px] font-black uppercase tracking-widest text-foreground/40 mb-1">{stat.label}</h3>
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-foreground/70 dark:text-foreground/40 mb-1">{stat.label}</h3>
                                 <p className="text-2xl font-black text-foreground tracking-tight">{stat.value}</p>
                             </Card>
                         </motion.div>
@@ -106,11 +106,11 @@ export default function Dashboard() {
                         className="lg:col-span-2 space-y-6"
                     >
                         <div className="flex items-center justify-between px-2">
-                            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground/80 flex items-center gap-2">
+                            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground flex items-center gap-2">
                                 <Activity className="w-4 h-4 text-primary" />
                                 Interactive Query Streamer
                             </h3>
-                            <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest text-primary/60 border-primary/20 bg-primary/5">Prototype Engine v1.0</Badge>
+                            <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest text-primary border-primary/20 bg-primary/5">Prototype Engine v1.0</Badge>
                         </div>
 
                         <SQLStreamer
@@ -131,7 +131,7 @@ export default function Dashboard() {
                         animate={{ opacity: 1, x: 0 }}
                         className="space-y-6"
                     >
-                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground/80 flex items-center gap-2 px-2">
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground flex items-center gap-2 px-2">
                             <Zap className="w-4 h-4 text-primary" />
                             Fast Response
                         </h3>
@@ -142,14 +142,14 @@ export default function Dashboard() {
                                 { title: 'Index Advisor', desc: 'Optimize query throughput', color: 'bg-emerald-500' },
                                 { title: 'System Docs', desc: 'Review node protocols', color: 'bg-slate-700' },
                             ].map((item, i) => (
-                                <Card key={i} className="glass-card p-6 border-foreground/5 dark:border-white/5 rounded-[2rem] hover:bg-foreground/[0.03] transition-all cursor-pointer group border-l-4 border-l-transparent hover:border-l-primary shadow-xl">
+                                <Card key={i} className="glass-card p-6 border-foreground/10 dark:border-white/5 rounded-[2rem] hover:bg-foreground/[0.03] transition-all cursor-pointer group border-l-4 border-l-transparent hover:border-l-primary shadow-lg dark:shadow-xl">
                                     <div className="flex items-center justify-between mb-4">
                                         <div className={`w-10 h-10 rounded-xl ${item.color}/10 flex items-center justify-center text-foreground`}>
-                                            <ArrowUpRight className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
+                                            <ArrowUpRight className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-colors" />
                                         </div>
                                     </div>
                                     <h4 className="text-xs font-black uppercase tracking-widest text-foreground group-hover:text-primary transition-colors">{item.title}</h4>
-                                    <p className="text-[10px] font-bold text-foreground/40">{item.desc}</p>
+                                    <p className="text-[10px] font-bold text-foreground/70 dark:text-foreground/40">{item.desc}</p>
                                 </Card>
                             ))}
                         </div>
@@ -158,7 +158,6 @@ export default function Dashboard() {
             </div>
 
             <style>{`
-                .glass-card { background: rgba(var(--background), 0.4); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); }
             `}</style>
         </AuthenticatedLayout>
     );

@@ -459,10 +459,10 @@ const Welcome: React.FC = () => {
       </Head>
       {/* Background Effects */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-grid opacity-[0.03] dark:opacity-[0.07]" />
-        <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] bg-primary/20 dark:bg-primary/25 blur-[160px] rounded-full animate-blob mix-blend-multiply dark:mix-blend-screen overflow-hidden" />
-        <div className="absolute bottom-[-15%] right-[-10%] w-[60%] h-[60%] bg-indigo-500/15 dark:bg-indigo-500/20 blur-[160px] rounded-full animate-blob animation-delay-2000 mix-blend-multiply dark:mix-blend-screen overflow-hidden" />
-        <div className="absolute top-[30%] left-[60%] w-[40%] h-[40%] bg-pink-500/10 dark:bg-pink-500/15 blur-[140px] rounded-full animate-blob animation-delay-4000 mix-blend-multiply dark:mix-blend-screen overflow-hidden" />
+        <div className="absolute top-0 left-0 w-full h-full bg-grid opacity-[0.03] dark:opacity-[0.05]" />
+        <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] bg-primary/10 dark:bg-primary/20 blur-[130px] rounded-full animate-blob mix-blend-multiply dark:mix-blend-screen opacity-70 dark:opacity-100" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] bg-indigo-500/10 dark:bg-indigo-500/15 blur-[130px] rounded-full animate-blob animation-delay-2000 mix-blend-multiply dark:mix-blend-screen opacity-70 dark:opacity-100" />
+        <div className="absolute top-[20%] left-[50%] w-[50%] h-[50%] bg-pink-500/5 dark:bg-pink-500/10 blur-[130px] rounded-full animate-blob animation-delay-4000 mix-blend-multiply dark:mix-blend-screen opacity-50 dark:opacity-100" />
       </div>
 
       <nav className="border-b glass fixed top-0 w-full z-50 px-8 py-5 flex items-center justify-between backdrop-blur-3xl shadow-2xl shadow-black/10">
@@ -643,24 +643,24 @@ const Welcome: React.FC = () => {
           <Badge variant="outline" className="px-5 py-1.5 rounded-full border-primary/30 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-4 shadow-[0_0_20px_rgba(109,40,217,0.3)] border-2">
             Engineering Preview v2.0
           </Badge>
-          <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-none text-foreground overflow-visible">
+          <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-none text-foreground overflow-visible drop-shadow-sm">
             Migrate <span className="text-primary italic">Better.</span>
           </h1>
-          <p className="text-xl text-slate-400 max-w-3xl mx-auto font-medium leading-relaxed font-sans">
+          <p className="text-xl text-foreground/50 dark:text-slate-400 max-w-3xl mx-auto font-medium leading-relaxed font-sans">
             The ultimate bridge from MySQL to PostgreSQL. Engineering speed,
-            <span className="text-white font-bold mx-1 inline-flex items-center gap-1 group cursor-help transition-all hover:text-primary">
+            <span className="text-foreground dark:text-white font-black mx-1 inline-flex items-center gap-1 group cursor-help transition-all hover:text-primary">
               Predictive AI <Zap className="inline-block w-4 h-4 text-primary fill-primary group-hover:scale-125 transition-transform" />
             </span>, and real-time streaming built for
             high-availability systems.
           </p>
 
           <div className="flex items-center justify-center gap-4 pt-8">
-            <div className="bg-slate-900/50 p-1.5 rounded-[1.5rem] border border-white/10 flex gap-2 backdrop-blur-xl shadow-inner shadow-black/20">
+            <div className="bg-foreground/[0.03] dark:bg-slate-900/50 p-1.5 rounded-[1.5rem] border border-foreground/10 dark:border-white/10 flex gap-2 backdrop-blur-xl shadow-inner shadow-black/5 dark:shadow-black/20">
               <Button
                 variant={mode === 'sql' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setMode('sql')}
-                className="rounded-xl flex px-6 font-bold text-[10px] uppercase tracking-widest"
+                className="rounded-xl flex px-6 font-bold text-[10px] uppercase tracking-widest shadow-none"
               >
                 <Terminal className="w-3 h-3 mr-2" />
                 SQL Dump
@@ -669,7 +669,7 @@ const Welcome: React.FC = () => {
                 variant={mode === 'stream' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setMode('stream')}
-                className="rounded-xl flex px-6 font-bold text-[10px] uppercase tracking-widest"
+                className="rounded-xl flex px-6 font-bold text-[10px] uppercase tracking-widest shadow-none"
               >
                 <Server className="w-3 h-3 mr-2" />
                 Live Stream
@@ -678,7 +678,7 @@ const Welcome: React.FC = () => {
                 variant={mode === 'tuning' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setMode('tuning')}
-                className="rounded-xl flex px-6 font-bold text-[10px] uppercase tracking-widest"
+                className="rounded-xl flex px-6 font-bold text-[10px] uppercase tracking-widest shadow-none"
               >
                 <Activity className="w-3 h-3 mr-2" />
                 Tuning Advisor
@@ -705,40 +705,40 @@ const Welcome: React.FC = () => {
 
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" className="rounded-2xl px-6 flex border-white/10 hover:bg-white/5 transition-all">
+                  <Button variant="outline" className="rounded-2xl justify-center items-center px-6 flex border-foreground/10 dark:border-white/10 hover:bg-foreground/5 dark:hover:bg-white/5 transition-all font-black text-[10px] uppercase tracking-widest">
                     <Settings className="w-4 mr-2" />
                     Options
                   </Button>
                 </SheetTrigger>
-                <SheetContent className="glass border-l-white/10 shadow-2xl overflow-y-auto custom-scrollbar">
-                  <SheetHeader className="pb-6 border-b border-white/5">
+                <SheetContent className="glass border-l-foreground/10 dark:border-l-white/10 shadow-2xl overflow-y-auto custom-scrollbar">
+                  <SheetHeader className="pb-6 border-b border-foreground/5 dark:border-white/5">
                     <SheetTitle className="text-2xl font-bold">Conversion Rules</SheetTitle>
                   </SheetHeader>
                   <div className="space-y-6 py-6 overflow-x-hidden">
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Framework Optimization</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 dark:text-white/40">Framework Optimization</Label>
                       <Select
                         value={options.frameworkPreset}
                         onValueChange={(v: any) => setOptions(p => ({ ...p, frameworkPreset: v }))}
                       >
-                        <SelectTrigger className="w-full bg-white/5 border-white/10 rounded-xl focus:ring-primary h-12">
+                        <SelectTrigger className="w-full bg-background dark:bg-white/5 border-foreground/10 dark:border-white/10 rounded-xl focus:ring-primary h-12 shadow-sm">
                           <SelectValue placeholder="Select Framework" />
                         </SelectTrigger>
-                        <SelectContent className="glass border-white/10 text-white rounded-xl overflow-hidden shadow-2xl">
-                          <SelectItem value="none" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3">General (Standard SQL)</SelectItem>
-                          <SelectItem value="wordpress" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium">WordPress Presets</SelectItem>
-                          <SelectItem value="laravel" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium text-amber-500">Laravel Optimization</SelectItem>
-                          <SelectItem value="magento" className="hover:bg-white/5 focus:bg-white/5 transition-colors py-3 font-medium text-orange-500">Magento Ecosystem</SelectItem>
+                        <SelectContent className="bg-background dark:glass border-foreground/10 dark:border-white/10 text-foreground dark:text-white rounded-xl overflow-hidden shadow-2xl">
+                          <SelectItem value="none" className="hover:bg-foreground/5 dark:hover:bg-white/5 py-3 transition-colors">General (Standard SQL)</SelectItem>
+                          <SelectItem value="wordpress" className="hover:bg-foreground/5 dark:hover:bg-white/5 py-3 transition-colors font-medium">WordPress Presets</SelectItem>
+                          <SelectItem value="laravel" className="hover:bg-foreground/5 dark:hover:bg-white/5 py-3 transition-colors font-medium text-amber-500">Laravel Optimization</SelectItem>
+                          <SelectItem value="magento" className="hover:bg-foreground/5 dark:hover:bg-white/5 py-3 transition-colors font-medium text-orange-500">Magento Ecosystem</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 glass-card rounded-2xl">
-                      <Label className="font-bold">Preserve Identity</Label>
+                    <div className="flex items-center justify-between p-5 border border-foreground/10 dark:border-white/5 bg-background dark:bg-white/[0.02] rounded-[1.5rem] shadow-sm">
+                      <Label className="font-bold text-sm tracking-tight text-foreground dark:text-white">Preserve Identity Keys</Label>
                       <Checkbox checked={options.preserveIdentity} onCheckedChange={(c) => setOptions(p => ({ ...p, preserveIdentity: !!c }))} />
                     </div>
-                    <div className="flex items-center justify-between p-4 glass-card rounded-2xl">
-                      <Label className="font-bold">Schema Only</Label>
+                    <div className="flex items-center justify-between p-5 border border-foreground/10 dark:border-white/5 bg-background dark:bg-white/[0.02] rounded-[1.5rem] shadow-sm">
+                      <Label className="font-bold text-sm tracking-tight text-foreground dark:text-white">Relational Schema Only</Label>
                       <Checkbox checked={options.schemaOnly} onCheckedChange={(c) => setOptions(p => ({ ...p, schemaOnly: !!c }))} />
                     </div>
 
@@ -746,76 +746,76 @@ const Welcome: React.FC = () => {
                       <div
                         onClick={() => setOptions(p => ({ ...p, predictiveRefactoring: !p.predictiveRefactoring }))}
                         className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.predictiveRefactoring
-                          ? 'bg-primary/10 border-primary/40 shadow-[0_0_40px_rgba(var(--primary),0.1)]'
-                          : 'bg-white/5 border-white/10 hover:border-primary/30 hover:bg-white/[0.07]'
+                          ? 'bg-primary/5 border-primary/40 shadow-[0_10px_40px_rgba(var(--primary),0.1)]'
+                          : 'bg-background border-foreground/10 dark:bg-white/5 dark:border-white/10 hover:border-primary/30 hover:bg-foreground/5 dark:hover:bg-white/[0.07] shadow-sm'
                           }`}
                       >
                         <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                          <Zap className={`w-16 h-16 ${options.predictiveRefactoring ? 'text-primary' : 'text-white'}`} />
+                          <Zap className={`w-16 h-16 ${options.predictiveRefactoring ? 'text-primary' : 'text-foreground dark:text-white'}`} />
                         </div>
                         <div className="flex items-start gap-5 relative z-10">
-                          <div className={`p-4 rounded-2xl transition-all duration-500 ${options.predictiveRefactoring ? 'bg-primary shadow-lg shadow-primary/40' : 'bg-white/10'}`}>
-                            <Zap className={`h-5 w-5 ${options.predictiveRefactoring ? 'text-white fill-white' : 'text-white/40'}`} />
+                          <div className={`p-4 rounded-2xl transition-all duration-500 ${options.predictiveRefactoring ? 'bg-primary shadow-lg shadow-primary/40' : 'bg-foreground/5 dark:bg-white/10'}`}>
+                            <Zap className={`h-5 w-5 ${options.predictiveRefactoring ? 'text-white fill-white' : 'text-foreground/60 dark:text-white/40'}`} />
                           </div>
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center justify-between">
-                              <h3 className="font-black text-xs uppercase tracking-widest text-white">Predictive Refactoring</h3>
-                              <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.predictiveRefactoring ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-white/5 border-white/10 text-white/30'}`}>AI Enabled</Badge>
+                              <h3 className="font-black text-xs uppercase tracking-widest text-foreground dark:text-white">Predictive Refactoring</h3>
+                              <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.predictiveRefactoring ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-foreground/5 dark:bg-white/5 border-foreground/10 dark:border-white/10 text-foreground/30 dark:text-white/30'}`}>AI Enabled</Badge>
                             </div>
-                            <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Uses advanced heuristics to suggest modern PostgreSQL types and optimizations.</p>
+                            <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px] text-foreground dark:text-white">Uses advanced heuristics to suggest modern PostgreSQL types and optimizations.</p>
                           </div>
                         </div>
-                        <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.predictiveRefactoring ? 'bg-primary scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
+                        <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.predictiveRefactoring ? 'bg-primary scale-100 opacity-100 shadow-lg shadow-primary/40' : 'bg-foreground/5 dark:bg-white/10 scale-50 opacity-0'}`}>
                           <Check className="h-3 w-3 text-white" />
                         </div>
                       </div>
-                      
+
                       {options.predictiveRefactoring && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           onClick={() => setOptions(p => ({ ...p, applyAiRefactoring: !p.applyAiRefactoring }))}
                           className={`cursor-pointer group relative p-5 rounded-[2rem] border transition-all duration-300 ml-4 mb-2 ${options.applyAiRefactoring
-                            ? 'bg-primary/20 border-primary/40 shadow-lg shadow-primary/10'
-                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                            ? 'bg-primary/5 border-primary/40 shadow-lg shadow-primary/5'
+                            : 'bg-background border-foreground/10 dark:bg-white/5 dark:border-white/10 hover:bg-foreground/2 hover:border-primary/20 shadow-sm'
                             }`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                               <div className={`p-2 rounded-lg ${options.applyAiRefactoring ? 'bg-primary text-white' : 'bg-white/10 text-white/40'}`}>
-                                 <ShieldCheck className="h-4 w-4" />
-                               </div>
-                               <span className="text-[10px] font-black uppercase tracking-widest text-white">Apply Modernization</span>
+                              <div className={`p-2 rounded-lg ${options.applyAiRefactoring ? 'bg-primary text-white' : 'bg-foreground/10 dark:bg-white/10 text-foreground/40 dark:text-white/40'}`}>
+                                <ShieldCheck className="h-4 w-4" />
+                              </div>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-foreground dark:text-white">Apply Modernization</span>
                             </div>
                             <Checkbox checked={options.applyAiRefactoring} />
                           </div>
-                          <p className="text-[9px] mt-3 font-medium leading-relaxed opacity-40 ml-1">Automatically commit AI-driven structural improvements. If disabled, changes will be provided for manual review in the report.</p>
+                           <p className="text-[9px] mt-3 font-medium leading-relaxed opacity-60 ml-1 text-foreground dark:text-white">Automatically commit AI-driven structural improvements. If disabled, changes will be provided for manual review in the report.</p>
                         </motion.div>
                       )}
 
                       <div
                         onClick={() => setOptions(p => ({ ...p, autoCleaning: !p.autoCleaning }))}
                         className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.autoCleaning
-                          ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_40px_rgba(245,158,11,0.1)]'
-                          : 'bg-white/5 border-white/10 hover:border-amber-500/30 hover:bg-white/[0.07]'
+                          ? 'bg-amber-500/5 border-amber-500/40 shadow-[0_10px_40px_rgba(245,158,11,0.1)]'
+                          : 'bg-background border-foreground/10 dark:bg-white/5 dark:border-white/10 hover:border-amber-500/30 hover:bg-foreground/5 dark:hover:bg-white/[0.07] shadow-sm'
                           }`}
                       >
                         <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                          <Eraser className={`w-16 h-16 ${options.autoCleaning ? 'text-amber-500' : 'text-white'}`} />
+                          <Eraser className={`w-16 h-16 ${options.autoCleaning ? 'text-amber-500' : 'text-foreground dark:text-white'}`} />
                         </div>
                         <div className="flex items-start gap-5 relative z-10">
-                          <div className={`p-4 rounded-2xl transition-all duration-500 ${options.autoCleaning ? 'bg-amber-500 shadow-lg shadow-amber-500/40' : 'bg-white/10'}`}>
-                            <Eraser className={`h-5 w-5 ${options.autoCleaning ? 'text-white fill-white' : 'text-white/40'}`} />
+                          <div className={`p-4 rounded-2xl transition-all duration-500 ${options.autoCleaning ? 'bg-amber-500 shadow-lg shadow-amber-500/40' : 'bg-foreground/5 dark:bg-white/10'}`}>
+                            <Eraser className={`h-5 w-5 ${options.autoCleaning ? 'text-white fill-white' : 'text-foreground/60 dark:text-white/40'}`} />
                           </div>
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center justify-between">
-                              <h3 className="font-black text-xs uppercase tracking-widest text-white">Auto-Cleaning</h3>
-                              <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.autoCleaning ? 'bg-amber-500/20 border-amber-500/40 text-amber-500' : 'bg-white/5 border-white/10 text-white/30'}`}>Optimization</Badge>
+                              <h3 className="font-black text-xs uppercase tracking-widest text-foreground dark:text-white">Auto-Cleaning</h3>
+                              <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.autoCleaning ? 'bg-amber-500/20 border-amber-500/40 text-amber-500' : 'bg-background border-foreground/10 dark:border-white/10 text-foreground/40 dark:text-white/30 shadow-sm'}`}>Optimization</Badge>
                             </div>
-                            <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Detects inconsistent naming conventions and redundant structural patterns.</p>
+                            <p className="text-[10px] font-medium leading-relaxed opacity-60 max-w-[200px] text-foreground dark:text-white">Detects inconsistent naming conventions and redundant structural patterns.</p>
                           </div>
                         </div>
-                        <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.autoCleaning ? 'bg-amber-500 scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
+                        <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.autoCleaning ? 'bg-amber-500 scale-100 opacity-100 shadow-lg shadow-amber-500/40' : 'bg-foreground/5 dark:bg-white/10 scale-50 opacity-0'}`}>
                           <Check className="h-3 w-3 text-white" />
                         </div>
                       </div>
@@ -823,26 +823,26 @@ const Welcome: React.FC = () => {
                       <div
                         onClick={() => setOptions(p => ({ ...p, incrementalSync: !p.incrementalSync }))}
                         className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.incrementalSync
-                          ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_40px_rgba(16,185,129,0.1)]'
-                          : 'bg-white/5 border-white/10 hover:border-emerald-500/30 hover:bg-white/[0.07]'
+                          ? 'bg-emerald-500/5 border-emerald-500/40 shadow-[0_10px_40px_rgba(16,185,129,0.1)]'
+                          : 'bg-background border-foreground/10 dark:bg-white/5 dark:border-white/10 hover:border-emerald-500/30 hover:bg-foreground/5 dark:hover:bg-white/[0.07] shadow-sm'
                           }`}
                       >
                         <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                          <Activity className={`w-16 h-16 ${options.incrementalSync ? 'text-emerald-500' : 'text-white'}`} />
+                          <Activity className={`w-16 h-16 ${options.incrementalSync ? 'text-emerald-500' : 'text-foreground dark:text-white'}`} />
                         </div>
                         <div className="flex items-start gap-5 relative z-10">
-                          <div className={`p-4 rounded-2xl transition-all duration-500 ${options.incrementalSync ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40' : 'bg-white/10'}`}>
-                            <Activity className={`h-5 w-5 ${options.incrementalSync ? 'text-white' : 'text-white/40'}`} />
+                          <div className={`p-4 rounded-2xl transition-all duration-500 ${options.incrementalSync ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40' : 'bg-foreground/5 dark:bg-white/10'}`}>
+                            <Activity className={`h-5 w-5 ${options.incrementalSync ? 'text-white' : 'text-foreground/60 dark:text-white/40'}`} />
                           </div>
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center justify-between">
-                              <h3 className="font-black text-xs uppercase tracking-widest text-white">Incremental Sync</h3>
-                              <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.incrementalSync ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-500' : 'bg-white/5 border-white/10 text-white/30'}`}>Zero Downtime</Badge>
+                              <h3 className="font-black text-xs uppercase tracking-widest text-foreground dark:text-white">Incremental Sync</h3>
+                              <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.incrementalSync ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-500' : 'bg-background border-foreground/10 dark:bg-white/10 text-foreground/40 dark:text-white/30 shadow-sm'}`}>Zero Downtime</Badge>
                             </div>
-                            <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Tracks the high-water mark of your data to migrate only delta records.</p>
+                            <p className="text-[10px] font-medium leading-relaxed opacity-60 max-w-[200px] text-foreground dark:text-white">Tracks the high-water mark of your data to migrate only delta records.</p>
                           </div>
                         </div>
-                        <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.incrementalSync ? 'bg-emerald-500 scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
+                        <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.incrementalSync ? 'bg-emerald-500 scale-100 opacity-100 shadow-lg shadow-emerald-500/40' : 'bg-foreground/5 dark:bg-white/10 scale-50 opacity-0'}`}>
                           <Check className="h-3 w-3 text-white" />
                         </div>
                       </div>
@@ -850,26 +850,26 @@ const Welcome: React.FC = () => {
                       <div
                         onClick={() => setOptions(p => ({ ...p, dataMasking: !p.dataMasking }))}
                         className={`cursor-pointer group relative p-6 rounded-[2.5rem] border transition-all duration-500 overflow-hidden ${options.dataMasking
-                          ? 'bg-blue-500/10 border-blue-500/40 shadow-[0_0_40px_rgba(59,130,246,0.1)]'
-                          : 'bg-white/5 border-white/10 hover:border-blue-500/30 hover:bg-white/[0.07]'
+                          ? 'bg-blue-500/5 border-blue-500/40 shadow-[0_10px_40px_rgba(59,130,246,0.1)]'
+                          : 'bg-background border-foreground/10 dark:bg-white/5 dark:border-white/10 hover:border-blue-500/30 hover:bg-foreground/5 dark:hover:bg-white/[0.07] shadow-sm'
                           }`}
                       >
                         <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                          <Search className={`w-16 h-16 ${options.dataMasking ? 'text-blue-500' : 'text-white'}`} />
+                          <Search className={`w-16 h-16 ${options.dataMasking ? 'text-blue-500' : 'text-foreground dark:text-white'}`} />
                         </div>
                         <div className="flex items-start gap-5 relative z-10">
-                          <div className={`p-4 rounded-2xl transition-all duration-500 ${options.dataMasking ? 'bg-blue-500 shadow-lg shadow-blue-500/40' : 'bg-white/10'}`}>
-                            <Maximize2 className={`h-5 w-5 ${options.dataMasking ? 'text-white' : 'text-white/40'}`} />
+                          <div className={`p-4 rounded-2xl transition-all duration-500 ${options.dataMasking ? 'bg-blue-500 shadow-lg shadow-blue-500/40' : 'bg-foreground/5 dark:bg-white/10'}`}>
+                            <Maximize2 className={`h-5 w-5 ${options.dataMasking ? 'text-white' : 'text-foreground/60 dark:text-white/40'}`} />
                           </div>
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center justify-between">
-                              <h3 className="font-black text-xs uppercase tracking-widest text-white">Staging Masking</h3>
-                              <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.dataMasking ? 'bg-blue-500/20 border-blue-500/40 text-blue-500' : 'bg-white/5 border-white/10 text-white/30'}`}>Privacy Mode</Badge>
+                              <h3 className="font-black text-xs uppercase tracking-widest text-foreground dark:text-white">Staging Masking</h3>
+                              <Badge variant="outline" className={`text-[8px] font-black uppercase tracking-tighter ${options.dataMasking ? 'bg-blue-500/20 border-blue-500/40 text-blue-500' : 'bg-background border-foreground/10 dark:bg-white/10 text-foreground/40 dark:text-white/30 shadow-sm'}`}>Privacy Mode</Badge>
                             </div>
-                            <p className="text-[10px] font-medium leading-relaxed opacity-40 max-w-[200px]">Automatically obfuscates PII data like emails and phones using FakerPHP.</p>
+                            <p className="text-[10px] font-medium leading-relaxed opacity-60 max-w-[200px] text-foreground dark:text-white">Automatically obfuscates PII data like emails and phones using FakerPHP.</p>
                           </div>
                         </div>
-                        <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.dataMasking ? 'bg-blue-500 scale-100 opacity-100' : 'bg-white/10 scale-50 opacity-0'}`}>
+                        <div className={`absolute bottom-6 right-6 h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${options.dataMasking ? 'bg-blue-500 scale-100 opacity-100 shadow-lg shadow-blue-500/40' : 'bg-foreground/5 dark:bg-white/10 scale-50 opacity-0'}`}>
                           <Check className="h-3 w-3 text-white" />
                         </div>
                       </div>
@@ -929,8 +929,8 @@ const Welcome: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="glass-card rounded-[2.5rem] overflow-hidden border-white/10 shadow-2xl group min-h-[500px] flex flex-col">
-              <div className="px-8 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+            <Card className="glass-card rounded-[2.5rem] overflow-hidden border-foreground/10 dark:border-white/10 shadow-2xl group min-h-[500px] flex flex-col">
+              <div className="px-8 py-5 border-b border-foreground/5 dark:border-white/5 bg-foreground/[0.02] dark:bg-white/[0.02] flex items-center justify-between">
                 <div className="flex gap-2">
                   <div className="h-3 w-3 rounded-full bg-red-500/50" />
                   <div className="h-3 w-3 rounded-full bg-amber-500/50" />
@@ -938,7 +938,7 @@ const Welcome: React.FC = () => {
                 </div>
                 {mode === 'sql' && (
                   <div className="flex gap-4 items-center">
-                    <div className="bg-white/5 p-1 rounded-xl flex gap-1 border border-white/5 ring-1 ring-white/10">
+                    <div className="bg-foreground/5 dark:bg-white/5 p-1 rounded-xl flex gap-1 border border-foreground/5 dark:border-white/5 ring-1 ring-foreground/10 dark:ring-white/10">
                       <Button
                         variant={inputMethod === 'manual' ? 'default' : 'ghost'}
                         size="sm"
@@ -956,7 +956,7 @@ const Welcome: React.FC = () => {
                         Live Node
                       </Button>
                     </div>
-                    <div className="h-4 w-[1px] bg-white/10" />
+                    <div className="h-4 w-[1px] bg-foreground/10 dark:bg-white/10" />
                     <div className="flex gap-2">
                       <Button variant="ghost" size="sm" onClick={clearInput} className="text-[10px] font-black uppercase tracking-tighter opacity-40 hover:opacity-100 flex items-center gap-1">
                         <Eraser className="h-3 w-3" /> Clear
@@ -977,7 +977,7 @@ const Welcome: React.FC = () => {
               </div>
 
               {/* Context Switch */}
-              <div className="flex-1 overflow-auto bg-slate-950/20 backdrop-blur-3xl">
+              <div className="flex-1 overflow-auto bg-foreground/[0.02] dark:bg-slate-950/20 backdrop-blur-3xl">
                 {mode === 'sql' && inputMethod === 'manual' ? (
                   <>
                     <AnimatePresence>
@@ -1004,32 +1004,32 @@ const Welcome: React.FC = () => {
                       value={mysqlInput}
                       onChange={(e) => setMysqlInput(e.target.value)}
                       placeholder="-- Paste MySQL here..."
-                      className="min-h-[500px] p-8 bg-transparent border-none focus-visible:ring-0 font-mono text-base resize-none leading-relaxed placeholder:text-white/10"
+                      className="min-h-[500px] p-8 bg-transparent border-none focus-visible:ring-0 font-mono text-base resize-none leading-relaxed placeholder:text-foreground/20"
                     />
                   </>
                 ) : mode === 'sql' && inputMethod === 'live' ? (
                   <div className="p-10 space-y-12">
                     <div className="flex items-center gap-6 mb-2">
-                      <Badge variant="outline" className="px-6 py-1.5 rounded-full border-primary/40 bg-primary/10 text-primary font-black uppercase text-[10px] tracking-widest shadow-2xl">Source Logic Cluster</Badge>
+                      <Badge variant="outline" className="px-6 py-1.5 rounded-full border-primary/40 bg-primary/20 dark:bg-primary/10 text-primary font-black uppercase text-[10px] tracking-widest shadow-2xl">Source Logic Cluster</Badge>
                     </div>
-                    <p className="text-[11px] font-black uppercase tracking-widest text-white/30 italic">Target a live MySQL instance to extract structural patterns and object relationships.</p>
+                    <p className="text-[11px] font-black uppercase tracking-widest text-foreground/30 dark:text-white/30 italic">Target a live MySQL instance to extract structural patterns and object relationships.</p>
 
                     <div className="space-y-6">
                       <div className="grid grid-cols-2 gap-8">
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Node Host</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Node Host</Label>
                           <input
                             placeholder="e.g. cluster-01.db.local"
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                            className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-sm dark:shadow-inner"
                             value={sourceConn.host}
                             onChange={e => setSourceConn(p => ({ ...p, host: e.target.value }))}
                           />
                         </div>
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Cluster Port</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Cluster Port</Label>
                           <input
                             placeholder="3306"
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                            className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-sm dark:shadow-inner"
                             value={sourceConn.port}
                             onChange={e => setSourceConn(p => ({ ...p, port: e.target.value }))}
                           />
@@ -1037,30 +1037,30 @@ const Welcome: React.FC = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-8">
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Access Token / User</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Access Token / User</Label>
                           <input
                             placeholder="admin"
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                            className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-sm dark:shadow-inner"
                             value={sourceConn.user}
                             onChange={e => setSourceConn(p => ({ ...p, user: e.target.value }))}
                           />
                         </div>
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Secure Secret / Pass</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Secure Secret / Pass</Label>
                           <input
                             type="password"
                             placeholder="••••••••"
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                            className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-sm dark:shadow-inner"
                             value={sourceConn.pass}
                             onChange={e => setSourceConn(p => ({ ...p, pass: e.target.value }))}
                           />
                         </div>
                       </div>
                       <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Database Namespace</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Database Namespace</Label>
                         <input
                           placeholder="primary_db"
-                          className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                          className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-sm dark:shadow-inner"
                           value={sourceConn.db}
                           onChange={e => setSourceConn(p => ({ ...p, db: e.target.value }))}
                         />
@@ -1070,26 +1070,26 @@ const Welcome: React.FC = () => {
                 ) : mode === 'tuning' ? (
                   <div className="p-10 space-y-12">
                     <div className="flex items-center gap-6 mb-2">
-                      <Badge variant="outline" className="px-6 py-1.5 rounded-full border-amber-500/40 bg-amber-500/10 text-amber-500 font-black uppercase text-[10px] tracking-widest shadow-2xl">Architecture Optimizer</Badge>
+                      <Badge variant="outline" className="px-6 py-1.5 rounded-full border-amber-500/40 bg-amber-500/20 dark:bg-amber-500/10 text-amber-500 font-black uppercase text-[10px] tracking-widest shadow-2xl">Architecture Optimizer</Badge>
                     </div>
-                    <p className="text-[11px] font-black uppercase tracking-widest text-white/30 italic">Provide your target server specifications and MySQL slow logs to generate a high-performance PostgreSQL configuration.</p>
+                    <p className="text-[11px] font-black uppercase tracking-widest text-foreground/30 dark:text-white/30 italic">Provide your target server specifications and MySQL slow logs to generate a high-performance PostgreSQL configuration.</p>
 
                     <div className="space-y-8">
                       <div className="grid grid-cols-2 gap-8">
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Total System RAM (GB)</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Total System RAM (GB)</Label>
                           <input
                             type="number"
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-amber-500/40 outline-none transition-all shadow-inner"
+                            className="w-full bg-foreground/[0.04] dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-amber-500/40 outline-none transition-all shadow-inner"
                             value={tuningInput.ram_gb}
                             onChange={e => setTuningInput(p => ({ ...p, ram_gb: parseInt(e.target.value) }))}
                           />
                         </div>
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">CPU Cores</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">CPU Cores</Label>
                           <input
                             type="number"
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-amber-500/40 outline-none transition-all shadow-inner"
+                            className="w-full bg-foreground/[0.04] dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-amber-500/40 outline-none transition-all shadow-inner"
                             value={tuningInput.cpu_cores}
                             onChange={e => setTuningInput(p => ({ ...p, cpu_cores: parseInt(e.target.value) }))}
                           />
@@ -1098,19 +1098,19 @@ const Welcome: React.FC = () => {
 
                       <div className="grid grid-cols-2 gap-8">
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Max Connections</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Max Connections</Label>
                           <input
                             type="number"
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-amber-500/40 outline-none transition-all shadow-inner"
+                            className="w-full bg-foreground/[0.04] dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-amber-500/40 outline-none transition-all shadow-inner"
                             value={tuningInput.connection_count}
                             onChange={e => setTuningInput(p => ({ ...p, connection_count: parseInt(e.target.value) }))}
                           />
                         </div>
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Estimated Data Volume (GB)</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Estimated Data Volume (GB)</Label>
                           <input
                             type="number"
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-amber-500/40 outline-none transition-all shadow-inner"
+                            className="w-full bg-foreground/[0.04] dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-amber-500/40 outline-none transition-all shadow-inner"
                             value={tuningInput.data_volume_gb}
                             onChange={e => setTuningInput(p => ({ ...p, data_volume_gb: parseInt(e.target.value) }))}
                           />
@@ -1118,12 +1118,12 @@ const Welcome: React.FC = () => {
                       </div>
 
                       <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Storage Substrate</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Storage Substrate</Label>
                         <Select
                           value={tuningInput.storage_type}
                           onValueChange={(v: any) => setTuningInput(p => ({ ...p, storage_type: v }))}
                         >
-                          <SelectTrigger className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] h-16 px-8 font-black text-sm">
+                          <SelectTrigger className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] h-16 px-8 font-black text-sm shadow-sm dark:shadow-inner">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="glass">
@@ -1134,9 +1134,9 @@ const Welcome: React.FC = () => {
                       </div>
 
                       <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">MySQL Slow Query Log (optional)</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">MySQL Slow Query Log (optional)</Label>
                         <Textarea
-                          className="min-h-[160px] bg-white/[0.04] border border-white/10 rounded-[2rem] p-8 text-xs font-mono placeholder:opacity-20"
+                          className="min-h-[160px] bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[2rem] p-8 text-xs font-mono placeholder:opacity-20 shadow-sm dark:shadow-inner"
                           placeholder="# Time: 2026-04-06T12:00:00.000000Z... Query_time: 10.5..."
                           value={tuningInput.slow_query_log}
                           onChange={e => setTuningInput(p => ({ ...p, slow_query_log: e.target.value }))}
@@ -1156,26 +1156,26 @@ const Welcome: React.FC = () => {
                 ) : (
                   <div className="p-10 space-y-12">
                     <div className="flex items-center gap-6 mb-2">
-                      <Badge variant="outline" className="px-6 py-1.5 rounded-full border-primary/40 bg-primary/10 text-primary font-black uppercase text-[10px] tracking-widest shadow-2xl">Source Logic Cluster</Badge>
+                      <Badge variant="outline" className="px-6 py-1.5 rounded-full border-primary/40 bg-primary/20 dark:bg-primary/10 text-primary font-black uppercase text-[10px] tracking-widest shadow-2xl">Source Logic Cluster</Badge>
                     </div>
-                    <p className="text-[11px] font-black uppercase tracking-widest text-white/30 italic">Connect directly to an external MySQL node to stream schema and data without intermediate artifacts.</p>
+                    <p className="text-[11px] font-black uppercase tracking-widest text-foreground/30 dark:text-white/30 italic">Connect directly to an external MySQL node to stream schema and data without intermediate artifacts.</p>
 
                     <div className="space-y-6">
                       <div className="grid grid-cols-2 gap-8">
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Node Host</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Node Host</Label>
                           <input
                             placeholder="e.g. cluster-01.db.local"
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                            className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-sm dark:shadow-inner"
                             value={sourceConn.host}
                             onChange={e => setSourceConn(p => ({ ...p, host: e.target.value }))}
                           />
                         </div>
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Cluster Port</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Cluster Port</Label>
                           <input
                             placeholder="3306"
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                            className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-sm dark:shadow-inner"
                             value={sourceConn.port}
                             onChange={e => setSourceConn(p => ({ ...p, port: e.target.value }))}
                           />
@@ -1183,58 +1183,58 @@ const Welcome: React.FC = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-8">
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Access Token / User</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Access Token / User</Label>
                           <input
                             placeholder="admin"
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                            className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-sm dark:shadow-inner"
                             value={sourceConn.user}
                             onChange={e => setSourceConn(p => ({ ...p, user: e.target.value }))}
                           />
                         </div>
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Secure Secret / Pass</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Secure Secret / Pass</Label>
                           <input
                             type="password"
                             placeholder="••••••••"
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                            className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-sm dark:shadow-inner"
                             value={sourceConn.pass}
                             onChange={e => setSourceConn(p => ({ ...p, pass: e.target.value }))}
                           />
                         </div>
                       </div>
                       <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Database Namespace</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Database Namespace</Label>
                         <input
                           placeholder="primary_db"
-                          className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-inner"
+                          className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-4 ring-primary/40 outline-none transition-all shadow-sm dark:shadow-inner"
                           value={sourceConn.db}
                           onChange={e => setSourceConn(p => ({ ...p, db: e.target.value }))}
                         />
                       </div>
                     </div>
 
-                    <div className="pt-8 border-t border-white/5 space-y-6">
+                    <div className="pt-8 border-t border-foreground/5 dark:border-white/5 space-y-6">
                       <div className="flex items-center gap-3">
                         <div className="bg-primary/20 p-2.5 rounded-xl">
                           <Database className="w-5 h-5 text-primary" />
                         </div>
                         <h3 className="font-black text-xs uppercase tracking-widest text-primary italic">Target Synchronization Node</h3>
                       </div>
-                      <p className="text-[11px] font-black uppercase tracking-widest text-white/30 italic">Highly optimized for live production clusters. Ensure SSL/TLS is active for direct migration.</p>
+                      <p className="text-[11px] font-black uppercase tracking-widest text-foreground/30 dark:text-white/30 italic">Highly optimized for live production clusters. Ensure SSL/TLS is active for direct migration.</p>
 
                       <div className="grid grid-cols-2 gap-8">
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Target Host</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Target Host</Label>
                           <input
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none"
+                            className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none shadow-sm dark:shadow-inner"
                             value={targetConn.host}
                             onChange={e => setTargetConn(p => ({ ...p, host: e.target.value }))}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Target Port</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Target Port</Label>
                           <input
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none"
+                            className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none shadow-sm dark:shadow-inner"
                             value={targetConn.port}
                             onChange={e => setTargetConn(p => ({ ...p, port: e.target.value }))}
                           />
@@ -1242,27 +1242,27 @@ const Welcome: React.FC = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-8">
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Target User</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Target User</Label>
                           <input
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none"
+                            className="w-full bg-background dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none shadow-sm dark:shadow-inner"
                             value={targetConn.user}
                             onChange={e => setTargetConn(p => ({ ...p, user: e.target.value }))}
                           />
                         </div>
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Target Pass</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Target Pass</Label>
                           <input
                             type="password"
-                            className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none"
+                            className="w-full bg-foreground/[0.04] dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none"
                             value={targetConn.pass}
                             onChange={e => setTargetConn(p => ({ ...p, pass: e.target.value }))}
                           />
                         </div>
                       </div>
                       <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ml-2">Target DB Name</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 dark:opacity-40 ml-2">Target DB Name</Label>
                         <input
-                          className="w-full bg-white/[0.04] border border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none"
+                          className="w-full bg-foreground/[0.04] dark:bg-white/[0.04] border border-foreground/10 dark:border-white/10 rounded-[1.8rem] px-8 py-5 text-sm font-black focus:ring-1 ring-primary/40 outline-none"
                           value={targetConn.db}
                           onChange={e => setTargetConn(p => ({ ...p, db: e.target.value }))}
                         />
@@ -1280,11 +1280,11 @@ const Welcome: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <Card className="glass-card rounded-[2.5rem] overflow-hidden border-white/10 shadow-2xl h-full flex flex-col">
+            <Card className="glass-card rounded-[2.5rem] overflow-hidden border-foreground/10 dark:border-white/10 shadow-2xl h-full flex flex-col">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-                <div className="px-6 py-4 border-b border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="px-6 py-4 border-b border-foreground/5 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="w-full overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-                    <TabsList className="bg-white/5 rounded-full p-1 ring-1 ring-white/10 flex-shrink-0 w-max min-w-full">
+                    <TabsList className="bg-foreground/5 dark:bg-white/5 rounded-full p-1 ring-1 ring-foreground/10 dark:ring-white/10 flex-shrink-0 w-max min-w-full">
                       <TabsTrigger value="output" className="rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-primary flex items-center gap-2">
                         <Rocket className="h-3 w-3" /> Output
                       </TabsTrigger>
@@ -1336,11 +1336,11 @@ const Welcome: React.FC = () => {
                                     <Settings className="text-primary w-6 h-6" />
                                     Recommended postgresql.conf
                                   </h3>
-                                  <Card className="glass border-white/5 p-6 rounded-[2rem] bg-black/40 overflow-hidden relative">
-                                    <div className="absolute top-0 right-0 p-6 opacity-5"><Database className="w-20 h-20" /></div>
-                                    <div className="font-mono text-[11px] text-white/80 space-y-2 relative z-10">
+                                  <Card className="glass border-foreground/10 dark:border-white/5 p-6 rounded-[2rem] bg-foreground/[0.04] dark:bg-black/40 overflow-hidden relative shadow-sm">
+                                    <div className="absolute top-0 right-0 p-6 opacity-5"><Database className="w-20 h-20 text-foreground dark:text-white" /></div>
+                                    <div className="font-mono text-[11px] text-foreground/80 dark:text-white/80 space-y-2 relative z-10">
                                       {Object.entries(tuningResult.config).map(([key, value]) => (
-                                        <div key={key} className="flex justify-between border-b border-white/5 py-2">
+                                        <div key={key} className="flex justify-between border-b border-foreground/5 dark:border-white/5 py-2">
                                           <span className="opacity-50">{key}</span>
                                           <span className="text-primary font-bold">{value as string}</span>
                                         </div>
@@ -1429,7 +1429,7 @@ const Welcome: React.FC = () => {
 
                             <div className="relative group/code rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl">
                               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50 opacity-20" />
-                              <div className="max-h-[400px] overflow-auto custom-scrollbar bg-slate-950/40 backdrop-blur-md">
+                              <div className="max-h-[400px] overflow-auto custom-scrollbar bg-background/60 dark:bg-slate-950/40 backdrop-blur-md">
                                 <CodeHighlighter code={output || '-- Awaiting Execution Data...'} language={targetFormat === 'csv' ? 'text' : 'sql'} />
                               </div>
 
@@ -1480,7 +1480,7 @@ const Welcome: React.FC = () => {
                                 value={queryInput}
                                 onChange={(e) => setQueryInput(e.target.value)}
                                 placeholder="SELECT * FROM `users` WHERE `created_at` > DATE_SUB(NOW(), INTERVAL 1 DAY);"
-                                className="h-full w-full p-10 pt-14 bg-slate-950/40 border-white/5 rounded-[2rem] font-mono text-sm resize-none focus:ring-1 ring-amber-500/40 outline-none placeholder:opacity-20"
+                                className="h-full w-full p-10 pt-14 bg-foreground/[0.04] dark:bg-slate-950/40 border-foreground/10 dark:border-white/5 rounded-[2rem] font-mono text-sm resize-none focus:ring-1 ring-amber-500/40 outline-none placeholder:opacity-20 shadow-sm"
                               />
                               <Button
                                 onClick={handleTranslateQuery}
@@ -1493,7 +1493,7 @@ const Welcome: React.FC = () => {
                             </div>
                             <div className="relative group">
                               <Badge variant="outline" className="absolute top-4 left-4 z-10 bg-emerald-500/10 border-emerald-500/30 text-emerald-500 font-black uppercase text-[8px] tracking-widest">PostgreSQL Result</Badge>
-                              <div className="h-full w-full p-10 pt-14 bg-slate-950/20 border border-white/5 rounded-[2rem] font-mono text-sm overflow-auto text-emerald-400">
+                              <div className="h-full w-full p-10 pt-14 bg-foreground/[0.02] dark:bg-slate-950/20 border border-foreground/10 dark:border-white/5 rounded-[2rem] font-mono text-sm overflow-auto text-emerald-600 dark:text-emerald-400 shadow-sm">
                                 {queryOutput ? (
                                   <pre className="whitespace-pre-wrap">{queryOutput}</pre>
                                 ) : (
@@ -1542,7 +1542,7 @@ const Welcome: React.FC = () => {
                       )}
 
                       {activeTab === 'visualization' && (
-                        <div className="p-4 h-[500px] relative group/erd rounded-3xl overflow-hidden border border-white/5 bg-slate-950/40">
+                        <div className="p-4 h-[500px] relative group/erd rounded-3xl overflow-hidden border border-foreground/10 dark:border-white/5 bg-foreground/5 dark:bg-slate-950/40 shadow-sm">
                           {schemaData ? (
                             <>
                               <ERDVisualizer tables={schemaData} />
@@ -1587,7 +1587,7 @@ const Welcome: React.FC = () => {
 
                           <div className="space-y-3">
                             <h2 className="text-3xl font-black tracking-tighter italic uppercase">Zero-Downtime Replay</h2>
-                            <p className="text-slate-400 max-w-sm mx-auto text-xs font-bold leading-relaxed uppercase tracking-[0.2em] opacity-60">
+                            <p className="text-foreground/40 dark:text-slate-400 max-w-sm mx-auto text-xs font-bold leading-relaxed uppercase tracking-[0.2em] opacity-60">
                               Capture binlog events during the migration snapshot and replay them to ensure data consistency.
                             </p>
                           </div>
@@ -1705,7 +1705,7 @@ const Welcome: React.FC = () => {
           </motion.div>
         </div>
 
-        <footer className="mt-20 pt-10 border-t border-white/5 flex items-center justify-between opacity-30 text-xs font-bold uppercase tracking-widest">
+        <footer className="mt-20 pt-10 border-t border-foreground/10 dark:border-white/5 flex items-center justify-between opacity-30 text-xs font-bold uppercase tracking-widest text-foreground dark:text-white">
           <div>© 2026 SQL-STREAM Core Ecosystem</div>
           <div className="flex gap-8">
             <Link href="/overview" className="hover:text-primary transition-colors">Overview</Link>

@@ -147,7 +147,7 @@ export const SQLStreamer: React.FC<SQLStreamerProps> = ({
               <textarea
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="relative w-full h-32 p-4 bg-muted/80 border-none rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary/50 transition-all resize-none"
+                className="relative w-full h-32 p-4 bg-muted border border-foreground/5 dark:border-none rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary/50 transition-all resize-none text-foreground"
                 placeholder="Enter SQL Query..."
               />
             </div>
@@ -174,19 +174,19 @@ export const SQLStreamer: React.FC<SQLStreamerProps> = ({
                 <Button
                   onClick={() => { setRows([]); setColumns([]); }}
                   variant="outline"
-                  className="rounded-2xl h-14 px-8 border-foreground/10 text-foreground/60 font-black uppercase text-[11px] tracking-widest hover:bg-foreground/5 transition-all"
+                  className="rounded-2xl h-14 px-8 border-foreground/20 dark:border-foreground/10 text-foreground/80 dark:text-foreground/60 font-black uppercase text-[11px] tracking-widest hover:bg-foreground/5 transition-all shadow-sm"
                 >
                   Clear Buffer
                 </Button>
               </div>
-              <div className="flex items-center text-sm text-muted-foreground mr-4">
+              <div className="flex items-center text-[11px] font-black uppercase tracking-widest text-foreground/50 dark:text-muted-foreground mr-4">
                 <div className="flex items-center">
-                  <TableIcon className="mr-1 h-4 w-4" />
-                  <span className="font-bold text-foreground mx-1">{stats.totalRows}</span> rows
+                  <TableIcon className="mr-2 h-4 w-4 text-primary" />
+                  <span className="font-black text-foreground mx-1">{stats.totalRows}</span> <span className="italic">rows</span>
                 </div>
                 <div className="flex items-center ml-4">
-                  <Activity className="mr-1 h-4 w-4" />
-                  <span className="font-bold text-foreground mx-1">{stats.rowsPerSec}</span> r/s
+                  <Activity className="mr-2 h-4 w-4 text-primary" />
+                  <span className="font-black text-foreground mx-1">{stats.rowsPerSec}</span> <span className="italic">r/s</span>
                 </div>
               </div>
             </div>

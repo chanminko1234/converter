@@ -92,16 +92,16 @@ export default function Support() {
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: i * 0.05 }}
                         >
-                            <Card className="glass-card rounded-[3.1rem] p-12 border-foreground/5 dark:border-white/5 hover:border-primary/20 transition-all flex flex-col items-center text-center gap-8 group shadow-2xl relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
+                            <Card className="glass-card rounded-[3.1rem] p-12 border-foreground/10 dark:border-white/5 hover:border-primary/20 transition-all flex flex-col items-center text-center gap-8 group shadow-2xl shadow-foreground/5 dark:shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
                                     {React.isValidElement(item.icon) && React.cloneElement(item.icon as React.ReactElement<any>, { className: "h-32 w-32" })}
                                 </div>
-                                <div className={`p-6 bg-foreground/5 dark:bg-white/5 rounded-[2.1rem] group-hover:bg-primary/10 transition-colors shadow-inner ring-1 ring-white/5 ${item.color}`}>
+                                <div className={`p-6 bg-foreground/[0.03] dark:bg-white/5 rounded-[2.1rem] group-hover:bg-primary/20 transition-all shadow-inner ring-1 ring-foreground/5 dark:ring-white/5 ${item.color}`}>
                                     {React.isValidElement(item.icon) && React.cloneElement(item.icon as React.ReactElement<any>, { className: "h-8 w-8" })}
                                 </div>
                                 <div className="space-y-3">
                                     <h3 className="font-black text-2xl tracking-tighter uppercase italic text-foreground leading-none">{item.title}</h3>
-                                    <p className="text-[10px] text-foreground/30 uppercase font-black tracking-widest px-4">{item.desc}</p>
+                                    <p className="text-[10px] text-foreground/60 dark:text-foreground/30 uppercase font-black tracking-widest px-4">{item.desc}</p>
                                 </div>
                                 <a href={item.url} target="_blank" rel="noopener noreferrer" className="w-full">
                                     <Button variant="outline" className="w-full flex items-center justify-center rounded-2xl border-foreground/10 dark:border-white/10 font-black uppercase text-[10px] tracking-widest hover:bg-foreground/5 dark:hover:bg-white/10 h-14 mt-4 text-foreground/60 group-hover:text-foreground group-hover:border-primary/20 transition-all">
@@ -116,16 +116,16 @@ export default function Support() {
 
                 {/* Innovation Fund Section */}
                 <section id="sponsorship" className="scroll-mt-32">
-                    <Card className="bg-slate-900/60 rounded-[4.5rem] p-16 border border-white/5 relative overflow-hidden shadow-2xl group shadow-inner">
-                        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-amber-500/5 blur-[160px] rounded-full translate-x-1/2 -translate-y-1/2 group-hover:translate-x-1/3 transition-all duration-1000" />
+                    <Card className="bg-foreground/[0.03] dark:bg-slate-900/60 rounded-[4.5rem] p-16 border border-foreground/10 dark:border-white/5 relative overflow-hidden shadow-2xl group shadow-inner">
+                        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-amber-500/10 blur-[160px] rounded-full translate-x-1/2 -translate-y-1/2 group-hover:translate-x-1/3 transition-all duration-1000" />
 
                         <div className="flex flex-col lg:flex-row items-center gap-24 relative z-10">
                             <div className="flex-1 space-y-10">
-                                <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20 px-6 py-2 rounded-full text-[10px] uppercase font-black tracking-[0.2em] shadow-glow-amber">
+                                <Badge variant="outline" className="bg-amber-500/20 dark:bg-amber-500/10 text-amber-500 border-amber-500/30 dark:border-amber-500/20 px-6 py-2 rounded-full text-[10px] uppercase font-black tracking-[0.2em] shadow-glow-amber">
                                     Sustain the Innovation
                                 </Badge>
                                 <h2 className="text-6xl font-black tracking-tighter leading-none italic uppercase text-foreground">Sustain <br />The <span className="text-amber-500">Stream.</span></h2>
-                                <p className="text-xl text-foreground/40 font-bold leading-relaxed tracking-tight max-w-xl">
+                                <p className="text-xl text-foreground/60 dark:text-foreground/40 font-bold leading-relaxed tracking-tight max-w-xl">
                                     SQL STREAM is an open-source movement. Your sponsorship directly funds the development of the Neural Engine and maintains our global low-latency stream nodes.
                                 </p>
                                 <div className="flex flex-wrap gap-6 pt-4">
@@ -135,26 +135,26 @@ export default function Support() {
                                         </Button>
                                     </a>
                                     <a href="https://discord.gg/qwsG7jYw" target="_blank" rel="noopener noreferrer">
-                                        <Button variant="outline" className="rounded-3xl px-14 h-18 border-white/10 font-black uppercase text-[11px] tracking-widest hover:bg-white/5 transition-all active:scale-95 text-foreground/70 hover:text-foreground font-black">
+                                        <Button variant="outline" className="rounded-3xl px-14 h-18 border-foreground/10 dark:border-white/20 font-black uppercase text-[11px] tracking-widest hover:bg-foreground/5 dark:hover:bg-white/10 transition-all active:scale-95 text-foreground/80 hover:text-foreground font-black">
                                             Become a Partner
                                         </Button>
                                     </a>
                                 </div>
                             </div>
 
-                            <div className="w-full lg:w-[450px] grid grid-cols-2 gap-8">
+                             <div className="w-full lg:w-[450px] grid grid-cols-2 gap-8">
                                 {[
                                     { label: 'Edge Nodes', val: 'Global', icon: <Activity /> },
                                     { label: 'Neural Logic', val: 'Active', icon: <Cpu /> },
                                     { label: 'Payload Hub', val: 'AES-256', icon: <Shield /> },
                                     { label: 'Sponsors', val: 'Join Node', icon: <Zap /> },
                                 ].map((stat, i) => (
-                                    <Card key={i} className="p-10 rounded-[3rem] bg-foreground/[0.02] border-foreground/5 dark:border-white/5 space-y-6 hover:bg-foreground/[0.04] transition-all group shadow-sm">
-                                        <div className="text-amber-500/40 group-hover:text-amber-500 transition-colors shadow-glow-amber-small">
+                                    <Card key={i} className="p-10 rounded-[3rem] bg-background dark:bg-foreground/[0.02] border-foreground/10 dark:border-white/5 space-y-6 hover:bg-foreground/[0.04] transition-all group shadow-sm">
+                                        <div className="text-amber-500/60 dark:text-amber-500/40 group-hover:text-amber-500 transition-colors shadow-glow-amber-small">
                                             {React.isValidElement(stat.icon) && React.cloneElement(stat.icon as React.ReactElement<any>, { className: "h-6 w-6" })}
                                         </div>
                                         <div>
-                                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground/20 italic">{stat.label}</p>
+                                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground/40 dark:text-foreground/20 italic">{stat.label}</p>
                                             <p className="font-black text-2xl tracking-tighter text-foreground uppercase italic">{stat.val}</p>
                                         </div>
                                     </Card>
@@ -176,9 +176,9 @@ export default function Support() {
                         <div className="space-y-6">
                             {faqs.map((f, i) => (
                                 <motion.div key={i} whileHover={{ x: 5 }} transition={{ type: "spring", stiffness: 300 }}>
-                                    <Card className="glass-card border-foreground/5 dark:border-white/5 p-10 rounded-[3rem] hover:border-primary/20 transition-all shadow-xl group">
-                                        <h4 className="font-black text-lg mb-4 tracking-tighter group-hover:text-primary transition-colors text-foreground uppercase italic leading-tight">{f.q}</h4>
-                                        <p className="text-[11px] text-foreground/40 leading-relaxed font-bold tracking-tight">{f.a}</p>
+                                    <Card className="glass-card border-foreground/10 dark:border-white/5 p-10 rounded-[3rem] hover:border-primary/20 transition-all shadow-xl shadow-foreground/[0.02] dark:shadow-xl group">
+                                         <h4 className="font-black text-lg mb-4 tracking-tighter group-hover:text-primary transition-colors text-foreground uppercase italic leading-tight">{f.q}</h4>
+                                         <p className="text-[11px] text-foreground/50 dark:text-foreground/40 leading-relaxed font-bold tracking-tight">{f.a}</p>
                                     </Card>
                                 </motion.div>
                             ))}
@@ -193,7 +193,7 @@ export default function Support() {
                             </div>
                             <h2 className="text-4xl font-black tracking-tighter uppercase italic text-foreground leading-none">Terminal Ticket</h2>
                         </div>
-                        <Card className="glass-card border-foreground/5 dark:border-white/5 rounded-[4rem] p-14 relative overflow-hidden shadow-2xl group shadow-inner">
+                        <Card className="glass-card border-foreground/10 dark:border-white/5 rounded-[4rem] p-14 relative overflow-hidden shadow-2xl shadow-foreground/[0.03] dark:shadow-2xl group shadow-inner">
                             <div className="absolute top-0 right-0 p-12 opacity-[0.02] pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
                                 <LifeBuoy className="h-64 w-64 text-emerald-500" />
                             </div>
@@ -203,31 +203,37 @@ export default function Support() {
                                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/20 italic">Architectural Oversight Tier 1</p>
                                 </div>
                                 <div className="space-y-6">
-                                    <input 
-                                        type="text" 
-                                        value={formData.namespace_id}
-                                        onChange={(e) => setFormData(p => ({ ...p, namespace_id: e.target.value }))}
-                                        placeholder="Namespace ID / Node Host" 
-                                        className="w-full h-16 bg-foreground/[0.02] dark:bg-white/[0.02] border-foreground/10 dark:border-white/10 rounded-2xl px-8 text-[11px] font-black uppercase tracking-widest text-foreground focus:ring-emerald-500/30 focus:border-emerald-500/50 transition-all placeholder:text-foreground/20"
-                                    />
-                                    <input 
-                                        type="text" 
-                                        value={formData.contact_entity}
-                                        onChange={(e) => setFormData(p => ({ ...p, contact_entity: e.target.value }))}
-                                        placeholder="Engineering Contact Entity" 
-                                        className="w-full h-16 bg-foreground/[0.02] dark:bg-white/[0.02] border-foreground/10 dark:border-white/10 rounded-2xl px-8 text-[11px] font-black uppercase tracking-widest text-foreground focus:ring-emerald-500/30 focus:border-emerald-500/50 transition-all placeholder:text-foreground/20"
-                                    />
-                                    <textarea 
-                                        value={formData.description}
-                                        onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
-                                        placeholder="Describe the structural complexity of your legacy patterns..." 
-                                        className="w-full h-52 bg-foreground/[0.02] dark:bg-white/[0.02] border-foreground/10 dark:border-white/10 rounded-[2.5rem] p-8 text-[11px] font-black uppercase tracking-widest text-foreground focus:ring-emerald-500/30 focus:border-emerald-500/50 transition-all leading-relaxed placeholder:text-foreground/20 resize-none"
-                                    />
+                                    <div className="relative">
+                                        <input 
+                                            type="text" 
+                                            value={formData.namespace_id}
+                                            onChange={(e) => setFormData(p => ({ ...p, namespace_id: e.target.value }))}
+                                            placeholder="Namespace ID / Node Host" 
+                                            className="w-full h-16 bg-background dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-2xl px-8 text-[11px] font-black uppercase tracking-widest text-foreground focus:ring-emerald-500/30 focus:border-emerald-500/50 transition-all placeholder:text-foreground/40 dark:placeholder:text-foreground/20 shadow-sm"
+                                        />
+                                    </div>
+                                    <div className="relative">
+                                        <input 
+                                            type="text" 
+                                            value={formData.contact_entity}
+                                            onChange={(e) => setFormData(p => ({ ...p, contact_entity: e.target.value }))}
+                                            placeholder="Engineering Contact Entity" 
+                                            className="w-full h-16 bg-background dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-2xl px-8 text-[11px] font-black uppercase tracking-widest text-foreground focus:ring-emerald-500/30 focus:border-emerald-500/50 transition-all placeholder:text-foreground/40 dark:placeholder:text-foreground/20 shadow-sm"
+                                        />
+                                    </div>
+                                    <div className="relative">
+                                        <textarea 
+                                            value={formData.description}
+                                            onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+                                            placeholder="Describe the structural complexity of your legacy patterns..." 
+                                            className="w-full h-52 bg-background dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-[2.5rem] p-8 text-[11px] font-black uppercase tracking-widest text-foreground focus:ring-emerald-500/30 focus:border-emerald-500/50 transition-all leading-relaxed placeholder:text-foreground/40 dark:placeholder:text-foreground/20 resize-none shadow-sm"
+                                        />
+                                    </div>
                                 </div>
                                 <Button 
                                     onClick={handleSubmit}
                                     disabled={isSubmitting}
-                                    className={`w-full rounded-3xl h-20 bg-emerald-500 hover:bg-emerald-600 font-black uppercase text-[12px] tracking-[0.4em] shadow-[0_20px_60px_rgba(16,185,129,0.3)] transition-all active:scale-95 text-black ring-1 ring-white/20 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`w-full rounded-3xl h-20 bg-emerald-500 hover:bg-emerald-600 font-black uppercase text-[12px] tracking-[0.4em] shadow-[0_20px_60px_rgba(16,185,129,0.3)] transition-all active:scale-95 text-black ring-1 ring-white/10 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {isSubmitting ? 'TRANSMITTING...' : 'Launch Request'}
                                 </Button>
@@ -249,7 +255,6 @@ export default function Support() {
             </div>
 
             <style>{`
-                .glass-card { background: rgba(var(--background), 0.4); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); }
                 .shadow-glow-amber { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.3)); }
                 .shadow-glow-amber-small { filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.2)); }
                 .shadow-glow-primary { filter: drop-shadow(0 0 12px rgba(var(--primary), 0.4)); }

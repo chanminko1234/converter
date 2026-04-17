@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-import { 
-    Zap, Server, Database, MessageSquare, Terminal, 
+import {
+    Zap, Server, Database, MessageSquare, Terminal,
     Maximize2, Loader2, Sparkles, Info, ChevronRight,
     Cpu, Activity, Shield, Rocket, Copy, Code2
 } from 'lucide-react';
@@ -126,10 +126,10 @@ export default function IndexAdvisor() {
                     {/* Setup Column */}
                     <div className="lg:col-span-4 space-y-8">
                         <Card className="glass-card rounded-[3.5rem] p-10 border-foreground/5 dark:border-white/5 relative overflow-hidden group shadow-2xl">
-                             <div className="absolute top-0 right-0 p-10 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
+                            <div className="absolute top-0 right-0 p-10 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
                                 <Cpu className="h-32 w-32 text-primary" />
                             </div>
-                            
+
                             <div className="flex items-center gap-4 mb-12">
                                 <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 ring-1 ring-primary/30">
                                     <Database className="h-7 w-7 text-primary shadow-glow-primary" />
@@ -139,9 +139,9 @@ export default function IndexAdvisor() {
 
                             <div className="space-y-6">
                                 <div className="space-y-3">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/20 ml-2 italic">Fabric Type</Label>
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 dark:text-foreground/20 ml-2 italic">Fabric Type</Label>
                                     <select
-                                        className="w-full bg-foreground/[0.02] border border-foreground/5 dark:border-white/10 rounded-2xl px-6 py-5 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none"
+                                        className="w-full bg-background dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-2xl px-6 py-5 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none shadow-sm"
                                         value={sourceType}
                                         onChange={(e) => setSourceType(e.target.value)}
                                     >
@@ -152,9 +152,9 @@ export default function IndexAdvisor() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/20 ml-2 italic">Node Host</Label>
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 dark:text-foreground/20 ml-2 italic">Node Host</Label>
                                     <input
-                                        className="w-full bg-foreground/[0.02] border border-foreground/5 dark:border-white/10 rounded-2xl px-6 py-5 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none italic"
+                                        className="w-full bg-background dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-2xl px-6 py-5 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none italic shadow-sm placeholder:text-foreground/40 dark:placeholder:text-foreground/20"
                                         value={sourceConn.host}
                                         onChange={e => setSourceConn({ ...sourceConn, host: e.target.value })}
                                         placeholder="ENDPOINT_ADDRESS"
@@ -162,9 +162,9 @@ export default function IndexAdvisor() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/20 ml-2 italic">Target Namespace</Label>
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 dark:text-foreground/20 ml-2 italic">Target Namespace</Label>
                                     <input
-                                        className="w-full bg-foreground/[0.02] border border-foreground/5 dark:border-white/10 rounded-2xl px-6 py-5 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none italic"
+                                        className="w-full bg-background dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-2xl px-6 py-5 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none italic shadow-sm placeholder:text-foreground/40 dark:placeholder:text-foreground/20"
                                         value={sourceConn.db}
                                         onChange={e => setSourceConn({ ...sourceConn, db: e.target.value })}
                                         placeholder="REGISTRY_ID"
@@ -175,7 +175,7 @@ export default function IndexAdvisor() {
 
                         <div className="flex gap-4">
                             <Button
-                                className="w-full h-20 rounded-[2.5rem] bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-[0.4em] text-[11px] shadow-[0_20px_60px_rgba(var(--primary),0.3)] active:scale-[0.98] transition-all flex items-center justify-center gap-4 ring-1 ring-white/20"
+                                className="w-full h-20 rounded-[2.5rem] bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-[0.4em] text-[10px] shadow-[0_20px_60px_rgba(var(--primary),0.3)] active:scale-[0.98] transition-all flex items-center justify-center gap-4 ring-1 ring-white/20"
                                 onClick={handleAdvise}
                                 disabled={isAnalyzing}
                             >
@@ -210,7 +210,7 @@ export default function IndexAdvisor() {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className="h-full min-h-[700px] flex flex-col items-center justify-center text-center p-20 glass-card rounded-[4rem] border-foreground/5 shadow-2xl space-y-12"
+                                    className="h-full min-h-[700px] flex flex-col items-center justify-center text-center p-20 glass-card rounded-[4rem] border-foreground/10 dark:border-white/5 shadow-2xl space-y-12"
                                 >
                                     <div className="h-32 w-32 rounded-[2.5rem] bg-foreground/[0.02] flex items-center justify-center border border-foreground/5 shadow-inner relative">
                                         <div className="absolute inset-0 bg-primary/5 rounded-full blur-3xl animate-pulse" />
@@ -230,7 +230,7 @@ export default function IndexAdvisor() {
                                     key="analyzing"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="h-full min-h-[700px] flex flex-col items-center justify-center text-center p-20 glass-card rounded-[4rem] border-foreground/5 space-y-16"
+                                    className="h-full min-h-[700px] flex flex-col items-center justify-center text-center p-20 glass-card rounded-[4rem] border-foreground/10 dark:border-white/5 space-y-16"
                                 >
                                     <div className="relative">
                                         <div className="h-48 w-48 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
@@ -256,7 +256,7 @@ export default function IndexAdvisor() {
                                     className="space-y-8"
                                 >
                                     {recommendations.map((rec, i) => (
-                                        <Card key={i} className="glass-card rounded-[3.5rem] border-foreground/5 p-12 shadow-2xl relative group/card hover:border-primary/20 transition-all">
+                                        <Card key={i} className="glass-card rounded-[3.5rem] border-foreground/10 dark:border-white/5 p-12 shadow-2xl shadow-foreground/5 dark:shadow-2xl relative group/card hover:border-primary/20 transition-all">
                                             <div className="flex items-center justify-between mb-12">
                                                 <div className="flex items-center gap-6">
                                                     <div className="h-16 w-16 bg-primary/10 rounded-[1.8rem] flex items-center justify-center border border-primary/10 ring-1 ring-primary/20">
@@ -274,7 +274,7 @@ export default function IndexAdvisor() {
 
                                             <div className="space-y-10">
                                                 {rec.suggestions.map((suggestion: any, si: number) => (
-                                                    <div key={si} className="space-y-8 p-10 rounded-[3rem] bg-foreground/[0.02] border border-foreground/5 hover:bg-foreground/[0.04] transition-all relative overflow-hidden group/item">
+                                                    <div key={si} className="space-y-8 p-10 rounded-[3rem] bg-foreground/[0.03] dark:bg-foreground/[0.02] border border-foreground/10 dark:border-white/5 hover:bg-foreground/[0.05] transition-all relative overflow-hidden group/item">
                                                         <div className="flex items-start justify-between relative z-10">
                                                             <div className="space-y-6 max-w-[75%]">
                                                                 <div className="flex items-center gap-4">
@@ -331,8 +331,8 @@ export default function IndexAdvisor() {
                 </div>
 
                 {/* Performance Footer */}
-                <footer className="p-1 bg-gradient-to-r from-primary/20 via-amber-500/20 to-primary/20 rounded-[4.5rem] shadow-2xl relative">
-                    <div className="p-14 rounded-[4.2rem] bg-background/60 backdrop-blur-3xl flex flex-col md:flex-row items-center justify-between gap-12 border border-white/5 overflow-hidden">
+                <footer className="p-1 bg-gradient-to-r from-primary/30 via-amber-500/30 to-primary/30 rounded-[4.5rem] shadow-2xl relative">
+                    <div className="p-14 rounded-[4.2rem] bg-background/90 dark:bg-background/60 backdrop-blur-3xl flex flex-col md:flex-row items-center justify-between gap-12 border border-foreground/10 dark:border-white/5 overflow-hidden shadow-inner">
                         <div className="absolute top-0 left-0 p-12 opacity-[0.03] pointer-events-none group-hover:-rotate-12 transition-transform">
                             <Rocket className="w-80 h-80 text-primary" />
                         </div>
@@ -345,7 +345,7 @@ export default function IndexAdvisor() {
                                 <p className="text-[11px] text-foreground/40 font-bold uppercase tracking-widest">PostgreSQL indexing can reduce disk I/O by 90% across sharded fabric.</p>
                             </div>
                         </div>
-                        
+
                         <Link href="/docs" className="relative z-10">
                             <Button className="group relative rounded-3xl px-12 h-20 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[11px] tracking-widest active:scale-95 transition-all shadow-[0_20px_60px_rgba(var(--primary),0.3)] ring-1 ring-white/20">
                                 <span className="relative flex items-center gap-4">
@@ -359,7 +359,6 @@ export default function IndexAdvisor() {
             </div>
 
             <style>{`
-                .glass-card { background: rgba(var(--background), 0.4); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); }
                 .shadow-glow-primary { filter: drop-shadow(0 0 12px rgba(var(--primary), 0.4)); }
                 .shadow-glow-amber { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.3)); shadow-amber-500/40; }
                 .shadow-glow-amber-small { filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.4)); }

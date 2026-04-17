@@ -96,9 +96,9 @@ export default function Validation() {
 
                             <div className="space-y-6">
                                 <div className="space-y-3">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/20 ml-2">Engine Typology</Label>
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 dark:text-foreground/20 ml-2">Engine Typology</Label>
                                     <select
-                                        className="w-full bg-foreground/[0.02] dark:bg-white/[0.02] border border-foreground/5 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none"
+                                        className="w-full bg-background dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none shadow-sm"
                                         value={sourceType}
                                         onChange={(e) => setSourceType(e.target.value)}
                                     >
@@ -110,17 +110,17 @@ export default function Validation() {
 
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-3">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/20 ml-2">Host</Label>
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 dark:text-foreground/20 ml-2">Host</Label>
                                         <input
-                                            className="w-full bg-foreground/[0.02] dark:bg-white/[0.02] border border-foreground/5 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none italic"
+                                            className="w-full bg-background dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none italic shadow-sm placeholder:text-foreground/20"
                                             value={sourceConn.host}
                                             onChange={e => setSourceConn({ ...sourceConn, host: e.target.value })}
                                         />
                                     </div>
                                     <div className="space-y-3">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/20 ml-2">Port</Label>
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 dark:text-foreground/20 ml-2">Port</Label>
                                         <input
-                                            className="w-full bg-foreground/[0.02] dark:bg-white/[0.02] border border-foreground/5 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none italic"
+                                            className="w-full bg-background dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none italic shadow-sm placeholder:text-foreground/20"
                                             value={sourceConn.port}
                                             onChange={e => setSourceConn({ ...sourceConn, port: e.target.value })}
                                         />
@@ -128,9 +128,9 @@ export default function Validation() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/20 ml-2">Identity (Namespace)</Label>
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 dark:text-foreground/20 ml-2">Identity (Namespace)</Label>
                                     <input
-                                        className="w-full bg-foreground/[0.02] dark:bg-white/[0.02] border border-foreground/5 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none italic"
+                                        className="w-full bg-background dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-primary transition-all outline-none italic shadow-sm placeholder:text-foreground/40 dark:placeholder:text-foreground/20"
                                         value={sourceConn.db}
                                         onChange={e => setSourceConn({ ...sourceConn, db: e.target.value })}
                                         placeholder="DATABASE_NAME"
@@ -154,26 +154,26 @@ export default function Validation() {
                             <div className="space-y-6">
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-3">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/20 ml-2">Host</Label>
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 dark:text-foreground/20 ml-2">Host</Label>
                                         <input
-                                            className="w-full bg-foreground/[0.02] dark:bg-white/[0.02] border border-foreground/5 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-indigo-500 transition-all outline-none italic"
+                                            className="w-full bg-background dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-indigo-500 transition-all outline-none italic shadow-sm"
                                             value={targetConn.host}
                                             onChange={e => setTargetConn({ ...targetConn, host: e.target.value })}
                                         />
                                     </div>
                                     <div className="space-y-3">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/20 ml-2">Port</Label>
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 dark:text-foreground/20 ml-2">Port</Label>
                                         <input
-                                            className="w-full bg-foreground/[0.02] dark:bg-white/[0.02] border border-foreground/5 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-indigo-500 transition-all outline-none italic"
+                                            className="w-full bg-background dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-indigo-500 transition-all outline-none italic shadow-sm"
                                             value={targetConn.port}
                                             onChange={e => setTargetConn({ ...targetConn, port: e.target.value })}
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-3">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/20 ml-2">Target Registry</Label>
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/40 dark:text-foreground/20 ml-2">Target Registry</Label>
                                     <input
-                                        className="w-full bg-foreground/[0.02] dark:bg-white/[0.02] border border-foreground/5 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-indigo-500 transition-all outline-none italic"
+                                        className="w-full bg-background dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-2xl px-6 py-4 text-[13px] font-black uppercase tracking-tight text-foreground focus:ring-2 ring-indigo-500 transition-all outline-none italic shadow-sm placeholder:text-foreground/40 dark:placeholder:text-foreground/20"
                                         value={targetConn.db}
                                         onChange={e => setTargetConn({ ...targetConn, db: e.target.value })}
                                         placeholder="POSTGRES_DB"
@@ -331,7 +331,6 @@ export default function Validation() {
             </div>
 
             <style>{`
-                .glass-card { background: hsla(var(--background), 0.4); backdrop-filter: blur(40px); }
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: hsla(var(--foreground), 0.05); border-radius: 10px; }

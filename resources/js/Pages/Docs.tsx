@@ -18,16 +18,16 @@ export default function Docs() {
             icon: <Rocket className="h-5 w-5 text-primary" />,
             content: (
                 <div className="space-y-6">
-                    <p className="text-foreground/40 font-bold leading-relaxed tracking-tight">
+                    <p className="text-foreground/50 dark:text-foreground/40 font-bold leading-relaxed tracking-tight">
                         SQL STREAM is engineered for zero-artifact database migrations. Connect MySQL, Oracle, or SQL Server directly and stream to PostgreSQL with zero-downtime.
                     </p>
-                    <div className="bg-slate-900/40 rounded-[2rem] border border-white/5 p-8 font-mono text-[11px] group relative overflow-hidden shadow-inner">
+                    <div className="bg-slate-900/90 dark:bg-slate-900/40 rounded-[2.5rem] border border-foreground/10 dark:border-white/5 p-8 font-mono text-[11px] group relative overflow-hidden shadow-2xl">
                         <div className="flex items-center gap-2 mb-4 opacity-40">
                             <Terminal className="w-3 h-3 text-primary" />
-                            <span className="uppercase tracking-[0.2em] font-black">Terminal</span>
+                            <span className="uppercase tracking-[0.2em] font-black text-white dark:text-foreground">Terminal</span>
                         </div>
-                        <p className="text-primary/60 mb-2 font-black"># Initialize a live migration stream</p>
-                        <p className="text-foreground font-black tracking-tight flex items-center gap-2">
+                        <p className="text-primary/80 dark:text-primary/60 mb-2 font-black italic"># Initialize a live migration stream</p>
+                        <p className="text-white dark:text-foreground font-black tracking-tight flex items-center gap-2">
                              <span className="text-primary transition-transform group-hover:translate-x-1">$</span>
                              php artisan convert:stream --source=oracle --target=pgsql
                         </p>
@@ -41,7 +41,7 @@ export default function Docs() {
             icon: <Database className="h-5 w-5 text-blue-400" />,
             content: (
                 <div className="space-y-6">
-                    <p className="text-foreground/40 font-bold leading-relaxed tracking-tight">Our enterprise adapter fabric supports high-fidelity transpilation from diverse engines:</p>
+                    <p className="text-foreground/50 dark:text-foreground/40 font-bold leading-relaxed tracking-tight">Our enterprise adapter fabric supports high-fidelity transpilation from diverse engines:</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {[
                             { name: 'Postgres Node', desc: 'Atomic synchronization and real-time SSE streaming for PG targets.' },
@@ -50,9 +50,9 @@ export default function Docs() {
                             { name: 'T-SQL Node', desc: 'SQL Server conversion with bracketed identifier normalization.' },
                             { name: 'SQLite Node', desc: 'Lightweight local database migration using sqlite_master catalogs.' }
                         ].map(f => (
-                            <Card key={f.name} className="p-6 rounded-3xl bg-foreground/[0.02] border-foreground/5 hover:border-primary/20 transition-all group shadow-sm">
-                                <h6 className="font-black text-[10px] uppercase tracking-widest mb-3 text-primary italic italic-not-really">{f.name}</h6>
-                                <p className="text-[10px] text-foreground/40 leading-relaxed font-bold tracking-tight">{f.desc}</p>
+                            <Card key={f.name} className="p-6 rounded-[2rem] bg-background dark:bg-foreground/[0.02] border-foreground/10 dark:border-foreground/5 hover:border-primary/20 transition-all group shadow-sm hover:shadow-lg">
+                                <h6 className="font-black text-[10px] uppercase tracking-widest mb-3 text-primary italic">{f.name}</h6>
+                                <p className="text-[10px] text-foreground/60 dark:text-foreground/40 leading-relaxed font-bold tracking-tight">{f.desc}</p>
                             </Card>
                         ))}
                     </div>
@@ -65,7 +65,7 @@ export default function Docs() {
             icon: <Cpu className="h-5 w-5 text-purple-400" />,
             content: (
                 <div className="space-y-6">
-                    <p className="text-foreground/40 font-bold leading-relaxed tracking-tight">Leverage Google Gemini to optimize your target PostgreSQL architecture. NTE scans your source schema and suggests indexing strategies.</p>
+                    <p className="text-foreground/50 dark:text-foreground/40 font-bold leading-relaxed tracking-tight">Leverage Google Gemini to optimize your target PostgreSQL architecture. NTE scans your source schema and suggests indexing strategies.</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {[
                             { label: 'GIN Indexing', desc: 'Optimized for JSONB containment and full-text search.' },
@@ -73,9 +73,9 @@ export default function Docs() {
                             { label: 'Partial Scans', desc: 'Index only rows your node actually prioritizes.' },
                             { label: 'Neural Rationale', desc: 'Justifications for every proposed DDL modification.' }
                         ].map(item => (
-                            <div key={item.label} className="p-5 rounded-2xl bg-foreground/[0.02] border border-foreground/5 hover:bg-primary/5 transition-all group">
+                            <div key={item.label} className="p-5 rounded-3xl bg-background dark:bg-foreground/[0.02] border border-foreground/10 dark:border-foreground/5 hover:bg-primary/5 transition-all group shadow-sm">
                                 <h6 className="text-[10px] font-black uppercase text-primary mb-2 tracking-widest">{item.label}</h6>
-                                <p className="text-[10px] text-foreground/40 font-bold leading-relaxed">{item.desc}</p>
+                                <p className="text-[10px] text-foreground/60 dark:text-foreground/40 font-bold leading-relaxed">{item.desc}</p>
                             </div>
                         ))}
                     </div>
@@ -96,9 +96,9 @@ export default function Docs() {
                             { label: 'Persistent ACL', desc: 'User-to-node permissions are maintained across sessions.' },
                             { label: 'Node Secrets', desc: 'Social tokens are encrypted and strictly managed.' }
                         ].map(item => (
-                            <div key={item.label} className="p-5 rounded-2xl bg-foreground/[0.02] border border-foreground/5 hover:bg-primary/5 transition-all group">
-                                <h6 className="text-[10px] font-black uppercase text-emerald-400 mb-2 tracking-widest">{item.label}</h6>
-                                <p className="text-[10px] text-foreground/40 font-bold leading-relaxed">{item.desc}</p>
+                            <div key={item.label} className="p-5 rounded-2xl bg-foreground/[0.03] dark:bg-foreground/[0.02] border border-foreground/10 dark:border-foreground/5 hover:bg-primary/5 transition-all group shadow-sm">
+                                <h6 className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 mb-2 tracking-widest">{item.label}</h6>
+                                <p className="text-[10px] text-foreground/50 dark:text-foreground/40 font-bold leading-relaxed">{item.desc}</p>
                             </div>
                         ))}
                     </div>
@@ -136,7 +136,7 @@ export default function Docs() {
                                     <a 
                                         key={s.id} 
                                         href={`#${s.id}`} 
-                                        className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-foreground/5 transition-all text-[11px] font-black uppercase tracking-widest text-foreground/30 hover:text-foreground group"
+                                        className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-foreground/5 transition-all text-[11px] font-black uppercase tracking-widest text-foreground/40 dark:text-foreground/30 hover:text-foreground group"
                                     >
                                         <div className="h-1.5 w-1.5 rounded-full bg-primary/0 group-hover:bg-primary transition-all scale-0 group-hover:scale-100" />
                                         {s.title}
@@ -145,12 +145,12 @@ export default function Docs() {
                             </nav>
                         </div>
 
-                        <Card className="p-8 glass-card rounded-[2.5rem] border-foreground/5 dark:border-white/5 space-y-6 shadow-2xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform">
-                                <Info className="w-12 h-12 text-primary" />
+                        <Card className="p-8 glass-card rounded-[3rem] border-foreground/10 dark:border-white/5 space-y-6 shadow-2xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none group-hover:rotate-12 transition-transform">
+                                <Info className="w-12 h-12 text-primary shadow-glow-primary" />
                             </div>
                             <h5 className="text-[10px] font-black uppercase tracking-widest text-foreground leading-tight">Need Node<br />Clearance?</h5>
-                            <p className="text-[9px] text-foreground/40 font-bold leading-relaxed">Join our enterprise cluster for 24/7 technical oversight and architectural reviews.</p>
+                            <p className="text-[9px] text-foreground/60 dark:text-foreground/40 font-bold leading-relaxed">Join our enterprise cluster for 24/7 technical oversight and architectural reviews.</p>
                             <Link href="/support" className="block">
                                 <Button variant="outline" className="w-full rounded-2xl text-[9px] font-black uppercase tracking-widest border-primary/20 h-11 hover:bg-primary/5 hover:text-primary transition-all">Support Desk</Button>
                             </Link>
@@ -164,7 +164,7 @@ export default function Docs() {
                         <h1 className="text-6xl font-black tracking-tighter leading-none text-foreground uppercase italic px-1">
                             Engineering <span className="text-primary italic">The Node.</span>
                         </h1>
-                        <p className="text-xl text-foreground/40 font-bold leading-relaxed tracking-tight">
+                        <p className="text-xl text-foreground/50 dark:text-foreground/40 font-bold leading-relaxed tracking-tight">
                             Master the high-performance SQL STREAM ecosystem. From complex structural transpilation to zero-downtime mission orchestration.
                         </p>
                     </section>
@@ -205,7 +205,6 @@ export default function Docs() {
 
             <style>{`
                 html { scroll-behavior: smooth; }
-                .glass-card { background: rgba(var(--background), 0.4); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); }
             `}</style>
         </AuthenticatedLayout>
     );
